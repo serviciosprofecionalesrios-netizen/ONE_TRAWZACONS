@@ -1,4 +1,4 @@
-@model ITServiceDeskApp.Models.Ticket
+﻿@model ITServiceDeskApp.Models.Ticket
 @using ITServiceDeskApp.Models
 
 @{
@@ -31,6 +31,7 @@
                             PriorityLevel.Low => "bg-success",
                             PriorityLevel.Medium => "bg-warning text-dark",
                             PriorityLevel.High => "bg-danger",
+                            PriorityLevel.Critical => "bg-dark",
                             _ => "bg-secondary"
                         };
 
@@ -38,6 +39,7 @@
                         {
                             TicketStatus.Open => "bg-primary",
                             TicketStatus.InProgress => "bg-info text-dark",
+                            TicketStatus.Resolved => "bg-warning text-dark",
                             TicketStatus.Closed => "bg-success",
                             _ => "bg-secondary"
                         };
@@ -72,10 +74,6 @@
         </div>
     </div>
 
-    <!-- ========================= -->
-    <!-- HISTORIAL DE CAMBIOS -->
-    <!-- ========================= -->
-
     <div class="card shadow">
         <div class="card-header bg-dark text-white">
             Historial de Cambios
@@ -83,7 +81,7 @@
 
         <div class="card-body">
 
-            @if (!Model.History.Any())
+            @if (!Model.HistoryEntries.Any())
             {
                 <div class="alert alert-info">
                     No hay cambios registrados.
@@ -102,7 +100,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in Model.History.OrderByDescending(h => h.ChangeDate))
+                        @foreach (var item in Model.HistoryEntries.OrderByDescending(h => h.ChangeDate))
                         {
                             <tr>
                                 <td>@item.ChangeDate.ToString("yyyy-MM-dd HH:mm")</td>

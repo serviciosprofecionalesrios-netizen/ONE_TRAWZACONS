@@ -1,4 +1,4 @@
-@model global::ITServiceDeskApp.Models.Ticket
+﻿@model global::ITServiceDeskApp.Models.Ticket
 
 @{
     ViewData["Title"] = "Eliminar";
@@ -18,7 +18,8 @@
         </div>
 
         <div class="card-footer text-end">
-            <form asp-action="Delete">
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
                 <button type="submit" class="btn btn-danger">Eliminar</button>
                 <a asp-action="Index" class="btn btn-secondary">Cancelar</a>

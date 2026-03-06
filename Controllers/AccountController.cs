@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using ITServiceDeskApp.Data;
+using ITServiceDeskApp.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using ITServiceDeskApp.Data;
-using ITServiceDeskApp.Models;
 
 namespace ITServiceDeskApp.Controllers
 {
@@ -22,9 +22,6 @@ namespace ITServiceDeskApp.Controllers
             _passwordHasher = passwordHasher;
         }
 
-        // ===============================
-        // LOGIN (GET)
-        // ===============================
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
@@ -32,9 +29,6 @@ namespace ITServiceDeskApp.Controllers
             return View();
         }
 
-        // ===============================
-        // LOGIN (POST)
-        // ===============================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
@@ -62,8 +56,7 @@ namespace ITServiceDeskApp.Controllers
             var verificationResult = _passwordHasher.VerifyHashedPassword(
                 user,
                 user.PasswordHash,
-                password
-            );
+                password);
 
             if (verificationResult == PasswordVerificationResult.Failed)
             {
@@ -71,7 +64,6 @@ namespace ITServiceDeskApp.Controllers
                 return View();
             }
 
-            // 🔐 Claims
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.FullName),
@@ -82,38 +74,30 @@ namespace ITServiceDeskApp.Controllers
 
             var identity = new ClaimsIdentity(
                 claims,
-                CookieAuthenticationDefaults.AuthenticationScheme
-            );
+                CookieAuthenticationDefaults.AuthenticationScheme);
 
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                principal
-            );
+                principal);
 
-            // 🔄 Redirección segura
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
                 return Redirect(returnUrl);
+            }
 
             return RedirectToAction("Index", "Dashboard");
         }
 
-        // ===============================
-        // LOGOUT
-        // ===============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme
-            );
-
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login));
         }
 
-        // ===============================
-        // ACCESS DENIED
-        // ===============================
         public IActionResult AccessDenied()
         {
             return View();

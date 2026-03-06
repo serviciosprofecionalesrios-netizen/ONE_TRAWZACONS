@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using ITServiceDeskApp.Models;
 
 namespace ITServiceDeskApp.ViewModels.Users
@@ -28,5 +28,15 @@ namespace ITServiceDeskApp.ViewModels.Users
         public UserRole Role { get; set; }
 
         public bool IsActive { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        [MinLength(8, ErrorMessage = "La nueva contraseña debe tener al menos 8 caracteres.")]
+        [DataType(DataType.Password)]
+        public string? NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Compare(nameof(NewPassword), ErrorMessage = "Las contraseñas no coinciden.")]
+        public string? ConfirmNewPassword { get; set; }
     }
 }

@@ -1,0 +1,460 @@
+@model ITServiceDeskApp.ViewModels.CalendarViewModel
+
+@{
+    ViewData["Title"] = "Calendario";
+    var dayHeaders = new[] { "LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM" };
+    var selectedSla = string.IsNullOrWhiteSpace(Model.SelectedSla) ? "all" : Model.SelectedSla;
+    var selectedTech = string.IsNullOrWhiteSpace(Model.SelectedTechnician) ? "all" : Model.SelectedTechnician;
+}
+
+<style>
+    .calendar-page {
+        --ok-bg: #e6f8ee;
+        --ok-text: #159947;
+        --near-bg: #fff4d9;
+        --near-text: #c57c00;
+        --late-bg: #ffe7e7;
+        --late-text: #d53b3b;
+        --critical-bg: #fff0dd;
+        --critical-text: #dd6b20;
+    }
+
+    .calendar-summary-card {
+        border: 1px solid #e8ebef;
+        border-radius: 16px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        background: #ffffff;
+    }
+
+    .calendar-summary-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .calendar-summary-title {
+        color: #5e6b7d;
+        font-size: 1.05rem;
+    }
+
+    .calendar-summary-value {
+        font-weight: 800;
+        color: #13213a;
+        line-height: 1;
+        font-size: 2rem;
+    }
+
+    .calendar-toolbar {
+        border: 1px solid #e8ebef;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .calendar-nav-btn {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #d6dde8;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #10223f;
+        text-decoration: none;
+        background-color: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .calendar-nav-btn:hover {
+        color: #ffffff;
+        background-color: #0f6e9c;
+        border-color: #0f6e9c;
+        transform: translateY(-1px);
+    }
+
+    .calendar-month-title {
+        font-weight: 800;
+        color: #10223f;
+        margin: 0;
+    }
+
+    .calendar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        color: #40516b;
+        font-weight: 500;
+    }
+
+    .calendar-legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+        vertical-align: middle;
+    }
+
+    .calendar-board-wrap {
+        overflow-x: auto;
+        border: 1px solid #e6ebf2;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .calendar-board {
+        min-width: 980px;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .calendar-cell-head {
+        background-color: #f8fafc;
+        color: #5b6b82;
+        text-align: center;
+        font-weight: 700;
+        padding: 0.9rem 0.5rem;
+        border-bottom: 1px solid #e6ebf2;
+        border-right: 1px solid #edf2f7;
+        letter-spacing: 0.04em;
+    }
+
+    .calendar-cell-head:last-child {
+        border-right: 0;
+    }
+
+    .calendar-day {
+        min-height: 145px;
+        border-right: 1px solid #edf2f7;
+        border-bottom: 1px solid #edf2f7;
+        padding: 0.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        background-color: #ffffff;
+    }
+
+    .calendar-day:nth-child(7n) {
+        border-right: 0;
+    }
+
+    .calendar-day--outside {
+        background-color: #fafbfc;
+        color: #a0aec0;
+    }
+
+    .calendar-day--today {
+        background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+    }
+
+    .calendar-day-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .calendar-day-number {
+        font-weight: 700;
+        color: #1c2f4e;
+    }
+
+    .calendar-day--outside .calendar-day-number {
+        color: #9aa8bc;
+    }
+
+    .calendar-day-count {
+        background: #eef2f7;
+        color: #607188;
+        border-radius: 999px;
+        min-width: 1.4rem;
+        height: 1.4rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0 0.35rem;
+    }
+
+    .calendar-day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .ticket-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 8px;
+        text-decoration: none;
+        padding: 0.3rem 0.45rem;
+        font-size: 0.92rem;
+        font-weight: 700;
+        border-left: 3px solid transparent;
+        transition: transform 0.15s ease;
+    }
+
+    .ticket-chip:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .ticket-chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+    }
+
+    .ticket-chip--compliant {
+        color: var(--ok-text);
+        background-color: var(--ok-bg);
+        border-left-color: #22c55e;
+    }
+
+    .ticket-chip--compliant .ticket-chip-dot {
+        background-color: #22c55e;
+    }
+
+    .ticket-chip--near {
+        color: var(--near-text);
+        background-color: var(--near-bg);
+        border-left-color: #f59e0b;
+    }
+
+    .ticket-chip--near .ticket-chip-dot {
+        background-color: #f59e0b;
+    }
+
+    .ticket-chip--breached {
+        color: var(--late-text);
+        background-color: var(--late-bg);
+        border-left-color: #ef4444;
+    }
+
+    .ticket-chip--breached .ticket-chip-dot {
+        background-color: #ef4444;
+    }
+
+    .ticket-chip-code {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ticket-chip-critical {
+        margin-left: auto;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--critical-text);
+        background: var(--critical-bg);
+        border-radius: 999px;
+        padding: 0.1rem 0.35rem;
+    }
+
+    .calendar-day-more {
+        color: #6f7f95;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 991.98px) {
+        .calendar-summary-value {
+            font-size: 1.7rem;
+        }
+
+        .calendar-month-title {
+            font-size: 1.7rem;
+        }
+    }
+</style>
+
+<div class="container-fluid calendar-page">
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="calendar-summary-card p-3 h-100 d-flex align-items-center gap-3">
+                <span class="calendar-summary-icon" style="background: var(--ok-bg); color: var(--ok-text);">
+                    <i class="bi bi-check-circle-fill"></i>
+                </span>
+                <div>
+                    <div class="calendar-summary-value">@Model.SlaCompliantCount</div>
+                    <div class="calendar-summary-title">SLA Cumplido</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="calendar-summary-card p-3 h-100 d-flex align-items-center gap-3">
+                <span class="calendar-summary-icon" style="background: var(--near-bg); color: var(--near-text);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                </span>
+                <div>
+                    <div class="calendar-summary-value">@Model.SlaNearDueCount</div>
+                    <div class="calendar-summary-title">Proximo a Vencer</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="calendar-summary-card p-3 h-100 d-flex align-items-center gap-3">
+                <span class="calendar-summary-icon" style="background: var(--late-bg); color: var(--late-text);">
+                    <i class="bi bi-x-circle-fill"></i>
+                </span>
+                <div>
+                    <div class="calendar-summary-value">@Model.SlaBreachedCount</div>
+                    <div class="calendar-summary-title">SLA Vencido</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="calendar-summary-card p-3 h-100 d-flex align-items-center gap-3">
+                <span class="calendar-summary-icon" style="background: var(--critical-bg); color: var(--critical-text);">
+                    <i class="bi bi-fire"></i>
+                </span>
+                <div>
+                    <div class="calendar-summary-value">@Model.CriticalPriorityCount</div>
+                    <div class="calendar-summary-title">Prioridad Critica</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-toolbar p-3 p-lg-4 mb-3">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3">
+
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a class="calendar-nav-btn"
+                   asp-action="Index"
+                   asp-route-year="@Model.PreviousYear"
+                   asp-route-month="@Model.PreviousMonth"
+                   asp-route-sla="@selectedSla"
+                   asp-route-technician="@selectedTech"
+                   title="Mes anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+
+                <h2 class="calendar-month-title">@Model.CurrentMonthLabel</h2>
+
+                <a class="calendar-nav-btn"
+                   asp-action="Index"
+                   asp-route-year="@Model.NextYear"
+                   asp-route-month="@Model.NextMonth"
+                   asp-route-sla="@selectedSla"
+                   asp-route-technician="@selectedTech"
+                   title="Mes siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+
+            <form method="get" class="row g-2 align-items-center ms-xl-auto">
+                <input type="hidden" name="year" value="@Model.Year" />
+                <input type="hidden" name="month" value="@Model.Month" />
+
+                <div class="col-auto">
+                    <label for="sla" class="form-label mb-0 fw-semibold text-muted">SLA:</label>
+                </div>
+                <div class="col-auto">
+                    <select id="sla" name="sla" class="form-select" onchange="this.form.submit()">
+                        @foreach (var option in Model.SlaOptions)
+                        {
+                            @if (option.Value == selectedSla)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-auto">
+                    <label for="technician" class="form-label mb-0 fw-semibold text-muted">Tecnico:</label>
+                </div>
+                <div class="col-auto">
+                    <select id="technician" name="technician" class="form-select" onchange="this.form.submit()">
+                        @foreach (var option in Model.TechnicianOptions)
+                        {
+                            @if (option.Value == selectedTech)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </form>
+
+        </div>
+
+        <div class="calendar-legend mt-3">
+            <span><span class="calendar-legend-dot" style="background:#22c55e;"></span>SLA Cumplido</span>
+            <span><span class="calendar-legend-dot" style="background:#f59e0b;"></span>Proximo a Vencer</span>
+            <span><span class="calendar-legend-dot" style="background:#ef4444;"></span>SLA Vencido</span>
+        </div>
+    </div>
+
+    <div class="calendar-board-wrap">
+        <div class="calendar-board">
+            @foreach (var day in dayHeaders)
+            {
+                <div class="calendar-cell-head">@day</div>
+            }
+
+            @for (var i = 0; i < Model.Days.Count; i++)
+            {
+                var day = Model.Days[i];
+
+                <div class="calendar-day @(day.IsCurrentMonth ? string.Empty : "calendar-day--outside") @(day.IsToday ? "calendar-day--today" : string.Empty)">
+                    <div class="calendar-day-top">
+                        <span class="calendar-day-number">@day.Date.Day</span>
+                        @if (day.Tickets.Count > 0)
+                        {
+                            <span class="calendar-day-count">@day.Tickets.Count</span>
+                        }
+                    </div>
+
+                    <div class="calendar-day-events">
+                        @foreach (var ticket in day.Tickets.Take(4))
+                        {
+                            <a asp-controller="Tickets"
+                               asp-action="Details"
+                               asp-route-id="@ticket.TicketId"
+                               class="@ticket.CssClass"
+                               title="@($"{ticket.TicketNumber} - {ticket.SlaLabel}")">
+                                <span class="ticket-chip-dot"></span>
+                                <span class="ticket-chip-code">@ticket.TicketNumber</span>
+                                @if (ticket.IsCritical)
+                                {
+                                    <span class="ticket-chip-critical">P1</span>
+                                }
+                            </a>
+                        }
+
+                        @if (day.Tickets.Count > 4)
+                        {
+                            <span class="calendar-day-more">+@(day.Tickets.Count - 4) mas...</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+

@@ -1,0 +1,543 @@
+@model ITServiceDeskApp.ViewModels.Reports.ReportIndexViewModel
+
+@{
+    ViewData["Title"] = "Reportes";
+
+    var startDateValue = Model.StartDate.ToString("yyyy-MM-dd");
+    var endDateValue = Model.EndDate.ToString("yyyy-MM-dd");
+
+    var selectedTechnician = string.IsNullOrWhiteSpace(Model.SelectedTechnician) ? "all" : Model.SelectedTechnician;
+    var selectedArea = string.IsNullOrWhiteSpace(Model.SelectedArea) ? "all" : Model.SelectedArea;
+    var selectedSite = string.IsNullOrWhiteSpace(Model.SelectedSite) ? "all" : Model.SelectedSite;
+
+    var activeTab = string.IsNullOrWhiteSpace(Model.ActiveTab) ? "summary" : Model.ActiveTab;
+}
+
+<style>
+    .reports-page {
+        --card-border: #e5e7eb;
+        --muted: #64748b;
+        --title: #0f172a;
+        --accent: #0ea5a4;
+        --ok-bg: #e7f8ef;
+        --ok-text: #14965d;
+        --warn-bg: #fff8df;
+        --warn-text: #be7b00;
+        --danger-bg: #ffe9e9;
+        --danger-text: #dc3f3f;
+        --soft-bg: #f7fbfb;
+    }
+
+    .reports-title {
+        color: var(--title);
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .reports-subtitle {
+        color: var(--muted);
+        margin-top: 0.3rem;
+        margin-bottom: 0;
+    }
+
+    .reports-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .reports-card {
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .reports-card-header {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .metric-card {
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        background: #fff;
+        padding: 1rem 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .metric-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .metric-label {
+        color: var(--muted);
+        font-size: 0.86rem;
+    }
+
+    .metric-value {
+        color: #0b1d3a;
+        font-weight: 800;
+        font-size: 2rem;
+        line-height: 1;
+    }
+
+    .summary-box {
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        background: #fff;
+        padding: 1.1rem;
+        min-height: 110px;
+    }
+
+    .summary-label {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .summary-value {
+        color: #0b1d3a;
+        font-weight: 800;
+        font-size: 2.2rem;
+        line-height: 1;
+    }
+
+    .tab-strip {
+        background: var(--soft-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 0.35rem;
+    }
+
+    .tab-link {
+        border-radius: 9px;
+        color: #334155;
+        font-weight: 600;
+        display: block;
+        text-align: center;
+        padding: 0.55rem 0.75rem;
+        text-decoration: none;
+    }
+
+    .tab-link:hover {
+        background: #edf7f7;
+        color: #0f172a;
+    }
+
+    .tab-link.active {
+        background: #dff4f4;
+        color: #0b7285;
+    }
+
+    .distribution-row {
+        margin-bottom: 0.9rem;
+    }
+
+    .distribution-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.95rem;
+        margin-bottom: 0.3rem;
+        color: #0f172a;
+    }
+
+    .distribution-track {
+        height: 12px;
+        border-radius: 999px;
+        background: #e7ecef;
+        overflow: hidden;
+    }
+
+    .distribution-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: var(--accent);
+    }
+
+    .table-lite th {
+        font-size: 0.85rem;
+        color: #5d6b7f;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .table-lite td {
+        vertical-align: middle;
+    }
+
+    @@media print {
+        nav,
+        .reports-actions,
+        .filters-panel,
+        .tab-strip {
+            display: none !important;
+        }
+
+        .content-wrapper {
+            padding: 0 !important;
+        }
+
+        .reports-page {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    }
+</style>
+
+<div class="container-fluid reports-page">
+
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-3">
+        <div>
+            <h2 class="reports-title">Modulo de Reportes</h2>
+            <p class="reports-subtitle">Genera reportes detallados y exporta la informacion</p>
+        </div>
+
+        <div class="reports-actions">
+            <a class="btn btn-success btn-sm"
+               asp-action="ExportExcel"
+               asp-route-startDate="@startDateValue"
+               asp-route-endDate="@endDateValue"
+               asp-route-technician="@selectedTechnician"
+               asp-route-area="@selectedArea"
+               asp-route-site="@selectedSite"
+               asp-route-tab="@activeTab">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Exportar Excel
+            </a>
+
+            <a class="btn btn-danger btn-sm"
+               asp-action="Index"
+               asp-route-startDate="@startDateValue"
+               asp-route-endDate="@endDateValue"
+               asp-route-technician="@selectedTechnician"
+               asp-route-area="@selectedArea"
+               asp-route-site="@selectedSite"
+               asp-route-tab="@activeTab"
+               asp-route-printMode="true"
+               target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="reports-card p-3 mb-3 filters-panel">
+        <div class="reports-card-header mb-3">
+            <i class="bi bi-funnel"></i> Filtros de Reporte
+        </div>
+
+        <form method="get" class="row g-3 align-items-end">
+            <input type="hidden" name="tab" value="@activeTab" />
+
+            <div class="col-12 col-md-6 col-xl-2">
+                <label for="startDate" class="form-label">Fecha Inicio</label>
+                <input id="startDate" name="startDate" type="date" class="form-control" value="@startDateValue" />
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2">
+                <label for="endDate" class="form-label">Fecha Fin</label>
+                <input id="endDate" name="endDate" type="date" class="form-control" value="@endDateValue" />
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="technician" class="form-label">Tecnico</label>
+                <select id="technician" name="technician" class="form-select">
+                    @foreach (var option in Model.TechnicianOptions)
+                    {
+                        if (option.Value == selectedTechnician)
+                        {
+                            <option value="@option.Value" selected="selected">@option.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2">
+                <label for="area" class="form-label">Area</label>
+                <select id="area" name="area" class="form-select">
+                    @foreach (var option in Model.AreaOptions)
+                    {
+                        if (option.Value == selectedArea)
+                        {
+                            <option value="@option.Value" selected="selected">@option.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2">
+                <label for="site" class="form-label">Sitio</label>
+                <select id="site" name="site" class="form-select">
+                    @foreach (var option in Model.SiteOptions)
+                    {
+                        if (option.Value == selectedSite)
+                        {
+                            <option value="@option.Value" selected="selected">@option.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-xl-1 d-grid">
+                <button type="submit" class="btn btn-primary">Aplicar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="tab-strip mb-3">
+        <div class="row g-2">
+            <div class="col-12 col-md-3">
+                <a class="tab-link @(activeTab == "summary" ? "active" : "")"
+                   asp-action="Index"
+                   asp-route-startDate="@startDateValue"
+                   asp-route-endDate="@endDateValue"
+                   asp-route-technician="@selectedTechnician"
+                   asp-route-area="@selectedArea"
+                   asp-route-site="@selectedSite"
+                   asp-route-tab="summary">Resumen General</a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a class="tab-link @(activeTab == "technician" ? "active" : "")"
+                   asp-action="Index"
+                   asp-route-startDate="@startDateValue"
+                   asp-route-endDate="@endDateValue"
+                   asp-route-technician="@selectedTechnician"
+                   asp-route-area="@selectedArea"
+                   asp-route-site="@selectedSite"
+                   asp-route-tab="technician">Por Tecnico</a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a class="tab-link @(activeTab == "area" ? "active" : "")"
+                   asp-action="Index"
+                   asp-route-startDate="@startDateValue"
+                   asp-route-endDate="@endDateValue"
+                   asp-route-technician="@selectedTechnician"
+                   asp-route-area="@selectedArea"
+                   asp-route-site="@selectedSite"
+                   asp-route-tab="area">Por Area</a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a class="tab-link @(activeTab == "site" ? "active" : "")"
+                   asp-action="Index"
+                   asp-route-startDate="@startDateValue"
+                   asp-route-endDate="@endDateValue"
+                   asp-route-technician="@selectedTechnician"
+                   asp-route-area="@selectedArea"
+                   asp-route-site="@selectedSite"
+                   asp-route-tab="site">Por Sitio</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6 col-xl">
+            <div class="metric-card">
+                <span class="metric-icon" style="background:#e3f8f9;color:#0b8f9a;"><i class="bi bi-ticket-detailed"></i></span>
+                <div>
+                    <div class="metric-value">@Model.TotalTickets</div>
+                    <div class="metric-label">Total Tickets</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl">
+            <div class="metric-card">
+                <span class="metric-icon" style="background:var(--ok-bg);color:var(--ok-text);"><i class="bi bi-check-circle"></i></span>
+                <div>
+                    <div class="metric-value">@Model.ResolvedTickets</div>
+                    <div class="metric-label">Resueltos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl">
+            <div class="metric-card">
+                <span class="metric-icon" style="background:#efe8ff;color:#7f56d9;"><i class="bi bi-arrow-repeat"></i></span>
+                <div>
+                    <div class="metric-value">@Model.InProgressTickets</div>
+                    <div class="metric-label">En Proceso</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl">
+            <div class="metric-card">
+                <span class="metric-icon" style="background:var(--warn-bg);color:var(--warn-text);"><i class="bi bi-clock"></i></span>
+                <div>
+                    <div class="metric-value">@Model.PendingTickets</div>
+                    <div class="metric-label">Pendientes</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl">
+            <div class="metric-card">
+                <span class="metric-icon" style="background:var(--danger-bg);color:var(--danger-text);"><i class="bi bi-exclamation-triangle"></i></span>
+                <div>
+                    <div class="metric-value">@Model.OverdueTickets</div>
+                    <div class="metric-label">Vencidos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-4">
+            <div class="summary-box">
+                <div class="summary-label"><i class="bi bi-stopwatch"></i> Tiempo Promedio de Resolucion</div>
+                <div class="summary-value">@Model.AverageResolutionHours.ToString("0.0") hrs</div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="summary-box">
+                <div class="summary-label"><i class="bi bi-emoji-smile"></i> Satisfaccion del Usuario</div>
+                <div class="summary-value">@Model.SatisfactionPercent%</div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="summary-box">
+                <div class="summary-label"><i class="bi bi-shield-check"></i> Cumplimiento SLA</div>
+                <div class="summary-value">@Model.SlaCompliancePercent%</div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalTickets == 0)
+    {
+        <div class="alert alert-info reports-card">No hay tickets para los filtros seleccionados.</div>
+    }
+    else if (activeTab == "summary")
+    {
+        <div class="reports-card p-3">
+            <h5 class="mb-3">Distribucion por Tipo de Incidencia</h5>
+
+            @foreach (var item in Model.IncidentTypeDistribution)
+            {
+                var width = item.Percentage <= 0 ? 2 : item.Percentage;
+
+                <div class="distribution-row">
+                    <div class="distribution-head">
+                        <span>@item.Label</span>
+                        <strong>@item.Count</strong>
+                    </div>
+                    <div class="distribution-track">
+                        <div class="distribution-fill" style="width:@width%"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (activeTab == "technician")
+    {
+        <div class="reports-card p-3">
+            <h5 class="mb-3">Tickets por Tecnico</h5>
+            <div class="table-responsive">
+                <table class="table table-lite align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tecnico</th>
+                            <th class="text-end">Tickets</th>
+                            <th class="text-end">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.TicketsByTechnician)
+                        {
+                            <tr>
+                                <td>@row.Label</td>
+                                <td class="text-end fw-semibold">@row.Count</td>
+                                <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (activeTab == "area")
+    {
+        <div class="reports-card p-3">
+            <h5 class="mb-3">Tickets por Area</h5>
+            <div class="table-responsive">
+                <table class="table table-lite align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Area</th>
+                            <th class="text-end">Tickets</th>
+                            <th class="text-end">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.TicketsByArea)
+                        {
+                            <tr>
+                                <td>@row.Label</td>
+                                <td class="text-end fw-semibold">@row.Count</td>
+                                <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (activeTab == "site")
+    {
+        <div class="reports-card p-3">
+            <h5 class="mb-3">Tickets por Sitio</h5>
+            <div class="table-responsive">
+                <table class="table table-lite align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Sitio</th>
+                            <th class="text-end">Tickets</th>
+                            <th class="text-end">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.TicketsBySite)
+                        {
+                            <tr>
+                                <td>@row.Label</td>
+                                <td class="text-end fw-semibold">@row.Count</td>
+                                <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
+
+@if (Model.PrintMode)
+{
+    <script>
+        window.addEventListener("load", function () {
+            window.print();
+        });
+    </script>
+}

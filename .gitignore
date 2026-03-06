@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / VS Code
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+*.log
+
+# Environment/user secrets
+.env
+appsettings.Local.json
+
+# Nested tool outputs
+scripts/**/bin/
+scripts/**/obj/

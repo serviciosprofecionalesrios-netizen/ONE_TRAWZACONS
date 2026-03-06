@@ -1,35 +1,34 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using ITServiceDeskApp.Data;
+﻿using ITServiceDeskApp.Data;
 using ITServiceDeskApp.Models;
 using ITServiceDeskApp.Services.Interfaces;
 using ITServiceDeskApp.ViewModels.Users;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ITServiceDeskApp.Controllers
 {
-    // 🔐 SOLO Administrator y CoordinadorIT pueden administrar usuarios
     [Authorize(Roles = "Administrator,CoordinadorIT")]
     public class UsersController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IUserService _userService;
+        private readonly IPasswordHasher<User> _passwordHasher;
 
         public UsersController(
             ApplicationDbContext context,
-            IUserService userService)
+            IUserService userService,
+            IPasswordHasher<User> passwordHasher)
         {
             _context = context;
             _userService = userService;
+            _passwordHasher = passwordHasher;
         }
 
-        // ===============================
-        // LISTADO
-        // ===============================
         public async Task<IActionResult> Index()
         {
             var users = await _context.Users
-                .Where(u => u.IsActive)
                 .OrderByDescending(u => u.CreatedAt)
                 .AsNoTracking()
                 .ToListAsync();
@@ -37,23 +36,19 @@ namespace ITServiceDeskApp.Controllers
             return View(users);
         }
 
-        // ===============================
-        // CREAR (GET)
-        // ===============================
         public IActionResult Create()
         {
             return View();
         }
 
-        // ===============================
-        // CREAR (POST)
-        // ===============================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(UserCreateViewModel model)
         {
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
             var result = await _userService.CreateUserAsync(model);
 
@@ -66,9 +61,6 @@ namespace ITServiceDeskApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ===============================
-        // EDITAR (GET)
-        // ===============================
         public async Task<IActionResult> Edit(int id)
         {
             var user = await _context.Users
@@ -76,7 +68,9 @@ namespace ITServiceDeskApp.Controllers
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
+            {
                 return NotFound();
+            }
 
             var model = new UserEditViewModel
             {
@@ -86,42 +80,73 @@ namespace ITServiceDeskApp.Controllers
                 Phone = user.Phone,
                 Department = user.Department,
                 Role = user.Role,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt
             };
 
             return View(model);
         }
 
-        // ===============================
-        // EDITAR (POST)
-        // ===============================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UserEditViewModel model)
         {
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
             var user = await _context.Users.FindAsync(model.Id);
 
             if (user == null)
+            {
                 return NotFound();
+            }
+
+            var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+            var emailInUse = await _context.Users
+                .AnyAsync(u => u.Id != model.Id && u.Email == normalizedEmail);
+
+            if (emailInUse)
+            {
+                ModelState.AddModelError(nameof(model.Email), "El correo electrónico ya está registrado.");
+                return View(model);
+            }
 
             user.FullName = model.FullName;
-            user.Email = model.Email.Trim().ToLowerInvariant();
+            user.Email = normalizedEmail;
             user.Phone = model.Phone;
             user.Department = model.Department;
             user.Role = model.Role;
             user.IsActive = model.IsActive;
+
+            if (!string.IsNullOrWhiteSpace(model.NewPassword))
+            {
+                user.PasswordHash = _passwordHasher.HashPassword(user, model.NewPassword);
+            }
 
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
 
-        // ===============================
-        // ELIMINAR (Soft Delete)
-        // ===============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.IsActive = !user.IsActive;
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -129,10 +154,11 @@ namespace ITServiceDeskApp.Controllers
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
+            {
                 return NotFound();
+            }
 
             user.IsActive = false;
-
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
