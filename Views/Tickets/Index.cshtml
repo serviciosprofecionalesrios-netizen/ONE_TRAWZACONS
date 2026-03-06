@@ -1,0 +1,256 @@
+@model IEnumerable<ITServiceDeskApp.Models.Ticket>
+@using ITServiceDeskApp.Models
+
+@{
+    ViewData["Title"] = "Gestión de Incidencias";
+    var tickets = Model ?? new List<Ticket>();
+}
+
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Gestión de Incidencias</h2>
+            <small class="text-muted">
+                Administra y da seguimiento a todos los tickets del sistema
+            </small>
+        </div>
+
+        <a asp-action="Create" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg"></i> Nueva Incidencia
+        </a>
+    </div>
+
+    <!-- ALERTA GLOBAL SLA -->
+    @if (ViewBag.OverdueCount != null && ViewBag.OverdueCount > 0)
+    {
+        <div class="alert alert-danger shadow-sm">
+            🔴 <strong>@ViewBag.OverdueCount</strong> ticket(s) vencido(s) requieren atención inmediata.
+        </div>
+    }
+
+    <!-- FILTROS -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <input type="text"
+                           id="searchBox"
+                           class="form-control"
+                           placeholder="Buscar por ticket, usuario o descripción..."
+                           value="@ViewBag.CurrentSearch" />
+                </div>
+
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Todos los Estados</option>
+                        @foreach (TicketStatus s in Enum.GetValues(typeof(TicketStatus)))
+                        {
+                            <option value="@s"
+                                    selected="@(ViewBag.CurrentStatus?.ToString() == s.ToString())">
+                                @s
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <select id="priorityFilter" class="form-select">
+                        <option value="">Todas las Prioridades</option>
+                        @foreach (PriorityLevel p in Enum.GetValues(typeof(PriorityLevel)))
+                        {
+                            <option value="@p"
+                                    selected="@(ViewBag.CurrentPriority?.ToString() == p.ToString())">
+                                @p
+                            </option>
+                        }
+                    </select>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card shadow">
+        <div class="card-body p-0">
+
+            @if (!tickets.Any())
+            {
+                <div class="p-4">
+                    <div class="alert alert-info mb-0">
+                        No hay incidencias registradas.
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ticket</th>
+                                <th>Fecha</th>
+                                <th>Usuario</th>
+                                <th>Prioridad</th>
+                                <th>Estado</th>
+                                <th>SLA</th>
+                                <th>Técnico</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in tickets)
+                            {
+                                var now = DateTime.UtcNow;
+                                var isOverdue = item.SLADeadline < now && item.Status != TicketStatus.Closed;
+                                var isNear = item.SLADeadline < now.AddHours(4) && !isOverdue && item.Status != TicketStatus.Closed;
+
+                                <tr class="@(isOverdue ? "table-danger" : "")">
+
+                                    <!-- Ticket -->
+                                    <td class="fw-bold text-success">
+                                        @item.TicketNumber
+                                    </td>
+
+                                    <!-- Fecha -->
+                                    <td>
+                                        @item.CreatedDate.ToString("yyyy-MM-dd HH:mm")
+                                    </td>
+
+                                    <!-- Usuario -->
+                                    <td>@item.RequestingUser</td>
+
+                                    <!-- PRIORIDAD -->
+                                    <td>
+                                        @{
+                                            string priorityClass = item.Priority switch
+                                            {
+                                                PriorityLevel.Low => "bg-success",
+                                                PriorityLevel.Medium => "bg-warning text-dark",
+                                                PriorityLevel.High => "bg-danger",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @priorityClass">
+                                            @item.Priority
+                                        </span>
+                                    </td>
+
+                                    <!-- ESTADO -->
+                                    <td>
+                                        @{
+                                            string statusClass = item.Status switch
+                                            {
+                                                TicketStatus.Open => "bg-primary",
+                                                TicketStatus.InProgress => "bg-info text-dark",
+                                                TicketStatus.Resolved => "bg-warning text-dark",
+                                                TicketStatus.Closed => "bg-success",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">
+                                            @item.Status
+                                        </span>
+                                    </td>
+
+                                    <!-- SLA -->
+                                    <td>
+                                        @if (item.Status == TicketStatus.Closed)
+                                        {
+                                            <span class="badge bg-secondary">Cerrado</span>
+                                        }
+                                        else if (isOverdue)
+                                        {
+                                            <span class="badge bg-danger">Vencido</span>
+                                        }
+                                        else if (isNear)
+                                        {
+                                            <span class="badge bg-warning text-dark">Por vencer</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">En tiempo</span>
+                                        }
+
+                                        <div class="small text-muted mt-1">
+                                            @item.SLADeadline.ToString("yyyy-MM-dd HH:mm")
+                                        </div>
+                                    </td>
+
+                                    <!-- Técnico -->
+                                    <td>
+                                        @(string.IsNullOrWhiteSpace(item.AssignedTechnician)
+                                            ? "Sin asignar"
+                                            : item.AssignedTechnician)
+                                    </td>
+
+                                    <!-- Acciones -->
+                                    <td class="text-center">
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Editar
+                                        </a>
+
+                                        <a asp-action="Details"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-info">
+                                            Detalles
+                                        </a>
+
+                                        <a asp-action="Delete"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-danger">
+                                            Eliminar
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const searchBox = document.getElementById("searchBox");
+    const statusFilter = document.getElementById("statusFilter");
+    const priorityFilter = document.getElementById("priorityFilter");
+
+    function applyFilters() {
+
+        const search = searchBox.value;
+        const status = statusFilter.value;
+        const priority = priorityFilter.value;
+
+        const params = new URLSearchParams();
+
+        if (search) params.append("search", search);
+        if (status) params.append("status", status);
+        if (priority) params.append("priority", priority);
+
+        window.location.href = "/Tickets?" + params.toString();
+    }
+
+    let typingTimer;
+
+    searchBox.addEventListener("keyup", function () {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(applyFilters, 400);
+    });
+
+    statusFilter.addEventListener("change", applyFilters);
+    priorityFilter.addEventListener("change", applyFilters);
+});
+</script>
+}

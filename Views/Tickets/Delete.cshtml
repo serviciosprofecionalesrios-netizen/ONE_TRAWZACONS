@@ -1,0 +1,28 @@
+@model global::ITServiceDeskApp.Models.Ticket
+
+@{
+    ViewData["Title"] = "Eliminar";
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-danger text-white">
+            <h4>¿Eliminar Incidencia?</h4>
+        </div>
+
+        <div class="card-body">
+            <p><strong>Ticket:</strong> @Model.TicketNumber</p>
+            <p><strong>Usuario:</strong> @Model.RequestingUser</p>
+            <p><strong>Técnico:</strong> @Model.AssignedTechnician</p>
+            <p><strong>Estado:</strong> @Model.Status</p>
+        </div>
+
+        <div class="card-footer text-end">
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="Id" />
+                <button type="submit" class="btn btn-danger">Eliminar</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>

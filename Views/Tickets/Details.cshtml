@@ -1,0 +1,131 @@
+@model ITServiceDeskApp.Models.Ticket
+@using ITServiceDeskApp.Models
+
+@{
+    ViewData["Title"] = "Detalle del Ticket";
+}
+
+<div class="container mt-4">
+
+    <div class="card shadow-lg mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+            <h4 class="mb-0">Detalle de Incidencia</h4>
+            <span class="fw-bold">@Model.TicketNumber</span>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p><strong>Fecha Creación:</strong> @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</p>
+                    <p><strong>Usuario:</strong> @Model.RequestingUser</p>
+                    <p><strong>Sitio:</strong> @Model.Site</p>
+                    <p><strong>Departamento:</strong> @Model.Department</p>
+                    <p><strong>Tipo Incidencia:</strong> @Model.IncidentType</p>
+                </div>
+
+                <div class="col-md-6">
+                    @{
+                        string priorityClass = Model.Priority switch
+                        {
+                            PriorityLevel.Low => "bg-success",
+                            PriorityLevel.Medium => "bg-warning text-dark",
+                            PriorityLevel.High => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        string statusClass = Model.Status switch
+                        {
+                            TicketStatus.Open => "bg-primary",
+                            TicketStatus.InProgress => "bg-info text-dark",
+                            TicketStatus.Closed => "bg-success",
+                            _ => "bg-secondary"
+                        };
+                    }
+
+                    <p>
+                        <strong>Prioridad:</strong>
+                        <span class="badge @priorityClass">@Model.Priority</span>
+                    </p>
+
+                    <p>
+                        <strong>Estado:</strong>
+                        <span class="badge @statusClass">@Model.Status</span>
+                    </p>
+
+                    <p>
+                        <strong>Técnico Asignado:</strong>
+                        @(string.IsNullOrWhiteSpace(Model.AssignedTechnician)
+                            ? "Sin asignar"
+                            : Model.AssignedTechnician)
+                    </p>
+                </div>
+            </div>
+
+            <hr />
+
+            <div>
+                <h5>Descripción</h5>
+                <p>@Model.Description</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- HISTORIAL DE CAMBIOS -->
+    <!-- ========================= -->
+
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            Historial de Cambios
+        </div>
+
+        <div class="card-body">
+
+            @if (!Model.History.Any())
+            {
+                <div class="alert alert-info">
+                    No hay cambios registrados.
+                </div>
+            }
+            else
+            {
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Campo</th>
+                            <th>Antes</th>
+                            <th>Después</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.History.OrderByDescending(h => h.ChangeDate))
+                        {
+                            <tr>
+                                <td>@item.ChangeDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@item.FieldChanged</td>
+                                <td>@item.OldValue</td>
+                                <td>@item.NewValue</td>
+                                <td>@item.ChangedBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+        </div>
+    </div>
+
+    <div class="mt-4 text-end">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+            Editar
+        </a>
+        <a asp-action="Index" class="btn btn-secondary">
+            Volver
+        </a>
+    </div>
+
+</div>

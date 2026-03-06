@@ -1,0 +1,8 @@
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.csproj.AssemblyReference.cache
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.AssemblyInfoInputs.cache
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.AssemblyInfo.cs
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.csproj.CoreCompileInputs.cache
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.RazorAssemblyInfo.cache
+C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp\obj\Debug\net8.0\ITServiceDeskApp.RazorAssemblyInfo.cs

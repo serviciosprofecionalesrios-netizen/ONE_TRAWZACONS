@@ -1,0 +1,117 @@
+@model global::ITServiceDeskApp.Models.Ticket
+@using ITServiceDeskApp.Models
+
+@{
+    ViewData["Title"] = "Nueva Incidencia";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Nueva Incidencia</h4>
+        </div>
+
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+
+                <div class="row">
+
+                    <!-- Número generado automáticamente -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Número de Ticket</label>
+                        <input class="form-control" value="Se generará automáticamente" readonly />
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CreatedDate" class="form-label">Fecha de Creación</label>
+                        <input asp-for="CreatedDate" type="datetime-local" class="form-control" />
+                        <span asp-validation-for="CreatedDate" class="text-danger"></span>
+                    </div>
+
+                    <!-- Usuario -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="RequestingUser" class="form-label">Usuario Solicitante</label>
+                        <input asp-for="RequestingUser" class="form-control" />
+                        <span asp-validation-for="RequestingUser" class="text-danger"></span>
+                    </div>
+
+                    <!-- Sitio -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Site" class="form-label">Sitio / Sede</label>
+                        <input asp-for="Site" class="form-control" />
+                        <span asp-validation-for="Site" class="text-danger"></span>
+                    </div>
+
+                    <!-- Departamento -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Department" class="form-label">Área / Departamento</label>
+                        <input asp-for="Department" class="form-control" />
+                        <span asp-validation-for="Department" class="text-danger"></span>
+                    </div>
+
+                    <!-- Tipo -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="IncidentType" class="form-label">Tipo de Incidencia</label>
+                        <input asp-for="IncidentType" class="form-control" />
+                        <span asp-validation-for="IncidentType" class="text-danger"></span>
+                    </div>
+
+                    <!-- Prioridad -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Priority" class="form-label">Prioridad</label>
+                        <select asp-for="Priority"
+                                class="form-select"
+                                asp-items="Html.GetEnumSelectList<PriorityLevel>()">
+                        </select>
+                        <span asp-validation-for="Priority" class="text-danger"></span>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Status" class="form-label">Estado</label>
+                        <select asp-for="Status"
+                                class="form-select"
+                                asp-items="Html.GetEnumSelectList<TicketStatus>()">
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
+                    <!-- Técnico -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="AssignedTechnician" class="form-label">Técnico Asignado</label>
+                        <input asp-for="AssignedTechnician" class="form-control" />
+                        <span asp-validation-for="AssignedTechnician" class="text-danger"></span>
+                    </div>
+
+                    <!-- SLA -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="SLADeadline" class="form-label">Fecha Compromiso (SLA)</label>
+                        <input asp-for="SLADeadline" type="datetime-local" class="form-control" />
+                        <span asp-validation-for="SLADeadline" class="text-danger"></span>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="col-12 mb-3">
+                        <label asp-for="Description" class="form-label">Descripción del Problema</label>
+                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success">
+                        Crear Incidencia
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
