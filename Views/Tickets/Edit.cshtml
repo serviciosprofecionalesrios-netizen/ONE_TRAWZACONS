@@ -1,101 +1,286 @@
-@model ITServiceDeskApp.Models.Ticket
+﻿@model ITServiceDeskApp.Models.Ticket
 @using ITServiceDeskApp.Models
+@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Editar Incidencia";
+
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var departmentOptions = ViewBag.DepartmentOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var incidentTypeOptions = ViewBag.IncidentTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var technicianOptions = ViewBag.TechnicianOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var requestingUserOptions = ViewBag.RequestingUserOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var canEditSolutionForm = ViewBag.CanEditSolutionForm is bool allowed && allowed;
 }
+<style>
+    .section-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin: 0.6rem 0 1rem;
+    }
+
+    .section-divider::before,
+    .section-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e1 100%);
+    }
+
+    .section-divider > span {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #0f172a;
+        background: #f8fafc;
+        border: 1px solid #dbe4ee;
+        border-radius: 999px;
+        padding: 0.2rem 0.75rem;
+        letter-spacing: 0.02em;
+    }
+</style>
 
 <div class="container mt-4">
     <div class="card shadow-lg">
         <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">Editar Incidencia</h4>
+            <h4 class="mb-0">Editar Incidencia - @Model.TicketNumber</h4>
         </div>
 
         <div class="card-body">
-            <form asp-action="Edit" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-                <!-- 🔥 CLAVES PARA CONCURRENCIA -->
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="RowVersion" />
+                <input type="hidden" asp-for="AttachmentPath" />
+                <input type="hidden" asp-for="BeforeEvidencePath" />
+                <input type="hidden" asp-for="AfterEvidencePath" />
+                <input type="hidden" asp-for="TechnicalSheetPath" />
+                <input type="hidden" asp-for="ExitOrderPath" />
 
-                <div class="row">
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="TicketNumber" class="form-label"></label>
-                        <input asp-for="TicketNumber" class="form-control" />
-                        <span asp-validation-for="TicketNumber" class="text-danger"></span>
+                <div class="section-divider">
+                    <span>Formulario de Usuario</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="TicketNumber" class="form-label fw-semibold"></label>
+                        <input asp-for="TicketNumber" class="form-control" readonly />
                     </div>
 
-                    <!-- 🔥 CreatedDate mejor solo lectura -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="CreatedDate" class="form-label"></label>
+                    <div class="col-md-6">
+                        <label asp-for="CreatedDate" class="form-label fw-semibold"></label>
                         <input asp-for="CreatedDate" class="form-control" readonly />
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="RequestingUser" class="form-label"></label>
-                        <input asp-for="RequestingUser" class="form-control" />
-                        <span asp-validation-for="RequestingUser" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Site" class="form-label"></label>
-                        <input asp-for="Site" class="form-control" />
-                        <span asp-validation-for="Site" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Department" class="form-label"></label>
-                        <input asp-for="Department" class="form-control" />
-                        <span asp-validation-for="Department" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="IncidentType" class="form-label"></label>
-                        <input asp-for="IncidentType" class="form-control" />
-                        <span asp-validation-for="IncidentType" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Priority" class="form-label"></label>
-                        <select asp-for="Priority"
-                                class="form-select"
-                                asp-items="Html.GetEnumSelectList<PriorityLevel>()">
+                    <div class="col-md-6">
+                        <label asp-for="RequestingUser" class="form-label fw-semibold"></label>
+                        <select asp-for="RequestingUser" class="form-select" asp-items="requestingUserOptions">
+                            <option value="">Seleccionar usuario</option>
                         </select>
-                        <span asp-validation-for="Priority" class="text-danger"></span>
+                        <span asp-validation-for="RequestingUser" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Status" class="form-label"></label>
-                        <select asp-for="Status"
-                                class="form-select"
-                                asp-items="Html.GetEnumSelectList<TicketStatus>()">
+                    <div class="col-md-6">
+                        <label asp-for="Site" class="form-label fw-semibold"></label>
+                        <select asp-for="Site" class="form-select" asp-items="siteOptions">
+                            <option value="">Seleccionar sitio</option>
                         </select>
-                        <span asp-validation-for="Status" class="text-danger"></span>
+                        <span asp-validation-for="Site" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="AssignedTechnician" class="form-label"></label>
-                        <input asp-for="AssignedTechnician" class="form-control" />
-                        <span asp-validation-for="AssignedTechnician" class="text-danger"></span>
+                    <div class="col-md-6">
+                        <label asp-for="Department" class="form-label fw-semibold"></label>
+                        <select asp-for="Department" class="form-select" asp-items="departmentOptions">
+                            <option value="">Seleccionar area</option>
+                        </select>
+                        <span asp-validation-for="Department" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="SLADeadline" class="form-label"></label>
-                        <input asp-for="SLADeadline" type="datetime-local" class="form-control" />
-                        <span asp-validation-for="SLADeadline" class="text-danger"></span>
+                    <div class="col-md-6">
+                        <label asp-for="IncidentType" class="form-label fw-semibold"></label>
+                        <select asp-for="IncidentType" class="form-select" asp-items="incidentTypeOptions">
+                            <option value="">Seleccionar tipo</option>
+                        </select>
+                        <span asp-validation-for="IncidentType" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-12 mb-3">
-                        <label asp-for="Description" class="form-label"></label>
-                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
+                    <div class="col-md-4">
+                        <label asp-for="Priority" class="form-label fw-semibold"></label>
+                        <select asp-for="Priority" class="form-select" asp-items="Html.GetEnumSelectList<PriorityLevel>()"></select>
+                        <span asp-validation-for="Priority" class="text-danger small"></span>
                     </div>
 
+                    <div class="col-md-4">
+                        <label asp-for="Status" class="form-label fw-semibold"></label>
+                        <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<TicketStatus>()"></select>
+                        <span asp-validation-for="Status" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="AssignedTechnician" class="form-label fw-semibold"></label>
+                        <select asp-for="AssignedTechnician" class="form-select" asp-items="technicianOptions">
+                            <option value="">Seleccionar tecnico</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
                 </div>
 
-                <div class="text-end">
+                
+                <div class="section-divider mt-4">
+                    <span>Bloque Tecnico</span>
+                </div>
+
+                @if (!canEditSolutionForm)
+                {
+                    <div class="alert alert-warning mb-3">
+                        El formulario de solucion solo lo puede editar un tecnico o administrador.
+                    </div>
+                }
+
+                <h5 class="fw-bold mb-3">Evidencia Tecnica</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Evidencia inicial</label>
+                        <input type="file" name="beforeEvidenceFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.pdf" />
+                        @if (!string.IsNullOrWhiteSpace(Model.BeforeEvidencePath))
+                        {
+                            <div class="form-text">Actual: <a href="@Model.BeforeEvidencePath" target="_blank">Ver archivo</a></div>
+                        }
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Evidencia final</label>
+                        <input type="file" name="afterEvidenceFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.pdf" />
+                        @if (!string.IsNullOrWhiteSpace(Model.AfterEvidencePath))
+                        {
+                            <div class="form-text">Actual: <a href="@Model.AfterEvidencePath" target="_blank">Ver archivo</a></div>
+                        }
+                        <span asp-validation-for="AfterEvidencePath" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Evidencia adicional</label>
+                        <input type="file" name="attachmentFile" class="form-control" accept=".jpg,.jpeg,.png,.pdf" />
+                        @if (!string.IsNullOrWhiteSpace(Model.AttachmentPath))
+                        {
+                            <div class="form-text">Actual: <a href="@Model.AttachmentPath" target="_blank">Ver archivo</a></div>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Foto de ficha tecnica</label>
+                        <input type="file" name="technicalSheetFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.webp" />
+                        @if (!string.IsNullOrWhiteSpace(Model.TechnicalSheetPath))
+                        {
+                            <div class="form-text">Actual: <a href="@Model.TechnicalSheetPath" target="_blank">Ver archivo</a></div>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Orden de Salida</label>
+                        <input type="file" name="exitOrderFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.webp" />
+                        @if (!string.IsNullOrWhiteSpace(Model.ExitOrderPath))
+                        {
+                            <div class="form-text">Actual: <a href="@Model.ExitOrderPath" target="_blank">Ver archivo</a></div>
+                        }
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <h5 class="fw-bold mb-3">Formulario Tecnico</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="InitialConditionNotes" class="form-label fw-semibold">Condicion inicial del equipo</label>
+                        <textarea asp-for="InitialConditionNotes" class="form-control" data-solution-field="true" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="RepairActionsPerformed" class="form-label fw-semibold">Reparaciones realizadas</label>
+                        <textarea asp-for="RepairActionsPerformed" class="form-control" data-solution-field="true" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="RootCause" class="form-label fw-semibold">Causa raiz detectada</label>
+                        <textarea asp-for="RootCause" class="form-control" data-solution-field="true" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="TechnicalTestsPerformed" class="form-label fw-semibold">Pruebas tecnicas realizadas</label>
+                        <textarea asp-for="TechnicalTestsPerformed" class="form-control" data-solution-field="true" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-center">
+                        <div class="form-check mt-2">
+                            <input asp-for="SparePartRequired" class="form-check-input" id="sparePartRequired" data-solution-field="true" />
+                            <label asp-for="SparePartRequired" class="form-check-label">Se requirio repuesto</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-center" id="sparePartPurchasedWrap">
+                        <div class="form-check mt-2">
+                            <input asp-for="SparePartPurchased" class="form-check-input" data-solution-field="true" />
+                            <label asp-for="SparePartPurchased" class="form-check-label">Se compro el repuesto</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" id="sparePartDetailsWrap">
+                        <label asp-for="SparePartDetails" class="form-label fw-semibold">Detalle del repuesto</label>
+                        <input asp-for="SparePartDetails" class="form-control" data-solution-field="true" />
+                        <span asp-validation-for="SparePartDetails" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-center">
+                        <div class="form-check mt-2">
+                            <input asp-for="ComponentChanged" class="form-check-input" id="componentChanged" data-solution-field="true" />
+                            <label asp-for="ComponentChanged" class="form-check-label">Se realizo cambio de componente</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" id="changedComponentNameWrap">
+                        <label asp-for="ChangedComponentName" class="form-label fw-semibold">Componente cambiado</label>
+                        <input asp-for="ChangedComponentName" class="form-control" data-solution-field="true" />
+                        <span asp-validation-for="ChangedComponentName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4" id="changedComponentCostCordobaWrap">
+                        <label asp-for="ChangedComponentCostCordoba" class="form-label fw-semibold">Costo del componente (C$)</label>
+                        <input asp-for="ChangedComponentCostCordoba" class="form-control" type="number" min="0" step="0.01" data-solution-field="true" />
+                        <span asp-validation-for="ChangedComponentCostCordoba" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4" id="changedComponentCostUsdWrap">
+                        <label asp-for="ChangedComponentCostUsd" class="form-label fw-semibold">Costo del componente ($)</label>
+                        <input asp-for="ChangedComponentCostUsd" class="form-control" type="number" min="0" step="0.01" data-solution-field="true" />
+                        <span asp-validation-for="ChangedComponentCostUsd" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check mt-2">
+                            <input asp-for="UserConformityConfirmed" class="form-check-input" data-solution-field="true" />
+                            <label asp-for="UserConformityConfirmed" class="form-check-label">Usuario confirma solucion aplicada</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="PreventiveRecommendations" class="form-label fw-semibold">Recomendaciones preventivas</label>
+                        <textarea asp-for="PreventiveRecommendations" class="form-control" data-solution-field="true" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Observations" class="form-label fw-semibold">Observaciones</label>
+                        <textarea asp-for="Observations" class="form-control" data-solution-field="true" rows="3" placeholder="Comentarios adicionales del tecnico (opcional)"></textarea>
+                        <span asp-validation-for="Observations" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
                     <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 </div>
@@ -106,4 +291,58 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const canEditSolutionForm = @(canEditSolutionForm ? "true" : "false");
+            const sparePartRequired = document.getElementById("sparePartRequired");
+            const purchasedWrap = document.getElementById("sparePartPurchasedWrap");
+            const detailsWrap = document.getElementById("sparePartDetailsWrap");
+            const componentChanged = document.getElementById("componentChanged");
+            const changedComponentNameWrap = document.getElementById("changedComponentNameWrap");
+            const changedComponentCostCordobaWrap = document.getElementById("changedComponentCostCordobaWrap");
+            const changedComponentCostUsdWrap = document.getElementById("changedComponentCostUsdWrap");
+
+            if (!canEditSolutionForm) {
+                document.querySelectorAll("[data-solution-field='true']").forEach((field) => {
+                    field.setAttribute("disabled", "disabled");
+                    if (field.tagName === "TEXTAREA" || field.tagName === "INPUT") {
+                        field.setAttribute("readonly", "readonly");
+                    }
+                });
+            }
+
+            function toggleSparePart() {
+                const visible = sparePartRequired.checked;
+                purchasedWrap.style.display = visible ? "flex" : "none";
+                detailsWrap.style.display = visible ? "block" : "none";
+            }
+
+            function toggleChangedComponent() {
+                const visible = componentChanged.checked;
+                changedComponentNameWrap.style.display = visible ? "block" : "none";
+                changedComponentCostCordobaWrap.style.display = visible ? "block" : "none";
+                changedComponentCostUsdWrap.style.display = visible ? "block" : "none";
+            }
+
+            sparePartRequired.addEventListener("change", toggleSparePart);
+            componentChanged.addEventListener("change", toggleChangedComponent);
+            toggleSparePart();
+            toggleChangedComponent();
+        });
+    </script>
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -6,24 +6,28 @@ using System.Text;
 using System.Threading.Tasks;
 using ITServiceDeskApp.Data;
 using ITServiceDeskApp.Models;
+using ITServiceDeskApp.Services;
 using ITServiceDeskApp.ViewModels.Reports;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ITServiceDeskApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
     public class ReportsController : Controller
     {
         private const string AllValue = "all";
         private static readonly string[] AllowedTabs = { "summary", "technician", "area", "site" };
 
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public ReportsController(ApplicationDbContext context)
+        public ReportsController(ApplicationDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         [HttpGet]
@@ -75,6 +79,48 @@ namespace ITServiceDeskApp.Controllers
             return File(bytes, "text/csv", fileName);
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> ExportPdf(
+            DateTime? startDate,
+            DateTime? endDate,
+            string? technician,
+            string? area,
+            string? site,
+            string? tab)
+        {
+            var report = await BuildReportAsync(startDate, endDate, technician, area, site, tab, printMode: false);
+
+            var rows = report.Tickets
+                .Select(t => new ReportsPdfTicketRow(
+                    TicketNumber: string.IsNullOrWhiteSpace(t.TicketNumber) ? $"TK-{t.Id:D4}" : t.TicketNumber,
+                    CreatedDate: t.CreatedDate,
+                    StatusLabel: t.Status switch
+                    {
+                        TicketStatus.Open => "Abierto",
+                        TicketStatus.InProgress => "En Progreso",
+                        TicketStatus.Resolved => "Resuelto",
+                        TicketStatus.Closed => "Cerrado",
+                        _ => t.Status.ToString()
+                    },
+                    PriorityLabel: t.Priority switch
+                    {
+                        PriorityLevel.Low => "Baja",
+                        PriorityLevel.Medium => "Media",
+                        PriorityLevel.High => "Alta",
+                        PriorityLevel.Critical => "Critica",
+                        _ => t.Priority.ToString()
+                    },
+                    Technician: LabelOrDefault(t.AssignedTechnician, "Sin asignar"),
+                    Area: LabelOrDefault(t.Department, "Sin definir"),
+                    Site: LabelOrDefault(t.Site, "Sin definir")))
+                .ToList();
+
+            var bytes = ReportsPdfReportService.GenerateReportPdf(report.Model, rows, _environment.WebRootPath);
+            var fileName = $"ReporteTickets_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
+
+            return File(bytes, "application/pdf", fileName);
+        }
         private async Task<(ReportIndexViewModel Model, List<ReportTicketRow> Tickets)> BuildReportAsync(
             DateTime? startDate,
             DateTime? endDate,
@@ -342,3 +388,7 @@ namespace ITServiceDeskApp.Controllers
         }
     }
 }
+
+
+
+

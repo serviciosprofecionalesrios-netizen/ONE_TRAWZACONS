@@ -1,100 +1,526 @@
-﻿@model global::ITServiceDeskApp.Models.Ticket
+﻿@model ITServiceDeskApp.Models.Ticket
 @using ITServiceDeskApp.Models
+@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Nueva Incidencia";
+
+    var previewTicket = ViewBag.PreviewTicketNumber as string ?? "TK-0000";
+    var previewCreated = ViewBag.PreviewCreatedDate is DateTime dt
+        ? dt.ToString("M/d/yyyy, h:mm:ss tt")
+        : DateTime.Now.ToString("M/d/yyyy, h:mm:ss tt");
+
+    var previewSla = ViewBag.SlaPreview as string ?? "Se calcula automaticamente";
+
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var departmentOptions = ViewBag.DepartmentOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var incidentTypeOptions = ViewBag.IncidentTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var technicianOptions = ViewBag.TechnicianOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var requestingUserOptions = ViewBag.RequestingUserOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var canEditSolutionForm = ViewBag.CanEditSolutionForm is bool allowed && allowed;
+    var canSetPriority = ViewBag.CanSetPriority is bool allowedPriority && allowedPriority;
 }
 
-<div class="container mt-4">
-    <div class="card shadow-lg">
-        <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">Nueva Incidencia</h4>
-        </div>
+<style>
+    .ticket-form-shell {
+        max-width: 1080px;
+        margin: 0 auto;
+        border: 1px solid #d7dce3;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+    }
 
-        <div class="card-body">
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    .ticket-form-header {
+        border-bottom: 1px solid #e3e8ef;
+        padding: 1rem 1.4rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Número de Ticket</label>
-                        <input class="form-control" value="Se generará automáticamente" readonly />
-                    </div>
+    .ticket-form-title {
+        margin: 0;
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Fecha de Creación</label>
-                        <input class="form-control" value="Se registrará al guardar" readonly />
-                    </div>
+    .ticket-form-body {
+        padding: 1.2rem 1.4rem 1rem;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="RequestingUser" class="form-label">Usuario Solicitante</label>
-                        <input asp-for="RequestingUser" class="form-control" />
-                        <span asp-validation-for="RequestingUser" class="text-danger"></span>
-                    </div>
+    .field-label {
+        font-weight: 700;
+        color: #3a475a;
+        margin-bottom: 0.4rem;
+        font-size: 0.95rem;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Site" class="form-label">Sitio / Sede</label>
-                        <input asp-for="Site" class="form-control" />
-                        <span asp-validation-for="Site" class="text-danger"></span>
-                    </div>
+    .field-label .required {
+        color: #dc2626;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Department" class="form-label">Área / Departamento</label>
-                        <input asp-for="Department" class="form-control" />
-                        <span asp-validation-for="Department" class="text-danger"></span>
-                    </div>
+    .section-title {
+        margin-top: 1.2rem;
+        margin-bottom: 0.8rem;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="IncidentType" class="form-label">Tipo de Incidencia</label>
-                        <input asp-for="IncidentType" class="form-control" />
-                        <span asp-validation-for="IncidentType" class="text-danger"></span>
-                    </div>
+    .form-note {
+        color: #8a97aa;
+        font-size: 0.8rem;
+        margin-top: 0.35rem;
+    }`r`n`r`n    .sla-legend {`r`n        border-left: 3px solid #0ea5a4;`r`n        padding-left: 0.5rem;`r`n        color: #475569;`r`n    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Priority" class="form-label">Prioridad</label>
-                        <select asp-for="Priority"
-                                class="form-select"
-                                asp-items="Html.GetEnumSelectList<PriorityLevel>()">
-                        </select>
-                        <span asp-validation-for="Priority" class="text-danger"></span>
-                    </div>
+    .section-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin: 0.6rem 0 1rem;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Status" class="form-label">Estado</label>
-                        <select asp-for="Status"
-                                class="form-select"
-                                asp-items="Html.GetEnumSelectList<TicketStatus>()">
-                        </select>
-                        <span asp-validation-for="Status" class="text-danger"></span>
-                    </div>
+    .section-divider::before,
+    .section-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e1 100%);
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="AssignedTechnician" class="form-label">Técnico Asignado</label>
-                        <input asp-for="AssignedTechnician" class="form-control" />
-                        <span asp-validation-for="AssignedTechnician" class="text-danger"></span>
-                    </div>
+    .section-divider > span {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #0f172a;
+        background: #f8fafc;
+        border: 1px solid #dbe4ee;
+        border-radius: 999px;
+        padding: 0.2rem 0.75rem;
+        letter-spacing: 0.02em;
+    }
+    .ticket-form-footer {
+        border-top: 1px solid #e3e8ef;
+        padding: 1rem 1.4rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+    }
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Fecha Compromiso (SLA)</label>
-                        <input class="form-control" value="Se calcula automáticamente por prioridad" readonly />
-                    </div>
+    .btn-create {
+        background: #0f9a8f;
+        border-color: #0f9a8f;
+        color: #fff;
+        font-weight: 600;
+    }
 
-                    <div class="col-12 mb-3">
-                        <label asp-for="Description" class="form-label">Descripción del Problema</label>
-                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-                </div>
+    .btn-create:hover {
+        background: #0c7f76;
+        border-color: #0c7f76;
+        color: #fff;
+    }
+</style>
 
-                <div class="text-end">
-                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-success">Crear Incidencia</button>
-                </div>
-            </form>
-        </div>
+<div class="ticket-form-shell mt-3">
+    <div class="ticket-form-header">
+        <h3 class="ticket-form-title">Nueva Incidencia</h3>
+        <a asp-action="Index" class="btn-close" title="Cerrar"></a>
     </div>
+
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+        <div class="ticket-form-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="section-divider">
+                <span>Formulario de Usuario</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="field-label">Numero de Ticket <span class="required">*</span></label>
+                    <input class="form-control" value="@previewTicket" readonly />
+                    <div class="form-note">Generado automaticamente</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="field-label">Fecha de Creacion <span class="required">*</span></label>
+                    <input class="form-control" value="@previewCreated" readonly />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="RequestingUser" class="field-label">Usuario Solicitante <span class="required">*</span></label>
+                    <select asp-for="RequestingUser" class="form-select" asp-items="requestingUserOptions">
+                        <option value="">Seleccionar usuario</option>
+                    </select>
+                    <span asp-validation-for="RequestingUser" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Site" class="field-label">Sitio / Sede <span class="required">*</span></label>
+                    <select asp-for="Site" class="form-select" asp-items="siteOptions">
+                        <option value="">Seleccionar sitio</option>
+                    </select>
+                    <span asp-validation-for="Site" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Department" class="field-label">Area / Departamento <span class="required">*</span></label>
+                    <select asp-for="Department" class="form-select" asp-items="departmentOptions">
+                        <option value="">Seleccionar area</option>
+                    </select>
+                    <span asp-validation-for="Department" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="IncidentType" class="field-label">Tipo de Incidencia <span class="required">*</span></label>
+                    <select asp-for="IncidentType" class="form-select" asp-items="incidentTypeOptions">
+                        <option value="">Seleccionar tipo</option>
+                    </select>
+                    <span asp-validation-for="IncidentType" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Priority" class="field-label">Prioridad <span class="required">*</span></label>
+                    @if (canSetPriority)
+                    {
+                        <select asp-for="Priority" class="form-select" id="prioritySelect">
+                            <option value="">Seleccionar prioridad</option>
+                            <option value="1">Baja</option>
+                            <option value="2">Media</option>
+                            <option value="3">Alta</option>
+                            <option value="4">Critica</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <input class="form-control" value="Media" readonly />
+                        <input type="hidden" asp-for="Priority" value="@((int)PriorityLevel.Medium)" />
+                    }
+                    <span asp-validation-for="Priority" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Status" class="field-label">Estado <span class="required">*</span></label>
+                    <input class="form-control" value="Abierto" readonly />
+                    <input type="hidden" asp-for="Status" value="@((int)TicketStatus.Open)" />
+                    <span asp-validation-for="Status" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="AssignedTechnician" class="field-label">Tecnico Asignado</label>
+                    <select asp-for="AssignedTechnician" class="form-select" asp-items="technicianOptions">
+                        <option value="">Seleccionar tecnico</option>
+                    </select>
+                    <span asp-validation-for="AssignedTechnician" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="field-label">Fecha Compromiso (SLA)</label>
+                    <input id="slaPreview" class="form-control" value="@previewSla" readonly />
+                    <div class="form-note">Se actualiza segun la prioridad seleccionada</div>`r`n                    <div class="form-note sla-legend">Horario laboral SLA: Lun-Vie 08:00-17:00, Sab 08:00-13:00, Dom no laboral. Fuera de horario pasa al siguiente bloque habil.</div>
+                </div>
+
+                <div class="col-md-8">
+                    <label asp-for="Description" class="field-label">Descripcion del Problema <span class="required">*</span></label>
+                    <textarea asp-for="Description" class="form-control" rows="4" placeholder="Describe detalladamente el problema..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="field-label">Foto de evidencia del caso</label>
+                    <input type="file" name="reportEvidenceFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                    <div class="form-note">Formatos: JPG, JPEG, PNG, WEBP (max. 10MB)</div>
+                </div>
+            </div>
+
+
+            <div class="section-divider mt-4">
+                <span>Bloque Tecnico</span>
+            </div>
+            @if (!canEditSolutionForm)
+            {
+                <div class="alert alert-warning mt-4 mb-3">
+                    El formulario de solucion solo lo puede editar un tecnico o administrador.
+                </div>
+            }
+
+            <h5 class="section-title">Evidencia Tecnica</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="field-label">Evidencia inicial (equipo recibido)</label>
+                    <input type="file" name="beforeEvidenceFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.pdf" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="field-label">Evidencia final (equipo entregado)</label>
+                    <input type="file" name="afterEvidenceFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.pdf" />
+                    <span asp-validation-for="AfterEvidencePath" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="field-label">Foto de ficha tecnica</label>
+                    <input type="file" name="technicalSheetFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.webp" />
+                    <div class="form-note">Formatos: JPG, JPEG, PNG, WEBP</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="field-label">Orden de Salida</label>
+                    <input type="file" name="exitOrderFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.webp" />
+                    <div class="form-note">Adjunta la imagen de salida del equipo</div>
+                </div>
+            </div>
+
+            <h5 class="section-title">Formulario Tecnico</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="InitialConditionNotes" class="field-label">Condicion inicial del equipo</label>
+                    <textarea asp-for="InitialConditionNotes" class="form-control" data-solution-field="true" rows="3" placeholder="Como se recibio el equipo"></textarea>
+                    <span asp-validation-for="InitialConditionNotes" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="RepairActionsPerformed" class="field-label">Reparaciones realizadas</label>
+                    <textarea asp-for="RepairActionsPerformed" class="form-control" data-solution-field="true" rows="3" placeholder="Detalle tecnico de acciones realizadas"></textarea>
+                    <span asp-validation-for="RepairActionsPerformed" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="RootCause" class="field-label">Causa raiz detectada</label>
+                    <textarea asp-for="RootCause" class="form-control" data-solution-field="true" rows="2"></textarea>
+                    <span asp-validation-for="RootCause" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="TechnicalTestsPerformed" class="field-label">Pruebas tecnicas realizadas</label>
+                    <textarea asp-for="TechnicalTestsPerformed" class="form-control" data-solution-field="true" rows="2"></textarea>
+                    <span asp-validation-for="TechnicalTestsPerformed" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4 d-flex align-items-center">
+                    <div class="form-check mt-2">
+                        <input asp-for="SparePartRequired" class="form-check-input" id="sparePartRequired" data-solution-field="true" />
+                        <label asp-for="SparePartRequired" class="form-check-label">Se requirio repuesto</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4 d-flex align-items-center" id="sparePartPurchasedWrap">
+                    <div class="form-check mt-2">
+                        <input asp-for="SparePartPurchased" class="form-check-input" data-solution-field="true" />
+                        <label asp-for="SparePartPurchased" class="form-check-label">Se compro el repuesto</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4" id="sparePartDetailsWrap">
+                    <label asp-for="SparePartDetails" class="field-label">Detalle del repuesto</label>
+                    <input asp-for="SparePartDetails" class="form-control" data-solution-field="true" placeholder="Modelo, serie, proveedor, costo" />
+                    <span asp-validation-for="SparePartDetails" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4 d-flex align-items-center">
+                    <div class="form-check mt-2">
+                        <input asp-for="ComponentChanged" class="form-check-input" id="componentChanged" data-solution-field="true" />
+                        <label asp-for="ComponentChanged" class="form-check-label">Se realizo cambio de componente</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4" id="changedComponentNameWrap">
+                    <label asp-for="ChangedComponentName" class="field-label">Componente cambiado</label>
+                    <input asp-for="ChangedComponentName" class="form-control" data-solution-field="true" placeholder="Ejemplo: SSD 512GB, RAM 8GB" />
+                    <span asp-validation-for="ChangedComponentName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4" id="changedComponentCostCordobaWrap">
+                    <label asp-for="ChangedComponentCostCordoba" class="field-label">Costo del componente (C$)</label>
+                    <input asp-for="ChangedComponentCostCordoba" class="form-control" type="number" min="0" step="0.01" data-solution-field="true" placeholder="0.00" />
+                    <span asp-validation-for="ChangedComponentCostCordoba" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4" id="changedComponentCostUsdWrap">
+                    <label asp-for="ChangedComponentCostUsd" class="field-label">Costo del componente ($)</label>
+                    <input asp-for="ChangedComponentCostUsd" class="form-control" type="number" min="0" step="0.01" data-solution-field="true" placeholder="0.00" />
+                    <span asp-validation-for="ChangedComponentCostUsd" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6 d-flex align-items-center">
+                    <div class="form-check mt-2">
+                        <input asp-for="UserConformityConfirmed" class="form-check-input" data-solution-field="true" />
+                        <label asp-for="UserConformityConfirmed" class="form-check-label">Usuario confirma solucion aplicada</label>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="PreventiveRecommendations" class="field-label">Recomendaciones preventivas</label>
+                    <textarea asp-for="PreventiveRecommendations" class="form-control" data-solution-field="true" rows="2"></textarea>
+                    <span asp-validation-for="PreventiveRecommendations" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Observations" class="field-label">Observaciones</label>
+                    <textarea asp-for="Observations" class="form-control" data-solution-field="true" rows="3" placeholder="Comentarios adicionales del tecnico (opcional)"></textarea>
+                    <span asp-validation-for="Observations" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ticket-form-footer">
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-create">
+                <i class="bi bi-plus-square"></i> Crear Incidencia
+            </button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const canEditSolutionForm = @(canEditSolutionForm ? "true" : "false");
+            const prioritySelect = document.getElementById("prioritySelect");
+            const slaPreview = document.getElementById("slaPreview");
+            const sparePartRequired = document.getElementById("sparePartRequired");
+            const sparePartPurchasedWrap = document.getElementById("sparePartPurchasedWrap");
+            const sparePartDetailsWrap = document.getElementById("sparePartDetailsWrap");
+            const componentChanged = document.getElementById("componentChanged");
+            const changedComponentNameWrap = document.getElementById("changedComponentNameWrap");
+            const changedComponentCostCordobaWrap = document.getElementById("changedComponentCostCordobaWrap");
+            const changedComponentCostUsdWrap = document.getElementById("changedComponentCostUsdWrap");
+
+            if (!canEditSolutionForm) {
+                document.querySelectorAll("[data-solution-field='true']").forEach((field) => {
+                    field.setAttribute("disabled", "disabled");
+                    if (field.tagName === "TEXTAREA" || field.tagName === "INPUT") {
+                        field.setAttribute("readonly", "readonly");
+                    }
+                });
+            }
+
+                        function getSlaHours(priority) {
+                if (priority === 1) return 48;
+                if (priority === 2) return 24;
+                if (priority === 3) return 8;
+                if (priority === 4) return 4;
+                return 24;
+            }
+
+            function isWorkingDay(date) {
+                return date.getDay() !== 0;
+            }
+
+            function getWorkShift(date) {
+                return date.getDay() === 6
+                    ? { startHour: 8, endHour: 13 }
+                    : { startHour: 8, endHour: 17 };
+            }
+
+            function moveToNextWorkingMinute(date) {
+                const current = new Date(date);
+
+                while (true) {
+                    if (!isWorkingDay(current)) {
+                        current.setDate(current.getDate() + 1);
+                        current.setHours(8, 0, 0, 0);
+                        continue;
+                    }
+
+                    const shift = getWorkShift(current);
+                    const start = new Date(current);
+                    start.setHours(shift.startHour, 0, 0, 0);
+
+                    const end = new Date(current);
+                    end.setHours(shift.endHour, 0, 0, 0);
+
+                    if (current < start) {
+                        return start;
+                    }
+
+                    if (current >= end) {
+                        current.setDate(current.getDate() + 1);
+                        current.setHours(8, 0, 0, 0);
+                        continue;
+                    }
+
+                    return current;
+                }
+            }
+
+            function addWorkingHours(baseDate, hours) {
+                let remaining = hours;
+                let current = moveToNextWorkingMinute(baseDate);
+
+                while (remaining > 0) {
+                    current = moveToNextWorkingMinute(current);
+
+                    const shift = getWorkShift(current);
+                    const shiftEnd = new Date(current);
+                    shiftEnd.setHours(shift.endHour, 0, 0, 0);
+
+                    const available = (shiftEnd.getTime() - current.getTime()) / (1000 * 60 * 60);
+                    const consumed = Math.min(remaining, available);
+
+                    current = new Date(current.getTime() + consumed * 60 * 60 * 1000);
+                    remaining -= consumed;
+
+                    if (remaining > 0) {
+                        current.setDate(current.getDate() + 1);
+                        current.setHours(8, 0, 0, 0);
+                    }
+                }
+
+                return current;
+            }
+
+            function formatDateTime(date) {
+                const day = String(date.getDate()).padStart(2, "0");
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const year = date.getFullYear();
+                const hour = String(date.getHours()).padStart(2, "0");
+                const minute = String(date.getMinutes()).padStart(2, "0");
+
+                return `${day}/${month}/${year} ${hour}:${minute}`;
+            }
+
+            function updateSlaPreview() {
+                const priority = Number(prioritySelect?.value || 2);
+                const slaHours = getSlaHours(priority);
+                const deadline = addWorkingHours(new Date(), slaHours);
+
+                slaPreview.value = formatDateTime(deadline);
+            }
+
+            function toggleSparePartDetails() {
+                const visible = sparePartRequired.checked;
+                sparePartPurchasedWrap.style.display = visible ? "flex" : "none";
+                sparePartDetailsWrap.style.display = visible ? "block" : "none";
+            }
+
+            function toggleChangedComponentDetails() {
+                const visible = componentChanged.checked;
+                changedComponentNameWrap.style.display = visible ? "block" : "none";
+                changedComponentCostCordobaWrap.style.display = visible ? "block" : "none";
+                changedComponentCostUsdWrap.style.display = visible ? "block" : "none";
+            }
+
+            if (prioritySelect) {
+                prioritySelect.addEventListener("change", updateSlaPreview);
+            }
+
+            sparePartRequired.addEventListener("change", toggleSparePartDetails);
+            componentChanged.addEventListener("change", toggleChangedComponentDetails);
+
+            updateSlaPreview();
+            toggleSparePartDetails();
+            toggleChangedComponentDetails();
+        });
+    </script>
 }
+
+
+
+
+
+
+

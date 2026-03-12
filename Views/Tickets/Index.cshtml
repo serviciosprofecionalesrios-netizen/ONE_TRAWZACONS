@@ -1,14 +1,96 @@
-@model IEnumerable<ITServiceDeskApp.Models.Ticket>
+﻿@model IEnumerable<ITServiceDeskApp.Models.Ticket>
 @using ITServiceDeskApp.Models
 
 @{
     ViewData["Title"] = "Gestión de Incidencias";
     var tickets = Model ?? new List<Ticket>();
+
+    var canCreateTicket =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician)) ||
+        User.IsInRole(nameof(UserRole.EndUser)) ||
+        User.IsInRole(nameof(UserRole.GerenciaGeneral));
+
+    var canEditTicket =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
+
+    var canDeleteTicket =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT));
 }
+
+<style>
+    .tickets-grid {
+        min-width: 1080px;
+    }
+
+    .tickets-grid th {
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .ticket-number-cell {
+        white-space: nowrap;
+        font-weight: 700;
+        color: #198754;
+    }
+
+    .date-main {
+        display: block;
+        font-weight: 500;
+    }
+
+    .date-sub {
+        display: block;
+        color: #6c757d;
+    }
+
+    .obs-cell {
+        max-width: 240px;
+        color: #334155;
+        line-height: 1.35;
+    }
+
+    .obs-preview {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+
+    .col-actions {
+        width: 150px;
+    }
+
+    .ticket-actions {
+        display: flex;
+        gap: 0.35rem;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+
+    .btn-icon i {
+        font-size: 0.95rem;
+    }
+</style>
 
 <div class="container mt-4">
 
-    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-1">Gestión de Incidencias</h2>
@@ -17,20 +99,21 @@
             </small>
         </div>
 
-        <a asp-action="Create" class="btn btn-success shadow-sm">
-            <i class="bi bi-plus-lg"></i> Nueva Incidencia
-        </a>
+        @if (canCreateTicket)
+        {
+            <a asp-action="Create" class="btn btn-success shadow-sm">
+                <i class="bi bi-plus-lg"></i> Nueva Incidencia
+            </a>
+        }
     </div>
 
-    <!-- ALERTA GLOBAL SLA -->
     @if (ViewBag.OverdueCount != null && ViewBag.OverdueCount > 0)
     {
         <div class="alert alert-danger shadow-sm">
-            🔴 <strong>@ViewBag.OverdueCount</strong> ticket(s) vencido(s) requieren atención inmediata.
+            <strong>@ViewBag.OverdueCount</strong> ticket(s) vencido(s) requieren atención inmediata.
         </div>
     }
 
-    <!-- FILTROS -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -73,7 +156,6 @@
         </div>
     </div>
 
-    <!-- TABLA -->
     <div class="card shadow">
         <div class="card-body p-0">
 
@@ -88,7 +170,7 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 tickets-grid">
                         <thead class="table-light">
                             <tr>
                                 <th>Ticket</th>
@@ -98,7 +180,8 @@
                                 <th>Estado</th>
                                 <th>SLA</th>
                                 <th>Técnico</th>
-                                <th class="text-center">Acciones</th>
+                                <th>Observaciones</th>
+                                <th class="text-center col-actions">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,24 +192,16 @@
                                 var isNear = item.SLADeadline < now.AddHours(4) && !isOverdue && item.Status != TicketStatus.Closed;
 
                                 <tr class="@(isOverdue ? "table-danger" : "")">
-
-                                    <!-- Ticket -->
-                                    <td class="fw-bold text-success">
-                                        @item.TicketNumber
-                                    </td>
-
-                                    <!-- Fecha -->
+                                    <td class="ticket-number-cell">@item.TicketNumber</td>
                                     <td>
-                                        @item.CreatedDate.ToString("yyyy-MM-dd HH:mm")
+                                        <span class="date-main">@item.CreatedDate.ToString("yyyy-MM-dd")</span>
+                                        <span class="date-sub">@item.CreatedDate.ToString("HH:mm")</span>
                                     </td>
-
-                                    <!-- Usuario -->
                                     <td>@item.RequestingUser</td>
 
-                                    <!-- PRIORIDAD -->
                                     <td>
                                         @{
-                                            string priorityClass = item.Priority switch
+                                            var priorityClass = item.Priority switch
                                             {
                                                 PriorityLevel.Low => "bg-success",
                                                 PriorityLevel.Medium => "bg-warning text-dark",
@@ -134,15 +209,12 @@
                                                 _ => "bg-secondary"
                                             };
                                         }
-                                        <span class="badge @priorityClass">
-                                            @item.Priority
-                                        </span>
+                                        <span class="badge @priorityClass">@item.Priority</span>
                                     </td>
 
-                                    <!-- ESTADO -->
                                     <td>
                                         @{
-                                            string statusClass = item.Status switch
+                                            var statusClass = item.Status switch
                                             {
                                                 TicketStatus.Open => "bg-primary",
                                                 TicketStatus.InProgress => "bg-info text-dark",
@@ -151,12 +223,9 @@
                                                 _ => "bg-secondary"
                                             };
                                         }
-                                        <span class="badge @statusClass">
-                                            @item.Status
-                                        </span>
+                                        <span class="badge @statusClass">@item.Status</span>
                                     </td>
 
-                                    <!-- SLA -->
                                     <td>
                                         @if (item.Status == TicketStatus.Closed)
                                         {
@@ -180,34 +249,64 @@
                                         </div>
                                     </td>
 
-                                    <!-- Técnico -->
                                     <td>
                                         @(string.IsNullOrWhiteSpace(item.AssignedTechnician)
                                             ? "Sin asignar"
                                             : item.AssignedTechnician)
                                     </td>
 
-                                    <!-- Acciones -->
-                                    <td class="text-center">
-                                        <a asp-action="Edit"
-                                           asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-outline-primary">
-                                            Editar
-                                        </a>
-
-                                        <a asp-action="Details"
-                                           asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-outline-info">
-                                            Detalles
-                                        </a>
-
-                                        <a asp-action="Delete"
-                                           asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-outline-danger">
-                                            Eliminar
-                                        </a>
+                                    <td class="obs-cell">
+                                        @if (string.IsNullOrWhiteSpace(item.Observations))
+                                        {
+                                            <span class="text-muted">Sin observaciones</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="obs-preview" title="@item.Observations">@item.Observations</span>
+                                        }
                                     </td>
 
+                                    <td class="text-center col-actions">
+                                        <div class="ticket-actions">
+                                            @if (canEditTicket)
+                                            {
+                                                <a asp-action="Edit"
+                                                   asp-route-id="@item.Id"
+                                                   class="btn btn-sm btn-outline-primary btn-icon"
+                                                   title="Editar"
+                                                   aria-label="Editar">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+                                            }
+
+                                            <a asp-action="Details"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-sm btn-outline-info btn-icon"
+                                               title="Detalles"
+                                               aria-label="Detalles">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+
+                                            <a asp-action="DownloadPdf"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-sm btn-outline-danger btn-icon"
+                                               title="Descargar PDF"
+                                               aria-label="Descargar PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i>
+                                            </a>
+
+                                            @if (canDeleteTicket)
+                                            {
+                                                <a asp-action="Delete"
+                                                   asp-route-id="@item.Id"
+                                                   class="btn btn-sm btn-outline-danger btn-icon"
+                                                   title="Eliminar"
+                                                   aria-label="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -222,13 +321,11 @@
 @section Scripts {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
     const searchBox = document.getElementById("searchBox");
     const statusFilter = document.getElementById("statusFilter");
     const priorityFilter = document.getElementById("priorityFilter");
 
     function applyFilters() {
-
         const search = searchBox.value;
         const status = statusFilter.value;
         const priority = priorityFilter.value;

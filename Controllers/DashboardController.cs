@@ -10,7 +10,7 @@ using ITServiceDeskApp.Models;
 namespace ITServiceDeskApp.Controllers
 {
     // 🔐 Requiere usuario autenticado
-    [Authorize]
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
     public class DashboardController : Controller
     {
         private readonly ApplicationDbContext _context;

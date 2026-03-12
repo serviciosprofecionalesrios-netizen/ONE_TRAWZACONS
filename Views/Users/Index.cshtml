@@ -1,11 +1,28 @@
 @model IEnumerable<ITServiceDeskApp.Models.User>
 @using ITServiceDeskApp.Models
 
-<h2 class="mb-3">Listado de Usuarios</h2>
+@{
+    var canManageUsers =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT));
+}
 
-<a asp-action="Create" class="btn btn-danger mb-3">
-    <i class="bi bi-person-plus"></i> Nuevo Usuario
-</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Listado de Usuarios</h2>
+
+    <div class="d-flex gap-2">
+        <a asp-action="ExportPdf" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+        </a>
+
+        @if (canManageUsers)
+        {
+            <a asp-action="Create" class="btn btn-danger">
+                <i class="bi bi-person-plus"></i> Nuevo Usuario
+            </a>
+        }
+    </div>
+</div>
 
 @if (Model == null || !Model.Any())
 {
@@ -45,39 +62,42 @@ else
                 </td>
 
                 <td>
+                    @if (canManageUsers)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@user.Id"
+                           class="btn btn-sm btn-warning">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
 
-                    <!-- EDITAR -->
-                    <a asp-action="Edit"
-                       asp-route-id="@user.Id"
-                       class="btn btn-sm btn-warning">
-                        <i class="bi bi-pencil"></i> Editar
-                    </a>
+                        <form asp-action="ToggleStatus"
+                              asp-route-id="@user.Id"
+                              method="post"
+                              style="display:inline-block;"
+                              onsubmit="return confirm('¿Desea cambiar el estado de este usuario?');">
 
-                    <!-- ACTIVAR / DESACTIVAR -->
-                    <form asp-action="ToggleStatus"
-                          asp-route-id="@user.Id"
-                          method="post"
-                          style="display:inline-block;"
-                          onsubmit="return confirm('Â¿Desea cambiar el estado de este usuario?');">
+                            @Html.AntiForgeryToken()
 
-                        @Html.AntiForgeryToken()
-
-                        @if (user.IsActive)
-                        {
-                            <button type="submit"
-                                    class="btn btn-sm btn-secondary">
-                                <i class="bi bi-toggle-off"></i> Desactivar
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="submit"
-                                    class="btn btn-sm btn-success">
-                                <i class="bi bi-toggle-on"></i> Activar
-                            </button>
-                        }
-                    </form>
-
+                            @if (user.IsActive)
+                            {
+                                <button type="submit"
+                                        class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-toggle-off"></i> Desactivar
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit"
+                                        class="btn btn-sm btn-success">
+                                    <i class="bi bi-toggle-on"></i> Activar
+                                </button>
+                            }
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Solo lectura</span>
+                    }
                 </td>
             </tr>
         }

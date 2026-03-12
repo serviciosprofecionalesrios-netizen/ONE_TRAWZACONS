@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ITServiceDeskApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
     public class CalendarController : Controller
     {
         private const string AllValue = "all";
@@ -292,3 +292,4 @@ namespace ITServiceDeskApp.Controllers
         }
     }
 }
+

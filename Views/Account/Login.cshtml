@@ -2,29 +2,298 @@
     ViewData["Title"] = "Iniciar Sesión";
 }
 
-<div class="container mt-5" style="max-width:400px;">
-    <div class="card shadow p-4">
-        <h3 class="text-center mb-4">Iniciar Sesión</h3>
+<style>
+    body.login-page {
+        background: #060b17 !important;
+    }
+
+    body.login-page .content-wrapper {
+        padding: 0 !important;
+    }
+
+    .login-tech-wrap {
+        position: relative;
+        width: 100%;
+        min-height: calc(100vh - 86px);
+        margin: 0;
+        border-radius: 0;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        padding: clamp(1rem, 2.6vw, 2.25rem);
+        isolation: isolate;
+    }
+
+    .tech-bg {
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at 15% 18%, rgba(239, 68, 68, 0.32), transparent 38%),
+            radial-gradient(circle at 82% 16%, rgba(6, 182, 212, 0.28), transparent 35%),
+            radial-gradient(circle at 50% 84%, rgba(30, 64, 175, 0.35), transparent 50%),
+            linear-gradient(125deg, #0f172a 0%, #0b1220 44%, #091424 100%);
+        animation: techGradientShift 16s ease-in-out infinite alternate;
+    }
+
+    .tech-bg::before,
+    .tech-bg::after {
+        content: "";
+        position: absolute;
+        inset: -30%;
+        pointer-events: none;
+    }
+
+    .tech-bg::before {
+        background: conic-gradient(from 180deg at 50% 50%, rgba(255, 255, 255, 0.08), transparent 25%, rgba(34, 211, 238, 0.14), transparent 60%, rgba(239, 68, 68, 0.12), transparent 85%);
+        filter: blur(36px);
+        animation: rotateHalo 22s linear infinite;
+        opacity: 0.45;
+    }
+
+    .tech-bg::after {
+        background:
+            radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1.5px) 0 0 / 26px 26px,
+            radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1.5px) 13px 13px / 26px 26px;
+        opacity: 0.2;
+        animation: starsDrift 20s linear infinite;
+    }
+
+    .tech-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            repeating-linear-gradient(90deg, rgba(56, 189, 248, 0.12) 0 1px, transparent 1px 62px),
+            repeating-linear-gradient(0deg, rgba(56, 189, 248, 0.12) 0 1px, transparent 1px 62px);
+        mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.94) 16%, rgba(0,0,0,0.94) 84%, transparent 100%);
+        animation: gridPulse 6.5s ease-in-out infinite;
+    }
+
+    .tech-grid::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 18%, transparent 82%, rgba(255,255,255,0.08));
+        mix-blend-mode: screen;
+    }
+
+    .tech-scan {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 110px;
+        background: linear-gradient(to bottom, transparent, rgba(34, 211, 238, 0.26), transparent);
+        filter: blur(1px);
+        animation: scanY 5.8s ease-in-out infinite;
+    }
+
+    .tech-nodes {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .tech-nodes span {
+        position: absolute;
+        left: var(--x);
+        top: var(--y);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow:
+            0 0 0 4px rgba(56, 189, 248, 0.2),
+            0 0 20px rgba(34, 211, 238, 0.7);
+        animation: nodePulse 2.4s ease-in-out infinite;
+        animation-delay: var(--d);
+    }
+
+    .tech-lines {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.42;
+        background:
+            linear-gradient(125deg, transparent 16%, rgba(34, 211, 238, 0.25) 18%, transparent 20%) 0 0 / 220px 220px,
+            linear-gradient(55deg, transparent 23%, rgba(239, 68, 68, 0.2) 25%, transparent 27%) 0 0 / 260px 260px;
+        animation: lineFlow 12s linear infinite;
+    }
+
+    .login-panel {
+        position: relative;
+        z-index: 2;
+        width: min(460px, 100%);
+        border: 1px solid rgba(255, 255, 255, 0.42);
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.93), rgba(255,255,255,0.88));
+        backdrop-filter: blur(12px);
+        box-shadow: 0 20px 48px rgba(2, 6, 23, 0.45);
+        padding: 1.55rem;
+    }
+
+    .login-panel h3 {
+        font-weight: 800;
+        font-size: clamp(1.8rem, 3vw, 2.35rem);
+        margin-bottom: 0.25rem;
+        color: #111827;
+    }
+
+    .login-caption {
+        margin-bottom: 1.15rem;
+        color: #334155;
+        font-weight: 500;
+    }
+
+    .login-panel label {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.35rem;
+    }
+
+    .login-panel .form-control {
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        padding: 0.72rem 0.82rem;
+        font-weight: 500;
+    }
+
+    .login-panel .form-control:focus {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.18);
+    }
+
+    .btn-login-tech {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        padding: 0.78rem 1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 10px 20px rgba(185, 28, 28, 0.35);
+    }
+
+    .btn-login-tech:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(185, 28, 28, 0.42);
+    }
+
+    .login-panel .validation-summary-errors ul {
+        margin: 0;
+        padding-left: 1.15rem;
+    }
+
+    @@keyframes techGradientShift {
+        0% { filter: saturate(1) brightness(1); }
+        100% { filter: saturate(1.2) brightness(1.08); }
+    }
+
+    @@keyframes rotateHalo {
+        to { transform: rotate(360deg); }
+    }
+
+    @@keyframes starsDrift {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-32px); }
+    }
+
+    @@keyframes gridPulse {
+        0%, 100% { opacity: 0.42; }
+        50% { opacity: 0.72; }
+    }
+
+    @@keyframes scanY {
+        0%, 100% { transform: translateY(-10%); opacity: 0; }
+        15% { opacity: 0.7; }
+        50% { transform: translateY(54%); opacity: 0.58; }
+        85% { opacity: 0.7; }
+    }
+
+    @@keyframes lineFlow {
+        from { background-position: 0 0, 0 0; }
+        to { background-position: 220px 220px, -240px 240px; }
+    }
+
+    @@keyframes nodePulse {
+        0%, 100% { transform: scale(0.78); opacity: 0.7; }
+        50% { transform: scale(1.25); opacity: 1; }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .tech-bg,
+        .tech-bg::before,
+        .tech-bg::after,
+        .tech-grid,
+        .tech-scan,
+        .tech-nodes span,
+        .tech-lines {
+            animation: none !important;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .login-tech-wrap {
+            min-height: calc(100vh - 78px);
+            padding: 0.85rem;
+        }
+
+        .login-panel {
+            padding: 1.15rem;
+            border-radius: 16px;
+        }
+
+        .login-caption {
+            font-size: 0.93rem;
+        }
+    }
+</style>
+
+<div class="login-tech-wrap">
+    <div class="tech-bg" aria-hidden="true"></div>
+    <div class="tech-grid" aria-hidden="true"></div>
+    <div class="tech-lines" aria-hidden="true"></div>
+    <div class="tech-scan" aria-hidden="true"></div>
+
+    <div class="tech-nodes" aria-hidden="true">
+        <span style="--x: 8%; --y: 18%; --d: 0s;"></span>
+        <span style="--x: 18%; --y: 64%; --d: .35s;"></span>
+        <span style="--x: 27%; --y: 31%; --d: .7s;"></span>
+        <span style="--x: 41%; --y: 76%; --d: .9s;"></span>
+        <span style="--x: 56%; --y: 24%; --d: 1.2s;"></span>
+        <span style="--x: 66%; --y: 58%; --d: 1.45s;"></span>
+        <span style="--x: 74%; --y: 37%; --d: 1.7s;"></span>
+        <span style="--x: 84%; --y: 71%; --d: 2s;"></span>
+        <span style="--x: 91%; --y: 22%; --d: 2.2s;"></span>
+    </div>
+
+    <div class="login-panel card">
+        <h3 class="text-center">Iniciar Sesión</h3>
+        <p class="text-center login-caption">Acceso seguro al ecosistema tecnológico de Service Desk.</p>
 
         <form asp-action="Login" method="post">
             @Html.AntiForgeryToken()
 
-            <!-- 🔥 ESTA LÍNEA ES CLAVE -->
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
             <div class="mb-3">
-                <label>Email</label>
-                <input type="email" name="email" class="form-control" required />
+                <label for="emailInput">Email</label>
+                <input id="emailInput" type="email" name="email" class="form-control" required autocomplete="username" />
             </div>
 
             <div class="mb-3">
-                <label>Contraseña</label>
-                <input type="password" name="password" class="form-control" required />
+                <label for="passwordInput">Contraseña</label>
+                <input id="passwordInput" type="password" name="password" class="form-control" required autocomplete="current-password" />
             </div>
 
-            <button type="submit" class="btn btn-danger w-100">
+            <button type="submit" class="btn btn-login-tech w-100">
                 Ingresar
             </button>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.body.classList.add("login-page");
+    </script>
+}

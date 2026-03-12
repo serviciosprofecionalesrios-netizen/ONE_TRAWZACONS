@@ -1,0 +1,63 @@
+@model ITServiceDeskApp.ViewModels.Notifications.NotificationBellViewModel
+
+<li class="nav-item dropdown notif-slot">
+    <button class="btn btn-link nav-link position-relative notif-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+        <i class="bi bi-bell fs-5"></i>
+        @if (Model.TotalCount > 0)
+        {
+            <span class="notif-badge">@(Model.HasOverflow ? "99+" : Model.DisplayCount.ToString())</span>
+        }
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end notif-menu p-0">
+        <div class="notif-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-bell-fill text-info-emphasis"></i>
+                <strong>Notificaciones</strong>
+                <span class="notif-header-badge">@Model.TotalCount</span>
+            </div>
+            <button type="button" class="btn btn-link notif-mark-read p-0">Marcar todo como leido</button>
+        </div>
+
+        @if (Model.Items.Any())
+        {
+            <div class="notif-list">
+                @foreach (var item in Model.Items)
+                {
+                    <a class="notif-link" asp-controller="Tickets" asp-action="Details" asp-route-id="@item.TicketId">
+                        <article class="@item.CardCssClass">
+                            <div class="notif-main">
+                                <div class="@item.IconCssClass">
+                                    <i class="@item.IconSymbolCssClass"></i>
+                                </div>
+                                <div class="notif-content">
+                                    <div class="notif-title-row">
+                                        <h6 class="notif-title">@item.Title</h6>
+                                        <span class="@item.PriorityCssClass">@item.PriorityLabel</span>
+                                    </div>
+                                    <p class="notif-summary">@item.Summary</p>
+                                    <div class="notif-meta">
+                                        <span><i class="bi bi-clock"></i> @item.TimeLabel</span>
+                                        <span class="notif-ticket">@item.TicketNumber</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="notif-dot"></span>
+                        </article>
+                    </a>
+                }
+            </div>
+
+            <div class="notif-footer">
+                Mostrando @Model.Items.Count de @Model.TotalCount notificaciones
+            </div>
+        }
+        else
+        {
+            <div class="notif-empty">
+                <i class="bi bi-check-circle"></i>
+                <span>No hay alertas pendientes.</span>
+            </div>
+        }
+    </div>
+</li>

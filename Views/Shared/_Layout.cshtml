@@ -7,50 +7,202 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
     <style>
         body {
             background-color: #f4f6f9;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        
 
         .navbar {
             background: linear-gradient(90deg, #c40000, #8b0000);
             border-bottom: 4px solid #000000;
         }
 
-        .navbar-brand img {
-            height: 45px;
-            margin-right: 12px;
-            transition: transform 0.3s ease;
+        .navbar .container-fluid {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            flex-wrap: nowrap;
         }
 
-        .navbar-brand:hover img {
-            transform: scale(1.05);
+        .navbar-collapse {
+            min-width: 0;
         }
-
         .navbar-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.82rem;
             font-weight: 600;
             color: #ffffff !important;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.45px;
+            text-decoration: none;
+            flex: 0 0 auto;
+        }
+
+        .brand-logo-shell {
+            position: relative;
+            width: 76px;
+            height: 76px;
+            border-radius: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            border: 2px solid rgba(255,255,255,0.9);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.28), inset 0 0 0 2px rgba(0,0,0,0.06);
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            padding: 4px;
+        }
+
+        .brand-logo-shell::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(120deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.32) 52%, rgba(255,255,255,0) 85%);
+            transform: translateX(-140%);
+            transition: transform 0.48s ease;
+            pointer-events: none;
+        }
+
+        .brand-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 17px;
+            transition: transform 0.26s ease;
+            filter: contrast(1.03) saturate(1.02);
+        }
+
+        .brand-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.55rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            letter-spacing: 0.015em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.26);
+            transition: letter-spacing 0.22s ease, text-shadow 0.22s ease;
+            white-space: nowrap;
+        }
+
+        .navbar-brand:hover .brand-logo-shell {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3), inset 0 0 0 2px rgba(0,0,0,0.08);
+        }
+
+        .navbar-brand:hover .brand-logo-shell::after {
+            transform: translateX(145%);
+        }
+
+        .navbar-brand:hover .brand-logo {
+            transform: scale(1.03);
+        }
+
+        .navbar-brand:hover .brand-title {
+            letter-spacing: 0.022em;
+            text-shadow: 0 4px 13px rgba(0,0,0,0.3);
         }
 
         .nav-link {
             color: #ffffff !important;
             font-weight: 500;
-            padding: 8px 14px;
             transition: all 0.3s ease;
         }
-
-        .nav-link:hover {
-            background-color: rgba(0,0,0,0.25);
-            border-radius: 6px;
-            transform: translateY(-1px);
+        .main-menu {
+            display: flex;
+            align-items: stretch;
+            gap: 0.2rem;
+            margin-right: auto;
+            min-width: 0;
+            flex-wrap: nowrap;
         }
 
-        .nav-link.active {
-            background-color: rgba(0,0,0,0.35);
-            border-radius: 6px;
+        .main-menu .nav-item {
+            display: flex;
+            min-width: 0;
+        }
+
+        .menu-link {
+            position: relative;
+            min-width: 92px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 0.2rem;
+            line-height: 1.1;
+            padding: 7px 8px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            transition: transform 0.22s ease, background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+            flex: 0 0 auto;
+        }
+
+        .menu-link::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0) 90%);
+            transform: translateX(-150%);
+            transition: transform 0.45s ease;
+            pointer-events: none;
+        }
+
+        .menu-link .menu-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: transform 0.22s ease, filter 0.22s ease;
+        }
+
+        .menu-link .menu-text {
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .menu-link:hover {
+            background-color: rgba(0, 0, 0, 0.26);
+            border-color: rgba(255, 255, 255, 0.22);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-link:hover::before {
+            transform: translateX(150%);
+        }
+
+        .menu-link:hover .menu-icon {
+            transform: translateY(-2px) scale(1.12);
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+        }
+
+        .menu-link.active {
+            background: rgba(0, 0, 0, 0.35);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+
+        .menu-link.active .menu-icon {
+            animation: menuPulse 1.8s ease-in-out infinite;
+        }
+
+        @@keyframes menuPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
         }
 
         .navbar-toggler {
@@ -61,41 +213,582 @@
             filter: invert(1);
         }
 
+        .navbar-expand-lg .navbar-nav.account-strip {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.34rem;
+            flex-wrap: nowrap;
+            min-width: 0;
+            margin-left: auto;
+        }
+
+        .account-stack {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 0.26rem;
+            min-width: 0;
+            flex: 0 0 auto;
+        }
+
+        .account-stack .nav-link {
+            padding: 0;
+        }
+
+        .account-stack form {
+            margin: 0;
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .account-strip .nav-item {
+            margin-right: 0 !important;
+        }
+
+        .account-strip .notif-slot {
+            width: 68px;
+            min-width: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .account-strip .notif-slot .notif-toggle {
+            margin: 0;
+        }
+
+        .user-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.34rem 0.58rem;
+            border-radius: 999px;
+            font-weight: 600;
+            color: #ffffff !important;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.23);
+            backdrop-filter: blur(4px);
+            max-width: 188px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .user-chip i {
+            font-size: 1rem;
+            flex: 0 0 auto;
+        }
+
+        .user-chip .user-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-chip:hover {
+            background: rgba(0, 0, 0, 0.38);
+            border-color: rgba(255, 255, 255, 0.36);
+            transform: translateY(-1px);
+        }
+
         .logout-btn {
-            border-color: rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: #ffffff;
+            background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(0,0,0,0.26));
+            border-radius: 11px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            padding: 0.34rem 0.58rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.38rem;
+            white-space: nowrap;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.22);
+            transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, border-color 0.22s ease;
+            font-size: 0.9rem;
+            line-height: 1.15;
+        }
+
+        .logout-btn::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0) 80%);
+            transform: translateX(-140%);
+            transition: transform 0.45s ease;
+            pointer-events: none;
+        }
+
+        .logout-btn i {
+            transition: transform 0.2s ease;
+            flex: 0 0 auto;
         }
 
         .logout-btn:hover {
-            background-color: rgba(0,0,0,0.25);
+            background-color: rgba(0,0,0,0.38);
             color: #ffffff;
-            border-color: #ffffff;
-        }
-
-        .content-wrapper {
-            padding: 30px;
-        }
-
-        .card {
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-        }
-
-        .btn-primary {
-            background-color: #c40000;
-            border-color: #c40000;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: #8b0000;
-            border-color: #8b0000;
+            border-color: rgba(255,255,255,0.5);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.28);
             transform: translateY(-1px);
+        }
+
+        .logout-btn:hover::after {
+            transform: translateX(145%);
+        }
+
+        .logout-btn:hover i {
+            transform: translateX(2px);
+        }
+
+        .notif-toggle {
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.18) !important;
+            border-radius: 12px;
+            padding: 0.38rem 0.52rem !important;
+            background: rgba(0,0,0,0.16);
+            text-decoration: none !important;
+            line-height: 1;
+        }
+
+        .notif-toggle:hover,
+        .notif-toggle:focus {
+            color: #ffffff !important;
+            background: rgba(0,0,0,0.28);
+            border-color: rgba(255,255,255,0.34) !important;
+            box-shadow: none !important;
+            text-decoration: none !important;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #ef4444;
+            color: #fff;
+            border-radius: 999px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #b00000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+
+        .notif-menu {
+            width: min(430px, calc(100vw - 24px));
+            max-width: calc(100vw - 24px);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 18px 35px rgba(0,0,0,0.22);
+            background: #f8fafc;
+            margin-top: 10px !important;
+        }
+
+        .notif-header {
+            padding: 0.8rem 0.95rem;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            gap: 0.7rem;
+        }
+
+        .notif-header .d-flex {
+            min-width: 0;
+        }
+
+        .notif-header strong {
+            font-size: 1.08rem;
+            color: #1f2937;
+        }
+
+        .notif-header-badge {
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.76rem;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 0.14rem 0.5rem;
+            line-height: 1.2;
+        }
+
+        .notif-mark-read {
+            font-weight: 700;
+            color: #0f766e !important;
+            text-decoration: none !important;
+            white-space: nowrap;
+            font-size: 0.92rem;
+            flex: 0 0 auto;
+        }
+
+        .notif-mark-read:hover {
+            color: #0a5b55 !important;
+            text-decoration: underline !important;
+        }
+
+        .notif-list {
+            max-height: min(62vh, 530px);
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .notif-link {
+            display: block;
+            color: inherit !important;
+            text-decoration: none !important;
+            outline: none;
+        }
+
+        .notif-link:hover,
+        .notif-link:focus {
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+
+        .notif-item {
+            position: relative;
+            padding: 0.82rem 0.92rem;
+            border-left: 4px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            background: #ffffff;
+            transition: background-color 0.2s ease;
+        }
+
+        .notif-link:hover .notif-item {
+            background: #f8fafc;
+        }
+
+        .notif-item--breached { border-left-color: #ef4444; }
+        .notif-item--near { border-left-color: #f59e0b; }
+        .notif-item--critical { border-left-color: #06b6d4; }
+
+        .notif-main {
+            display: grid;
+            grid-template-columns: 46px 1fr;
+            gap: 0.72rem;
+            align-items: flex-start;
+        }
+
+        .notif-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.22rem;
+            border: 1px solid transparent;
+        }
+
+        .notif-icon--breached {
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .notif-icon--near {
+            background: #fef3c7;
+            color: #d97706;
+            border-color: #fde68a;
+        }
+
+        .notif-icon--critical {
+            background: #cffafe;
+            color: #0891b2;
+            border-color: #a5f3fc;
+        }
+
+        .notif-content {
+            min-width: 0;
+        }
+
+        .notif-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.42rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.18rem;
+        }
+
+        .notif-title {
+            margin: 0;
+            font-size: 1.02rem;
+            font-weight: 800;
+            color: #1f2937;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .notif-priority {
+            border-radius: 8px;
+            padding: 0.08rem 0.45rem;
+            font-size: 0.76rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .notif-priority--critical { background: #fee2e2; color: #b91c1c; }
+        .notif-priority--high { background: #ffedd5; color: #c2410c; }
+        .notif-priority--medium { background: #fef3c7; color: #b45309; }
+        .notif-priority--low { background: #dcfce7; color: #15803d; }
+
+        .notif-summary {
+            margin: 0 0 0.28rem 0;
+            color: #475569;
+            font-size: 0.93rem;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .notif-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.72rem;
+            flex-wrap: wrap;
+            color: #64748b;
+            font-size: 0.88rem;
+        }
+
+        .notif-ticket {
+            color: #0f766e;
+            font-weight: 800;
+        }
+
+        .notif-dot {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #14b8a6;
+        }
+
+        .notif-footer {
+            padding: 0.72rem 0.95rem;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #6b7280;
+            font-size: 0.92rem;
+            text-align: center;
+        }
+
+        .notif-empty {
+            padding: 1rem 0.95rem;
+            text-align: center;
+            color: #6b7280;
+            display: flex;
+            gap: 0.45rem;
+            justify-content: center;
+            align-items: center;
+            background: #ffffff;
+        }
+
+        @@media (max-width: 575.98px) {
+            .notif-menu {
+                width: min(360px, calc(100vw - 16px));
+                max-width: calc(100vw - 16px);
+                margin-top: 8px !important;
+            }
+
+            .notif-header {
+                padding: 0.72rem 0.78rem;
+                align-items: flex-start !important;
+            }
+
+            .notif-header strong {
+                font-size: 1rem;
+            }
+
+            .notif-mark-read {
+                font-size: 0.84rem;
+            }
+
+            .notif-item {
+                padding: 0.74rem 0.76rem;
+            }
+
+            .notif-main {
+                grid-template-columns: 40px 1fr;
+                gap: 0.62rem;
+            }
+
+            .notif-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                font-size: 1.05rem;
+            }
+        }
+        @@media (min-width: 992px) {
+            .navbar-expand-lg .navbar-collapse {
+                display: flex !important;
+                align-items: center;
+                min-width: 0;
+            }
+
+            .main-menu {
+                flex: 1 1 auto;
+                overflow-x: auto;
+                padding-bottom: 2px;
+                scrollbar-width: thin;
+            }
+
+            .main-menu::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .main-menu::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.26);
+                border-radius: 999px;
+            }
+
+            .main-menu .nav-item,
+            .menu-link,
+            .account-strip {
+                flex: 0 0 auto;
+            }
+        }
+
+        @@media (max-width: 1480px) {
+            .menu-link {
+                min-width: 100px;
+                padding: 7px 9px;
+            }
+
+            .menu-link .menu-text {
+                font-size: 0.91rem;
+            }
+
+            .brand-title {
+                font-size: 1.55rem;
+            }
+
+            .brand-logo-shell {
+                width: 70px;
+                height: 70px;
+            }
+
+            .user-chip {
+                max-width: min(165px, 13vw);
+                font-size: 0.92rem;
+                padding: 0.34rem 0.56rem;
+            }
+
+            .logout-btn {
+                font-size: 0.9rem;
+                padding: 0.34rem 0.52rem;
+            }
+        }
+
+        @@media (max-width: 1260px) {
+            .menu-link {
+                min-width: 94px;
+                padding: 7px 8px;
+            }
+
+            .menu-link .menu-text {
+                font-size: 0.86rem;
+            }
+
+            .brand-title {
+                font-size: 1.4rem;
+            }
+
+            .brand-logo-shell {
+                width: 64px;
+                height: 64px;
+            }
+
+            .user-chip {
+                max-width: min(145px, 12vw);
+                font-size: 0.86rem;
+            }
+
+            .logout-btn {
+                font-size: 0.86rem;
+                padding: 0.3rem 0.45rem;
+            }
+        }
+
+        @@media (max-width: 991.98px) {
+            .navbar-brand {
+                gap: 0.58rem;
+            }
+
+            .brand-logo-shell {
+                width: 60px;
+                height: 60px;
+                border-radius: 16px;
+            }
+
+            .brand-title {
+                font-size: 1.45rem;
+            }
+
+            .main-menu {
+                display: block;
+                width: 100%;
+                gap: 0;
+                overflow: visible;
+            }
+
+            .main-menu .nav-item {
+                width: 100%;
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+
+            .menu-link {
+                min-width: 0;
+                flex-direction: row;
+                justify-content: flex-start;
+                text-align: left;
+                gap: 0.6rem;
+                padding: 10px 12px;
+            }
+
+            .menu-link .menu-icon {
+                width: 18px;
+                font-size: 1rem;
+            }
+
+            .account-strip {
+                width: 100%;
+                margin-top: 0.45rem;
+                gap: 0.45rem;
+                flex-wrap: nowrap;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .account-stack {
+                width: 100%;
+                align-items: stretch;
+            }
+
+            .account-stack form {
+                display: block;
+            }
+
+            .user-chip {
+                max-width: 100%;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .logout-btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         @@media (max-width: 768px) {
@@ -109,19 +802,36 @@
         }
     </style>
 </head>
+@{
+    var canSeeUsersMenu =
+        User.Identity?.IsAuthenticated == true && (
+            User.IsInRole("Administrator") ||
+            User.IsInRole("CoordinadorIT") ||
+            User.IsInRole("Technician") ||
+            User.IsInRole("GerenciaGeneral"));
+
+    var canSeeCredentialsMenu =
+        User.Identity?.IsAuthenticated == true && (
+            User.IsInRole("Administrator") ||
+            User.IsInRole("Technician") ||
+            User.IsInRole("GerenciaGeneral"));
+}
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark shadow">
         <div class="container-fluid">
 
-            <a class="navbar-brand d-flex align-items-center"
+            <a class="navbar-brand"
                asp-controller="Dashboard"
                asp-action="Index">
 
-                <img src="@Url.Content("~/images/logo-transan.png")"
-                     alt="Grupo Transan Logo" />
+                <span class="brand-logo-shell">
+                    <img class="brand-logo"
+                         src="@Url.Content("~/images/logo-transan.png")"
+                         alt="Grupo Transan Logo" />
+                </span>
 
-                <span>Service Desk</span>
+                <span class="brand-title">Service Desk</span>
             </a>
 
             <button class="navbar-toggler"
@@ -133,59 +843,81 @@
 
             <div class="collapse navbar-collapse" id="navbarNav">
 
-                <ul class="navbar-nav ms-4">
+                <ul class="navbar-nav ms-2 main-menu">
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active fw-bold" : "")"
+                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active fw-bold" : "")"
                            asp-controller="Dashboard"
                            asp-action="Index">
-                            <i class="bi bi-speedometer2"></i> Dashboard
+                            <span class="menu-icon"><i class="bi bi-speedometer2"></i></span><span class="menu-text">Dashboard</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" ? "active fw-bold" : "")"
+                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" ? "active fw-bold" : "")"
                            asp-controller="Tickets"
                            asp-action="Index">
-                            <i class="bi bi-ticket-perforated"></i> Incidencias
+                            <span class="menu-icon"><i class="bi bi-ticket-perforated"></i></span><span class="menu-text">Incidencias</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Calendar" ? "active fw-bold" : "")"
+                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Calendar" ? "active fw-bold" : "")"
                            href="/Calendar">
-                            <i class="bi bi-calendar3"></i> Calendario
+                            <span class="menu-icon"><i class="bi bi-calendar3"></i></span><span class="menu-text">Calendario</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active fw-bold" : "")"
+                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active fw-bold" : "")"
                            href="/Reports">
-                            <i class="bi bi-bar-chart"></i> Reportes
+                            <span class="menu-icon"><i class="bi bi-bar-chart"></i></span><span class="menu-text">Reportes</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active fw-bold" : "")"
-                           asp-controller="Users"
+                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventory" ? "active fw-bold" : "")"
+                           asp-controller="Inventory"
                            asp-action="Index">
-                            <i class="bi bi-people"></i> Usuarios
+                            <span class="menu-icon"><i class="bi bi-pc-display"></i></span><span class="menu-text">Inventario</span>
                         </a>
                     </li>
+
+                    @if (canSeeUsersMenu)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active fw-bold" : "")"
+                               asp-controller="Users"
+                               asp-action="Index">
+                                <span class="menu-icon"><i class="bi bi-people"></i></span><span class="menu-text">Usuarios</span>
+                            </a>
+                        </li>
+                    }
+
+                    @if (canSeeCredentialsMenu)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Credentials" ? "active fw-bold" : "")"
+                               asp-controller="Credentials"
+                               asp-action="Index">
+                                <span class="menu-icon"><i class="bi bi-key"></i></span><span class="menu-text">Credenciales</span>
+                            </a>
+                        </li>
+                    }
                 </ul>
 
-                <ul class="navbar-nav ms-auto mt-3 mt-lg-0 align-items-lg-center">
+                <ul class="navbar-nav ms-auto mt-3 mt-lg-0 align-items-lg-center account-strip">
                     @if (User.Identity?.IsAuthenticated ?? false)
                     {
-                        <li class="nav-item me-lg-2">
-                            <span class="nav-link pe-lg-2">
-                                <i class="bi bi-person-circle"></i> @User.Identity?.Name
+                        @await Component.InvokeAsync("NotificationsBell")
+                        <li class="nav-item account-stack">
+                            <span class="nav-link user-chip">
+                                <i class="bi bi-person-circle"></i>
+                                <span class="user-name">@User.Identity?.Name</span>
                             </span>
-                        </li>
-                        <li class="nav-item">
                             <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm logout-btn">
-                                    <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                                    <i class="bi bi-box-arrow-right"></i> Cerrar sesiÃ³n
                                 </button>
                             </form>
                         </li>
@@ -202,11 +934,64 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".notif-mark-read").forEach(function (btn) {
+                btn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    var menu = btn.closest(".notif-menu");
+                    if (!menu) return;
+
+                    menu.querySelectorAll(".notif-dot").forEach(function (dot) { dot.style.display = "none"; });
+                    menu.querySelectorAll(".notif-header-badge").forEach(function (badge) { badge.textContent = "0"; });
+
+                    var toggle = menu.parentElement ? menu.parentElement.querySelector(".notif-badge") : null;
+                    if (toggle) { toggle.style.display = "none"; }
+                });
+            });
+        });
+    </script>
 
     @RenderSection("Scripts", required: false)
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ITServiceDeskApp.Models
 {
@@ -8,20 +9,12 @@ namespace ITServiceDeskApp.Models
     {
         public int Id { get; set; }
 
-        // =========================
-        // IDENTIFICACIÓN
-        // =========================
-
         [MaxLength(20)]
         public string? TicketNumber { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? ClosedDate { get; set; }
-
-        // =========================
-        // INFORMACIÓN DEL SOLICITANTE
-        // =========================
 
         [Required]
         [MaxLength(100)]
@@ -39,10 +32,6 @@ namespace ITServiceDeskApp.Models
         [MaxLength(100)]
         public string IncidentType { get; set; } = string.Empty;
 
-        // =========================
-        // CONTROL OPERATIVO
-        // =========================
-
         [Required]
         public PriorityLevel Priority { get; set; }
 
@@ -52,15 +41,7 @@ namespace ITServiceDeskApp.Models
         [MaxLength(100)]
         public string? AssignedTechnician { get; set; }
 
-        // =========================
-        // SLA
-        // =========================
-
         public DateTime SLADeadline { get; set; }
-
-        // =========================
-        // CONTENIDO
-        // =========================
 
         [Required]
         [MinLength(10)]
@@ -70,18 +51,68 @@ namespace ITServiceDeskApp.Models
         [MaxLength(500)]
         public string? AttachmentPath { get; set; }
 
-        // =========================
-        // RELACIÓN 1 → MUCHOS (Historial)
-        // =========================
+        [MaxLength(500)]
+        public string? BeforeEvidencePath { get; set; }
+
+        [MaxLength(500)]
+        public string? AfterEvidencePath { get; set; }
+
+        [MaxLength(1000)]
+        public string? InitialConditionNotes { get; set; }
+
+        [MaxLength(2000)]
+        public string? RepairActionsPerformed { get; set; }
+
+        [MaxLength(1000)]
+        public string? RootCause { get; set; }
+
+        public bool SparePartRequired { get; set; }
+
+        public bool SparePartPurchased { get; set; }
+
+        [MaxLength(500)]
+        public string? SparePartDetails { get; set; }
+
+        public bool ComponentChanged { get; set; }
+
+        [MaxLength(250)]
+        public string? ChangedComponentName { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El costo del componente debe ser mayor o igual a 0.")]
+        public decimal? ChangedComponentCost { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El costo en C$ debe ser mayor o igual a 0.")]
+        public decimal? ChangedComponentCostCordoba { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El costo en $ debe ser mayor o igual a 0.")]
+        public decimal? ChangedComponentCostUsd { get; set; }
+
+        [MaxLength(1000)]
+        public string? TechnicalTestsPerformed { get; set; }
+
+        public bool UserConformityConfirmed { get; set; }
+
+        [MaxLength(1000)]
+        public string? PreventiveRecommendations { get; set; }
+
+        [MaxLength(500)]
+        public string? TechnicalSheetPath { get; set; }
+
+        [MaxLength(500)]
+        public string? ExitOrderPath { get; set; }
+
+        [MaxLength(2000)]
+        public string? Observations { get; set; }
 
         public ICollection<TicketHistory> HistoryEntries { get; set; }
             = new List<TicketHistory>();
-
-        // =========================
-        // CONTROL DE CONCURRENCIA
-        // =========================
 
         [Timestamp]
         public byte[]? RowVersion { get; set; }
     }
 }
+
+

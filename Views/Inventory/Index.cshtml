@@ -1,0 +1,173 @@
+@model IEnumerable<ITServiceDeskApp.Models.InventoryItem>
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Inventario TI";
+
+    var items = Model ?? Enumerable.Empty<InventoryItem>();
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+
+    var canManage =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
+
+    string search = ViewBag.Search as string ?? string.Empty;
+    bool includeInactive = ViewBag.IncludeInactive is bool b && b;
+    string selectedCategory = Context.Request.Query["category"].ToString();
+    string selectedStatus = Context.Request.Query["status"].ToString();
+    string selectedSite = Context.Request.Query["site"].ToString();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Inventario TI</h2>
+            <small class="text-muted">Control de activos, asignaciones, costos y mantenimiento</small>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-success"
+               asp-action="ExportExcel"
+               asp-route-search="@search"
+               asp-route-category="@selectedCategory"
+               asp-route-status="@selectedStatus"
+               asp-route-site="@selectedSite"
+               asp-route-includeInactive="@includeInactive">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </a>
+
+            <a class="btn btn-outline-danger"
+               asp-action="ExportPdf"
+               asp-route-search="@search"
+               asp-route-category="@selectedCategory"
+               asp-route-status="@selectedStatus"
+               asp-route-site="@selectedSite"
+               asp-route-includeInactive="@includeInactive">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
+
+            @if (canManage)
+            {
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Nuevo Activo
+                </a>
+            }
+        </div>
+    </div>
+
+    <form method="get" asp-action="Index" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Buscar</label>
+                    <input type="text" class="form-control" name="search" value="@search" placeholder="Código, serie, marca, modelo, usuario, sitio..." />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Categoría</label>
+                    <select class="form-select" name="category" asp-items="categoryOptions">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Estado</label>
+                    <select class="form-select" name="status" asp-items="statusOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sitio</label>
+                    <select class="form-select" name="site" asp-items="siteOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" id="includeInactive" @(includeInactive ? "checked" : "")>
+                        <label class="form-check-label" for="includeInactive">Ver inactivos</label>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">Filtrar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            @if (!items.Any())
+            {
+                <div class="p-4">
+                    <div class="alert alert-info mb-0">No hay activos registrados.</div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Categoría</th>
+                                <th>Marca / Modelo</th>
+                                <th>Serie</th>
+                                <th>Sitio</th>
+                                <th>Estado</th>
+                                <th>Asignado</th>
+                                <th>Costo C$</th>
+                                <th>Costo $</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in items)
+                            {
+                                <tr class="@(item.IsActive ? string.Empty : "table-secondary")">
+                                    <td>
+                                        <span class="fw-semibold">@item.AssetCode</span>
+                                        @if (!item.IsActive)
+                                        {
+                                            <span class="badge bg-secondary ms-1">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>@item.Category</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Brand) ? "-" : item.Brand) / @(string.IsNullOrWhiteSpace(item.Model) ? "-" : item.Model)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.SerialNumber) ? "-" : item.SerialNumber)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Site) ? "-" : item.Site)</td>
+                                    <td>@item.Status</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.AssignedTo) ? "Sin asignar" : item.AssignedTo)</td>
+                                    <td>@(item.CostCordoba.HasValue ? $"C$ {item.CostCordoba.Value:N2}" : "-")</td>
+                                    <td>@(item.CostUsd.HasValue ? $"$ {item.CostUsd.Value:N2}" : "-")</td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Ver</a>
+
+                                        @if (canManage)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Editar</a>
+
+                                            @if (item.IsActive)
+                                            {
+                                                <form asp-action="Delete" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
+                                                </form>
+                                            }
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

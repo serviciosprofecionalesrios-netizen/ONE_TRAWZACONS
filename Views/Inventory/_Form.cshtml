@@ -1,0 +1,188 @@
+@model ITServiceDeskApp.Models.InventoryItem
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Linq
+
+@{
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var departmentOptions = ViewBag.DepartmentOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var operatingSystemOptions = ViewBag.OperatingSystemOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var officeVersionOptions = ViewBag.OfficeVersionOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var conditionOptions = new[] { "Nuevo", "Bueno", "Regular", "Dañado" };
+}
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="AssetCode" class="form-label fw-semibold">Código de activo *</label>
+        <input asp-for="AssetCode" class="form-control" placeholder="INV-2026-0001" />
+        <div class="form-text">Si lo dejas vacío, se genera automático.</div>
+        <span asp-validation-for="AssetCode" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="AssetTag" class="form-label fw-semibold">Etiqueta/Tag</label>
+        <input asp-for="AssetTag" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="SerialNumber" class="form-label fw-semibold">Número de serie</label>
+        <input asp-for="SerialNumber" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Category" class="form-label fw-semibold">Categoría *</label>
+        <select asp-for="Category" class="form-select" asp-items="categoryOptions">
+            <option value="">Seleccionar categoría</option>
+        </select>
+        <span asp-validation-for="Category" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Subcategory" class="form-label fw-semibold">Subcategoría</label>
+        <input asp-for="Subcategory" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Condition" class="form-label fw-semibold">Condición *</label>
+        <select asp-for="Condition" class="form-select">
+            @foreach (var condition in conditionOptions)
+            {
+                <option value="@condition">@condition</option>
+            }
+        </select>
+        <span asp-validation-for="Condition" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Brand" class="form-label fw-semibold">Marca</label>
+        <input asp-for="Brand" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Model" class="form-label fw-semibold">Modelo</label>
+        <input asp-for="Model" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Status" class="form-label fw-semibold">Estado *</label>
+        <select asp-for="Status" class="form-select" asp-items="statusOptions">
+            <option value="">Seleccionar estado</option>
+        </select>
+        <span asp-validation-for="Status" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Site" class="form-label fw-semibold">Sitio</label>
+        <select asp-for="Site" class="form-select" asp-items="siteOptions">
+            <option value="">Seleccionar sitio</option>
+        </select>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Department" class="form-label fw-semibold">Área / Departamento</label>
+        <select asp-for="Department" class="form-select" asp-items="departmentOptions">
+            <option value="">Seleccionar área</option>
+        </select>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="AssignedTo" class="form-label fw-semibold">Asignado a</label>
+        <input asp-for="AssignedTo" class="form-control" />
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="AssignedToEmail" class="form-label fw-semibold">Correo usuario asignado</label>
+        <input asp-for="AssignedToEmail" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="PurchaseDate" class="form-label fw-semibold">Fecha de compra</label>
+        <input asp-for="PurchaseDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="WarrantyEndDate" class="form-label fw-semibold">Vencimiento garantía</label>
+        <input asp-for="WarrantyEndDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Supplier" class="form-label fw-semibold">Proveedor</label>
+        <input asp-for="Supplier" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="InvoiceNumber" class="form-label fw-semibold">Número factura</label>
+        <input asp-for="InvoiceNumber" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="CostCordoba" class="form-label fw-semibold">Costo (C$)</label>
+        <input asp-for="CostCordoba" type="number" min="0" step="0.01" class="form-control" />
+        <span asp-validation-for="CostCordoba" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="CostUsd" class="form-label fw-semibold">Costo ($)</label>
+        <input asp-for="CostUsd" type="number" min="0" step="0.01" class="form-control" />
+        <span asp-validation-for="CostUsd" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="IpAddress" class="form-label fw-semibold">IP</label>
+        <input asp-for="IpAddress" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="MacAddress" class="form-label fw-semibold">MAC</label>
+        <input asp-for="MacAddress" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="OperatingSystem" class="form-label fw-semibold">Sistema Operativo</label>
+        <select asp-for="OperatingSystem" class="form-select" asp-items="operatingSystemOptions">
+            <option value="">Seleccionar sistema operativo</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="OfficeVersion" class="form-label fw-semibold">Versión Office</label>
+        <select asp-for="OfficeVersion" class="form-select" asp-items="officeVersionOptions">
+            <option value="">Seleccionar versión de Office</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Antivirus" class="form-label fw-semibold">Antivirus</label>
+        <input asp-for="Antivirus" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="LastMaintenanceDate" class="form-label fw-semibold">Último mantenimiento</label>
+        <input asp-for="LastMaintenanceDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="NextMaintenanceDate" class="form-label fw-semibold">Próximo mantenimiento</label>
+        <input asp-for="NextMaintenanceDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label">Activo</label>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="TechnicalSpecifications" class="form-label fw-semibold">Especificaciones técnicas</label>
+        <textarea asp-for="TechnicalSpecifications" class="form-control" rows="2"></textarea>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label fw-semibold">Notas</label>
+        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+    </div>
+</div>
+
+

@@ -26,8 +26,32 @@ build_property.GenerateRazorMetadataSourceChecksumAttributes =
 build_property.MSBuildProjectDirectory = C:\Users\EQCOORDINADORIT\Desktop\IT-ServiceDesk\ITServiceDeskApp
 build_property._RazorSourceGeneratorDebug = 
 
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Account/AccessDenied.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxBY2Nlc3NEZW5pZWQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Calendar/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ2FsZW5kYXJcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Credentials/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3JlZGVudGlhbHNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Credentials/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3JlZGVudGlhbHNcRGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Credentials/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3JlZGVudGlhbHNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Credentials/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3JlZGVudGlhbHNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Dashboard/Index.cshtml]
@@ -40,6 +64,34 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Inventory/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Inventory/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XERldGFpbHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Inventory/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Inventory/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Inventory/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XF9Gb3JtLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Reports/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmVwb3J0c1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Shared/Components/NotificationsBell/Default.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXENvbXBvbmVudHNcTm90aWZpY2F0aW9uc0JlbGxcRGVmYXVsdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/EQCOORDINADORIT/Desktop/IT-ServiceDesk/ITServiceDeskApp/Views/Shared/Error.cshtml]

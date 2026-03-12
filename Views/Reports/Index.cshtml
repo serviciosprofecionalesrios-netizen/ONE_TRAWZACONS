@@ -217,15 +217,13 @@
             </a>
 
             <a class="btn btn-danger btn-sm"
-               asp-action="Index"
+               asp-action="ExportPdf"
                asp-route-startDate="@startDateValue"
                asp-route-endDate="@endDateValue"
                asp-route-technician="@selectedTechnician"
                asp-route-area="@selectedArea"
                asp-route-site="@selectedSite"
-               asp-route-tab="@activeTab"
-               asp-route-printMode="true"
-               target="_blank">
+               asp-route-tab="@activeTab">
                 <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
             </a>
         </div>
@@ -541,3 +539,4 @@
         });
     </script>
 }
+

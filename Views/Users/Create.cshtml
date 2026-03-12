@@ -1,4 +1,10 @@
-@model ITServiceDeskApp.ViewModels.Users.UserCreateViewModel
+﻿@model ITServiceDeskApp.ViewModels.Users.UserCreateViewModel
+@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    var departmentOptions = ViewBag.DepartmentOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
 
 <div class="container mt-4">
     <div class="card shadow-lg p-4">
@@ -29,7 +35,9 @@
 
                 <div class="col-md-6 mb-3">
                     <label asp-for="Department" class="form-label"></label>
-                    <input asp-for="Department" class="form-control" />
+                    <select asp-for="Department" class="form-select" asp-items="departmentOptions">
+                        <option value="">Seleccionar departamento</option>
+                    </select>
                     <span asp-validation-for="Department" class="text-danger"></span>
                 </div>
 

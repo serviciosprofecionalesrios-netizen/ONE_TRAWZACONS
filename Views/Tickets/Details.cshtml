@@ -3,6 +3,11 @@
 
 @{
     ViewData["Title"] = "Detalle del Ticket";
+
+    var canEditTicket =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
 }
 
 <div class="container mt-4">
@@ -14,10 +19,9 @@
         </div>
 
         <div class="card-body">
-
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <p><strong>Fecha Creación:</strong> @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</p>
+                    <p><strong>Fecha Creacion:</strong> @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</p>
                     <p><strong>Usuario:</strong> @Model.RequestingUser</p>
                     <p><strong>Sitio:</strong> @Model.Site</p>
                     <p><strong>Departamento:</strong> @Model.Department</p>
@@ -45,47 +49,115 @@
                         };
                     }
 
-                    <p>
-                        <strong>Prioridad:</strong>
-                        <span class="badge @priorityClass">@Model.Priority</span>
-                    </p>
-
-                    <p>
-                        <strong>Estado:</strong>
-                        <span class="badge @statusClass">@Model.Status</span>
-                    </p>
-
-                    <p>
-                        <strong>Técnico Asignado:</strong>
-                        @(string.IsNullOrWhiteSpace(Model.AssignedTechnician)
-                            ? "Sin asignar"
-                            : Model.AssignedTechnician)
-                    </p>
+                    <p><strong>Prioridad:</strong> <span class="badge @priorityClass">@Model.Priority</span></p>
+                    <p><strong>Estado:</strong> <span class="badge @statusClass">@Model.Status</span></p>
+                    <p><strong>Tecnico Asignado:</strong> @(string.IsNullOrWhiteSpace(Model.AssignedTechnician) ? "Sin asignar" : Model.AssignedTechnician)</p>
+                    <p><strong>SLA:</strong> @Model.SLADeadline.ToString("yyyy-MM-dd HH:mm")</p>
                 </div>
             </div>
 
             <hr />
+            <h5>Descripcion</h5>
+            <p>@Model.Description</p>
 
-            <div>
-                <h5>Descripción</h5>
-                <p>@Model.Description</p>
+            <hr />
+            <h5>Evidencia del Tecnico</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Evidencia inicial:</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.BeforeEvidencePath))
+                    {
+                        <div><a href="@Model.BeforeEvidencePath" target="_blank">Ver archivo</a></div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">No cargada</div>
+                    }
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Evidencia final:</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.AfterEvidencePath))
+                    {
+                        <div><a href="@Model.AfterEvidencePath" target="_blank">Ver archivo</a></div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">No cargada</div>
+                    }
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Evidencia adicional:</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.AttachmentPath))
+                    {
+                        <div><a href="@Model.AttachmentPath" target="_blank">Ver archivo</a></div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">No cargada</div>
+                    }
+                </div>
             </div>
 
+            <hr />
+            <h5>Formulario Tecnico</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <strong>Condicion inicial del equipo</strong>
+                    <div>@(string.IsNullOrWhiteSpace(Model.InitialConditionNotes) ? "Sin detalle" : Model.InitialConditionNotes)</div>
+                </div>
+                <div class="col-md-6">
+                    <strong>Reparaciones realizadas</strong>
+                    <div>@(string.IsNullOrWhiteSpace(Model.RepairActionsPerformed) ? "Sin detalle" : Model.RepairActionsPerformed)</div>
+                </div>
+                <div class="col-md-6">
+                    <strong>Causa raiz</strong>
+                    <div>@(string.IsNullOrWhiteSpace(Model.RootCause) ? "Sin detalle" : Model.RootCause)</div>
+                </div>
+                <div class="col-md-6">
+                    <strong>Pruebas tecnicas</strong>
+                    <div>@(string.IsNullOrWhiteSpace(Model.TechnicalTestsPerformed) ? "Sin detalle" : Model.TechnicalTestsPerformed)</div>
+                </div>
+                <div class="col-md-4">
+                    <strong>Requirio repuesto:</strong> @(Model.SparePartRequired ? "Si" : "No")
+                </div>
+                <div class="col-md-4">
+                    <strong>Se compro repuesto:</strong> @(Model.SparePartPurchased ? "Si" : "No")
+                </div>
+                <div class="col-md-4">
+                    <strong>Detalle repuesto:</strong> @(string.IsNullOrWhiteSpace(Model.SparePartDetails) ? "N/A" : Model.SparePartDetails)
+                </div>
+                <div class="col-md-4">
+                    <strong>Cambio de componente:</strong> @(Model.ComponentChanged ? "Si" : "No")
+                </div>
+                <div class="col-md-4">
+                    <strong>Componente cambiado:</strong> @(string.IsNullOrWhiteSpace(Model.ChangedComponentName) ? "N/A" : Model.ChangedComponentName)
+                </div>
+                <div class="col-md-4">
+                    <strong>Costo del componente (C$):</strong> @(Model.ChangedComponentCostCordoba.HasValue ? $"C$ {Model.ChangedComponentCostCordoba.Value:N2}" : "N/A")
+                </div>
+                <div class="col-md-4">
+                    <strong>Costo del componente ($):</strong> @(Model.ChangedComponentCostUsd.HasValue ? $"$ {Model.ChangedComponentCostUsd.Value:N2}" : "N/A")
+                </div>
+                <div class="col-md-6">
+                    <strong>Usuario confirma solucion:</strong> @(Model.UserConformityConfirmed ? "Si" : "No")
+                </div>
+                <div class="col-md-6">
+                    <strong>Recomendaciones preventivas</strong>
+                    <div>@(string.IsNullOrWhiteSpace(Model.PreventiveRecommendations) ? "Sin detalle" : Model.PreventiveRecommendations)</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="card shadow">
-        <div class="card-header bg-dark text-white">
-            Historial de Cambios
-        </div>
+        <div class="card-header bg-dark text-white">Historial de Cambios</div>
 
         <div class="card-body">
-
             @if (!Model.HistoryEntries.Any())
             {
-                <div class="alert alert-info">
-                    No hay cambios registrados.
-                </div>
+                <div class="alert alert-info">No hay cambios registrados.</div>
             }
             else
             {
@@ -95,7 +167,7 @@
                             <th>Fecha</th>
                             <th>Campo</th>
                             <th>Antes</th>
-                            <th>Después</th>
+                            <th>Despues</th>
                             <th>Usuario</th>
                         </tr>
                     </thead>
@@ -113,17 +185,21 @@
                     </tbody>
                 </table>
             }
-
         </div>
     </div>
 
     <div class="mt-4 text-end">
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
-            Editar
-        </a>
-        <a asp-action="Index" class="btn btn-secondary">
-            Volver
-        </a>
+        @if (canEditTicket)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
+        }
+        <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="btn btn-danger">Descargar PDF</a>
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
     </div>
 
 </div>
+
+
+
+
+
