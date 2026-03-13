@@ -54,6 +54,9 @@ namespace ITServiceDeskApp.Models
         [MaxLength(150)]
         public string? AssignedToEmail { get; set; }
 
+        [MaxLength(30)]
+        public string? CorporatePhoneNumber { get; set; }
+
         public DateTime? PurchaseDate { get; set; }
 
         public DateTime? WarrantyEndDate { get; set; }

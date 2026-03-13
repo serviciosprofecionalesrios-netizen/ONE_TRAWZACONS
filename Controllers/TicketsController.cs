@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -486,7 +486,10 @@ namespace ITServiceDeskApp.Controllers
                 "Plantel Nagarote",
                 "Plantel Las Lajitas",
                 "Granada",
-                "Jinotepe",
+                "Diriamba",
+                "Masaya",
+                "Los Brasiles",
+                "Casa Masaya",
                 "Casa Miramar",
                 "Casa de Alto Nagarote"
             };
@@ -502,8 +505,8 @@ namespace ITServiceDeskApp.Controllers
                 "IT",
                 "Operaciones",
                 "Administracion",
-                "Compras",
-                "Contabilidad"
+                "Mantenimiento",
+                "Finanzas"
             };
 
             var dbDepartments = await _context.Tickets
@@ -515,7 +518,10 @@ namespace ITServiceDeskApp.Controllers
                 .ToListAsync();
 
             var departments = baseDepartments
-                .Concat(dbDepartments.Where(d => !baseDepartments.Contains(d, StringComparer.OrdinalIgnoreCase)))
+                .Concat(dbDepartments.Where(d =>
+                    !baseDepartments.Contains(d, StringComparer.OrdinalIgnoreCase) &&
+                    !d.Equals("Compras", StringComparison.OrdinalIgnoreCase) &&
+                    !d.Equals("Contabilidad", StringComparison.OrdinalIgnoreCase)))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -994,6 +1000,8 @@ namespace ITServiceDeskApp.Controllers
         }
     }
 }
+
+
 
 
 

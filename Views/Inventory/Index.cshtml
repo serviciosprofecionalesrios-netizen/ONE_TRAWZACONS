@@ -121,6 +121,7 @@
                                 <th>Sitio</th>
                                 <th>Estado</th>
                                 <th>Asignado</th>
+                                <th>Teléfono Corporativo</th>
                                 <th>Costo C$</th>
                                 <th>Costo $</th>
                                 <th class="text-center">Acciones</th>
@@ -143,6 +144,7 @@
                                     <td>@(string.IsNullOrWhiteSpace(item.Site) ? "-" : item.Site)</td>
                                     <td>@item.Status</td>
                                     <td>@(string.IsNullOrWhiteSpace(item.AssignedTo) ? "Sin asignar" : item.AssignedTo)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.CorporatePhoneNumber) ? "-" : item.CorporatePhoneNumber)</td>
                                     <td>@(item.CostCordoba.HasValue ? $"C$ {item.CostCordoba.Value:N2}" : "-")</td>
                                     <td>@(item.CostUsd.HasValue ? $"$ {item.CostUsd.Value:N2}" : "-")</td>
                                     <td class="text-center">

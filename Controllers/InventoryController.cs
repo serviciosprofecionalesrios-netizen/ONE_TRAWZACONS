@@ -89,6 +89,7 @@ namespace ITServiceDeskApp.Controllers
             item.Department = item.Department?.Trim();
             item.AssignedTo = item.AssignedTo?.Trim();
             item.AssignedToEmail = item.AssignedToEmail?.Trim();
+            item.CorporatePhoneNumber = item.CorporatePhoneNumber?.Trim();
             item.Status = (item.Status ?? string.Empty).Trim();
             item.Condition = (item.Condition ?? string.Empty).Trim();
             item.Supplier = item.Supplier?.Trim();
@@ -187,6 +188,7 @@ namespace ITServiceDeskApp.Controllers
             dbItem.Department = item.Department?.Trim();
             dbItem.AssignedTo = item.AssignedTo?.Trim();
             dbItem.AssignedToEmail = item.AssignedToEmail?.Trim();
+            dbItem.CorporatePhoneNumber = item.CorporatePhoneNumber?.Trim();
             dbItem.PurchaseDate = item.PurchaseDate;
             dbItem.WarrantyEndDate = item.WarrantyEndDate;
             dbItem.Supplier = item.Supplier?.Trim();
@@ -298,6 +300,7 @@ namespace ITServiceDeskApp.Controllers
                     (i.Model != null && i.Model.Contains(term)) ||
                     (i.AssignedTo != null && i.AssignedTo.Contains(term)) ||
                     (i.AssignedToEmail != null && i.AssignedToEmail.Contains(term)) ||
+                    (i.CorporatePhoneNumber != null && i.CorporatePhoneNumber.Contains(term)) ||
                     (i.Site != null && i.Site.Contains(term)) ||
                     (i.Department != null && i.Department.Contains(term)));
             }
@@ -553,7 +556,7 @@ namespace ITServiceDeskApp.Controllers
             sb.AppendLine($"<h2>Inventario TI - {DateTime.Now:dd/MM/yyyy HH:mm}</h2>");
             sb.AppendLine("<table border='1' cellspacing='0' cellpadding='4'>");
             sb.AppendLine("<tr style='font-weight:bold;background:#f2f2f2;'>");
-            sb.AppendLine("<td>Codigo</td><td>Activo</td><td>Categoria</td><td>Marca</td><td>Modelo</td><td>Serie</td><td>Estado</td><td>Condicion</td><td>Sitio</td><td>Departamento</td><td>Asignado a</td><td>Email</td><td>Fecha compra</td><td>Garantia</td><td>Costo C$</td><td>Costo $</td><td>IP</td><td>MAC</td><td>SO</td><td>Office</td><td>Antivirus</td><td>Ultimo mantenimiento</td><td>Proximo mantenimiento</td><td>Notas</td>");
+            sb.AppendLine("<td>Codigo</td><td>Activo</td><td>Categoria</td><td>Marca</td><td>Modelo</td><td>Serie</td><td>Estado</td><td>Condicion</td><td>Sitio</td><td>Departamento</td><td>Asignado a</td><td>Email</td><td>Tel. corporativo</td><td>Fecha compra</td><td>Garantia</td><td>Costo C$</td><td>Costo $</td><td>IP</td><td>MAC</td><td>SO</td><td>Office</td><td>Antivirus</td><td>Ultimo mantenimiento</td><td>Proximo mantenimiento</td><td>Notas</td>");
             sb.AppendLine("</tr>");
 
             foreach (var item in items)
@@ -571,6 +574,7 @@ namespace ITServiceDeskApp.Controllers
                 sb.AppendLine($"<td>{E(item.Department)}</td>");
                 sb.AppendLine($"<td>{E(item.AssignedTo)}</td>");
                 sb.AppendLine($"<td>{E(item.AssignedToEmail)}</td>");
+                sb.AppendLine($"<td>{E(item.CorporatePhoneNumber)}</td>");
                 sb.AppendLine($"<td>{D(item.PurchaseDate)}</td>");
                 sb.AppendLine($"<td>{D(item.WarrantyEndDate)}</td>");
                 sb.AppendLine($"<td>{N(item.CostCordoba)}</td>");
