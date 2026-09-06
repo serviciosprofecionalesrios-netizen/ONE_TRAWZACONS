@@ -360,13 +360,8 @@ namespace ITServiceDeskApp.Controllers
 
             var baseSites = new List<string>
             {
-                "Oficina ASOMA",
-                "Plantel Nagarote",
-                "Plantel Las Lajitas",
-                "Granada",
-                "Jinotepe",
-                "Casa Miramar",
-                "Casa de Alto Nagarote"
+                "ACT",
+                "ASB"
             };
 
             var baseDepartments = new List<string>

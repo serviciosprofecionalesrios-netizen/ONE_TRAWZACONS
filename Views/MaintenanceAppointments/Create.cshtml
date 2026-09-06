@@ -1,0 +1,366 @@
+﻿@model ITServiceDeskApp.Models.MaintenanceAppointment
+@using System.Linq
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "Editar Cita de Mantenimiento" : "Nueva Cita de Mantenimiento";
+    var requestingUsers = ViewBag.RequestingUsers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var technicians = ViewBag.Technicians as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var technicianCategoryOptions = ViewBag.TechnicianCategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var tenenciaOptions = ViewBag.TenenciaOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var typeOptions = ViewBag.TypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var orderOptions = ViewBag.OrderOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var templateOptions = ViewBag.TemplateOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var templatePresetsJson = ViewBag.TemplatePresetsJson as string ?? "{}";
+    var maintenanceTechnicianCatalogJson = ViewBag.MaintenanceTechnicianCatalogJson as string ?? "[]";
+    var meta = ViewBag.Metadata as MaintenanceAppointmentMetadata ?? new MaintenanceAppointmentMetadata();
+    var userNotes = ViewBag.UserNotes as string ?? (Model.Notes ?? string.Empty);
+    var scheduleChangeComment = ViewBag.ScheduleChangeComment as string ?? string.Empty;
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">@(isEdit ? "Editar Cita de Mantenimiento" : "Nueva Cita de Mantenimiento")</h4>
+            <a asp-action="Index" class="btn btn-sm btn-light">Ver citas</a>
+        </div>
+        <div class="card-body">
+            <form asp-action="@(isEdit ? "Edit" : "Create")" method="post">
+                <div asp-validation-summary="All" class="alert alert-danger"></div>
+                @if (isEdit)
+                {
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="RowVersion" />
+                    <input type="hidden" asp-for="AppointmentNumber" />
+                    <input type="hidden" asp-for="CreatedAt" />
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Numero de cita</label>
+                        <input class="form-control" value="@(isEdit ? Model.AppointmentNumber : "Se genera automaticamente al guardar")" readonly />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Plantilla rapida</label>
+                        <select id="templatePreset" class="form-select">
+                            <option value="">Seleccionar plantilla</option>
+                            @foreach (var template in templateOptions)
+                            {
+                                <option value="@template.Value">@template.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ScheduledFor" class="form-label fw-semibold">Fecha y hora de cita *</label>
+                        <input asp-for="ScheduledFor" type="datetime-local" class="form-control"
+                               value="@(Model.ScheduledFor == default ? string.Empty : Model.ScheduledFor.ToString("yyyy-MM-ddTHH:mm"))" />
+                        <span asp-validation-for="ScheduledFor" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Duracion estimada (horas) *</label>
+                        <input type="number" name="estimatedDurationHours" id="estimatedDurationHours" class="form-control" min="0.5" max="72" step="0.5" value="@(meta.EstimatedDurationHours?.ToString("0.##") ?? "2")" />
+                        @if (ViewData.ModelState.TryGetValue("EstimatedDurationHours", out var durationErrors))
+                        {
+                            foreach (var err in durationErrors.Errors)
+                            {
+                                <span class="text-danger small d-block">@err.ErrorMessage</span>
+                            }
+                        }
+                    </div>
+
+                    @if (isEdit)
+                    {
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Motivo de cambio de fecha/hora</label>
+                            <textarea name="scheduleChangeComment" class="form-control" rows="2" placeholder="Obligatorio solo si cambias la fecha y hora de la cita.">@scheduleChangeComment</textarea>
+                            <small class="text-muted">Este comentario queda en el historial auditable de la cita.</small>
+                            @if (ViewData.ModelState.TryGetValue("ScheduleChangeComment", out var scheduleChangeErrors))
+                            {
+                                foreach (var err in scheduleChangeErrors.Errors)
+                                {
+                                    <span class="text-danger small d-block">@err.ErrorMessage</span>
+                                }
+                            }
+                        </div>
+                    }
+
+                    <div class="col-md-4">
+                        <label asp-for="Site" class="form-label fw-semibold">Sitio / Ubicacion *</label>
+                        <select asp-for="Site" class="form-select" asp-items="siteOptions">
+                            <option value="">Seleccionar sitio</option>
+                        </select>
+                        <span asp-validation-for="Site" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Tenencia" class="form-label fw-semibold">Tenencia *</label>
+                        <select asp-for="Tenencia" class="form-select" asp-items="tenenciaOptions">
+                            <option value="">Seleccionar tenencia</option>
+                        </select>
+                        <span asp-validation-for="Tenencia" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Orden de mantenimiento relacionada</label>
+                        <select class="form-select" name="maintenanceOrderNumber" id="maintenanceOrderNumber">
+                            <option value="">Sin enlazar</option>
+                            @foreach (var option in orderOptions)
+                            {
+                                if (string.Equals(option.Value, meta.MaintenanceOrderNumber, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <option value="@option.Value" selected>@option.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@option.Value">@option.Text</option>
+                                }
+                            }
+                        </select>
+                        @if (ViewData.ModelState.TryGetValue("MaintenanceOrderNumber", out var orderErrors))
+                        {
+                            foreach (var err in orderErrors.Errors)
+                            {
+                                <span class="text-danger small d-block">@err.ErrorMessage</span>
+                            }
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="RequestingUser" class="form-label fw-semibold">Solicitante *</label>
+                        <select asp-for="RequestingUser" class="form-select" asp-items="requestingUsers">
+                            <option value="">Seleccionar solicitante</option>
+                        </select>
+                        <span asp-validation-for="RequestingUser" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="TechnicianCategory" class="form-label fw-semibold">Categoria tecnico *</label>
+                        <select asp-for="TechnicianCategory" class="form-select" asp-items="technicianCategoryOptions">
+                            <option value="">Seleccionar categoria</option>
+                        </select>
+                        <span asp-validation-for="TechnicianCategory" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="AssignedTechnician" class="form-label fw-semibold">Tecnico asignado *</label>
+                        <select asp-for="AssignedTechnician" class="form-select" asp-items="technicians">
+                            <option value="">Seleccionar tecnico</option>
+                        </select>
+                        <span asp-validation-for="AssignedTechnician" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MaintenanceType" class="form-label fw-semibold">Tipo de mantenimiento *</label>
+                        <select asp-for="MaintenanceType" class="form-select" asp-items="typeOptions">
+                            <option value="">Seleccionar tipo</option>
+                        </select>
+                        <span asp-validation-for="MaintenanceType" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Status" class="form-label fw-semibold">Estado *</label>
+                        <select asp-for="Status" class="form-select" asp-items="statusOptions">
+                            <option value="">Seleccionar estado</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="AssetOrArea" class="form-label fw-semibold">Unidad / Equipo / Area *</label>
+                        <input asp-for="AssetOrArea" class="form-control" placeholder="Ej: Cascadia C-21 / Gondola G-05 / Taller" />
+                        <span asp-validation-for="AssetOrArea" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Ingreso a taller</label>
+                        <input type="datetime-local" name="workshopEntryAt" class="form-control" value="@(meta.WorkshopEntryAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Salida de taller</label>
+                        <input type="datetime-local" name="workshopExitAt" class="form-control" value="@(meta.WorkshopExitAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                        @if (ViewData.ModelState.TryGetValue("WorkshopExitAt", out var exitErrors))
+                        {
+                            foreach (var err in exitErrors.Errors)
+                            {
+                                <span class="text-danger small d-block">@err.ErrorMessage</span>
+                            }
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="RecipientUsers" class="form-label fw-semibold">Usuarios destino (correo/area)</label>
+                        <input asp-for="RecipientUsers" class="form-control" placeholder="operaciones@trawzacons.com; jefe.taller@trawzacons.com" />
+                        <span asp-validation-for="RecipientUsers" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Evidencia de cierre</label>
+                        <input type="text" name="completionEvidenceNotes" class="form-control" value="@meta.CompletionEvidenceNotes" placeholder="Detalle breve de evidencia tecnica o validacion" />
+                        @if (ViewData.ModelState.TryGetValue("CompletionEvidenceNotes", out var evidenceErrors))
+                        {
+                            foreach (var err in evidenceErrors.Errors)
+                            {
+                                <span class="text-danger small d-block">@err.ErrorMessage</span>
+                            }
+                        }
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label fw-semibold">Descripcion del trabajo *</label>
+                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Detalle de la cita y alcance del mantenimiento"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Checklist tecnico (obligatorio para completar)</label>
+                        <div class="border rounded p-3">
+                            <div class="row g-2">
+                                <div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="checklistInspectionCompleted" value="true" @(meta.ChecklistInspectionCompleted ? "checked" : string.Empty) /><label class="form-check-label">Inspeccion inicial</label></div></div>
+                                <div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="checklistSparePartsCompleted" value="true" @(meta.ChecklistSparePartsCompleted ? "checked" : string.Empty) /><label class="form-check-label">Repuestos validados</label></div></div>
+                                <div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="checklistFinalTestCompleted" value="true" @(meta.ChecklistFinalTestCompleted ? "checked" : string.Empty) /><label class="form-check-label">Prueba final</label></div></div>
+                                <div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="checklistUserConformityCompleted" value="true" @(meta.ChecklistUserConformityCompleted ? "checked" : string.Empty) /><label class="form-check-label">Conformidad usuario</label></div></div>
+                            </div>
+                        </div>
+                        @if (ViewData.ModelState.TryGetValue("ChecklistCompletion", out var checklistErrors))
+                        {
+                            foreach (var err in checklistErrors.Errors)
+                            {
+                                <span class="text-danger small d-block">@err.ErrorMessage</span>
+                            }
+                        }
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label fw-semibold">Notas</label>
+                        <textarea asp-for="Notes" class="form-control" rows="3">@userNotes</textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" name="submitAction" value="save" class="btn btn-success">
+                        <i class="bi bi-calendar2-check"></i> @(isEdit ? "Guardar cambios" : "Guardar cita")
+                    </button>
+                    <button type="submit" name="submitAction" value="save_pdf" class="btn btn-danger">
+                        <i class="bi bi-file-earmark-pdf"></i> Guardar y descargar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const templateSelect = document.getElementById("templatePreset");
+            const descriptionInput = document.getElementById("Description");
+            const durationInput = document.getElementById("estimatedDurationHours");
+            const typeSelect = document.getElementById("MaintenanceType");
+            const technicianCategorySelect = document.getElementById("TechnicianCategory");
+            const technicianSelect = document.getElementById("AssignedTechnician");
+            const templates = @Html.Raw(templatePresetsJson);
+            const maintenanceTechnicianCatalog = (() => {
+                try {
+                    return @Html.Raw(maintenanceTechnicianCatalogJson);
+                } catch {
+                    return [];
+                }
+            })();
+
+            function normalizeText(value) {
+                return (value || "").toString().trim().toUpperCase();
+            }
+
+            function categoryMatches(itemCategory, selectedCategory) {
+                if (!selectedCategory) return true;
+
+                const normalized = normalizeText(itemCategory);
+                if (!normalized) return false;
+                if (normalized === selectedCategory) return true;
+
+                // Soporte para categorias guardadas como lista (ej: "MECANICO, ELECTRICO").
+                const parts = normalized
+                    .split(/[;,|/]/)
+                    .map(part => part.trim())
+                    .filter(Boolean);
+                return parts.includes(selectedCategory);
+            }
+
+            function syncTechnicianOptions() {
+                if (!technicianSelect) return;
+
+                const previousValue = technicianSelect.value || "";
+                const selectedCategory = normalizeText(technicianCategorySelect?.value);
+                technicianSelect.innerHTML = "<option value=\"\">Seleccionar tecnico</option>";
+
+                maintenanceTechnicianCatalog
+                    .filter(item => item && item.isActive)
+                    .filter(item => categoryMatches(item.category, selectedCategory))
+                    .sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || "")))
+                    .forEach(item => {
+                        const load = `${Number(item.currentActiveOrders || 0)}/${Number(item.maxActiveOrders || 1)}`;
+                        const shift = item.shift ? ` - ${item.shift}` : "";
+                        const flags = [
+                            item.isAvailable ? "" : " - No disponible",
+                            item.isOverCapacity ? " - Capacidad completa" : ""
+                        ].join("");
+                        const option = document.createElement("option");
+                        option.value = item.fullName || "";
+                        option.textContent = `${item.fullName || ""} (${load})${shift}${flags}`;
+                        technicianSelect.appendChild(option);
+                    });
+
+                const hasPrevious = [...technicianSelect.options].some(opt => opt.value === previousValue);
+                if (hasPrevious) {
+                    technicianSelect.value = previousValue;
+                } else if (previousValue) {
+                    const option = document.createElement("option");
+                    option.value = previousValue;
+                    option.textContent = `${previousValue} (No disponible)`;
+                    technicianSelect.appendChild(option);
+                    technicianSelect.value = previousValue;
+                }
+            }
+
+            if (templateSelect && templates) {
+                templateSelect.addEventListener("change", function () {
+                    const selected = templates[templateSelect.value];
+                    if (!selected) return;
+
+                    if (descriptionInput && !descriptionInput.value.trim()) {
+                        descriptionInput.value = selected.description || "";
+                    }
+
+                    if (durationInput && (!durationInput.value || Number(durationInput.value) <= 0)) {
+                        durationInput.value = String(selected.durationHours || 2);
+                    }
+
+                    if (typeSelect && selected.maintenanceType) {
+                        const option = [...typeSelect.options].find(x => x.value.toLowerCase() === String(selected.maintenanceType).toLowerCase());
+                        if (option) {
+                            typeSelect.value = option.value;
+                        }
+                    }
+                });
+            }
+
+            if (technicianCategorySelect) {
+                technicianCategorySelect.addEventListener("change", syncTechnicianOptions);
+            }
+
+            syncTechnicianOptions();
+        });
+    </script>
+}
+

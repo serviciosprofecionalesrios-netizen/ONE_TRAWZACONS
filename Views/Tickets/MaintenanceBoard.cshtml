@@ -1,0 +1,413 @@
+@model ITServiceDeskApp.ViewModels.Tickets.MaintenanceBoardViewModel
+@using ITServiceDeskApp.Models
+@using System
+
+@{
+    Layout = null;
+    string StatusLabel(TicketStatus status) => status switch
+    {
+        TicketStatus.Open => "Abierto",
+        TicketStatus.InProgress => "En progreso",
+        TicketStatus.Resolved => "Resuelto",
+        TicketStatus.Closed => "Cerrado",
+        _ => status.ToString()
+    };
+
+    string FormatDuration(double hours)
+    {
+        var absolute = Math.Abs(hours);
+        var span = TimeSpan.FromHours(absolute);
+        var dayPart = span.TotalDays >= 1 ? $"{(int)span.TotalDays}d " : string.Empty;
+        var compact = $"{dayPart}{span.Hours}h {span.Minutes}m".Trim();
+        return hours < 0 ? $"-{compact}" : compact;
+    }
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pizarra Operativa - Mantenimiento</title>
+    <style>
+        :root {
+            --bg-1: #071a2d;
+            --bg-2: #0f2b4a;
+            --ink: #e9f2ff;
+            --muted: #9cb3d1;
+            --line: rgba(255,255,255,.18);
+            --ok: #1fb76c;
+            --warn: #ffb423;
+            --bad: #ff4d5a;
+            --info: #44b3ff;
+            --card: rgba(15,34,58,.78);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; margin: 0; }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at 8% 12%, #153a63 0%, var(--bg-1) 48%, #030f1d 100%);
+        }
+
+        .board-shell {
+            width: 100%;
+            min-height: 100%;
+            padding: 18px 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title {
+            font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+            font-weight: 800;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: .95rem;
+            margin-top: 2px;
+        }
+
+        .clock-box {
+            text-align: right;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--card);
+        }
+
+        .clock {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: .03em;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(120px, 1fr)) auto auto auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filters select, .filters button, .filters a {
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            color: var(--ink);
+            font-size: .95rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+        }
+
+        .filters option {
+            color: #0e2239;
+        }
+
+        .filters button, .filters a {
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(160px, 1fr));
+            gap: 8px;
+        }
+
+        .kpi {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--card);
+            padding: 10px 12px;
+        }
+
+        .kpi-label {
+            color: var(--muted);
+            font-size: .84rem;
+        }
+
+        .kpi-value {
+            font-size: 1.95rem;
+            line-height: 1;
+            font-weight: 800;
+            margin-top: 4px;
+        }
+
+        .table-panel {
+            flex: 1;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden;
+            background: rgba(5, 16, 30, .66);
+            min-height: 0;
+        }
+
+        .table-scroll {
+            height: 100%;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 1320px;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #0b2038;
+            color: #d9e8ff;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-size: .78rem;
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: 9px 8px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            white-space: nowrap;
+            font-size: .94rem;
+        }
+
+        tbody tr:hover { background: rgba(255,255,255,.05); }
+
+        .pill {
+            display: inline-flex;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-weight: 800;
+            font-size: .8rem;
+        }
+
+        .tone-success { background: rgba(31,183,108,.2); color: #8cffc1; }
+        .tone-warning { background: rgba(255,180,35,.2); color: #ffd178; }
+        .tone-danger { background: rgba(255,77,90,.2); color: #ff9aa1; }
+        .tone-info { background: rgba(68,179,255,.2); color: #9eddff; }
+        .tone-secondary { background: rgba(164,179,201,.2); color: #ced9ea; }
+
+        .ticket {
+            font-weight: 800;
+            color: #8ec8ff;
+            letter-spacing: .02em;
+        }
+
+        .timer {
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .danger-text { color: #ff9aa1; }
+        .warning-text { color: #ffd178; }
+        .ok-text { color: #8cffc1; }
+
+        .empty {
+            text-align: center;
+            padding: 42px 16px;
+            color: var(--muted);
+            font-size: 1.15rem;
+        }
+
+        .foot {
+            color: var(--muted);
+            font-size: .84rem;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <main class="board-shell">
+        <section class="topbar">
+            <div>
+                <div class="title">Pizarra Operativa - Taller</div>
+                <div class="subtitle">Visualizacion dedicada para monitoreo en TV de talleres</div>
+            </div>
+            <div class="clock-box">
+                <div id="clock" class="clock">--:--:--</div>
+                <div>Actualizado: @Model.GeneratedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
+            </div>
+        </section>
+
+        <form method="get" class="filters">
+            <select name="site">
+                <option value="">Todos los sitios</option>
+                @foreach (var opt in Model.SiteOptions)
+                {
+                    if (string.Equals(Model.SelectedSite, opt, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <option value="@opt" selected>@opt</option>
+                    }
+                    else
+                    {
+                        <option value="@opt">@opt</option>
+                    }
+                }
+            </select>
+            <select name="technician">
+                <option value="">Todos los tecnicos</option>
+                @foreach (var opt in Model.TechnicianOptions)
+                {
+                    if (string.Equals(Model.SelectedTechnician, opt, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <option value="@opt" selected>@opt</option>
+                    }
+                    else
+                    {
+                        <option value="@opt">@opt</option>
+                    }
+                }
+            </select>
+            <select name="stage">
+                <option value="">Todas las etapas</option>
+                @foreach (var opt in Model.StageOptions)
+                {
+                    if (string.Equals(Model.SelectedStage, opt, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <option value="@opt" selected>@opt</option>
+                    }
+                    else
+                    {
+                        <option value="@opt">@opt</option>
+                    }
+                }
+            </select>
+            <button type="submit">Aplicar</button>
+            <a href="@Url.Action("MaintenanceBoard", "Tickets")">Limpiar</a>
+            <button type="button" id="fullscreenBtn">Pantalla completa</button>
+        </form>
+
+        <section class="kpis">
+            <article class="kpi">
+                <div class="kpi-label">Ordenes activas</div>
+                <div class="kpi-value">@Model.ActiveOrders</div>
+            </article>
+            <article class="kpi">
+                <div class="kpi-label">Vencidas</div>
+                <div class="kpi-value danger-text">@Model.OverdueOrders</div>
+            </article>
+            <article class="kpi">
+                <div class="kpi-label">Por vencer (<= 4h)</div>
+                <div class="kpi-value warning-text">@Model.NearDueOrders</div>
+            </article>
+            <article class="kpi">
+                <div class="kpi-label">Sin tecnico</div>
+                <div class="kpi-value">@Model.UnassignedOrders</div>
+            </article>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-scroll">
+                @if (!Model.Rows.Any())
+                {
+                    <div class="empty">No hay ordenes activas con los filtros actuales.</div>
+                }
+                else
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Semaforo</th>
+                                <th>Tecnico</th>
+                                <th>Orden</th>
+                                <th>Equipo</th>
+                                <th>Sitio</th>
+                                <th>Tipo</th>
+                                <th>Etapa</th>
+                                <th>Estado</th>
+                                <th>Desde</th>
+                                <th>Transcurrido</th>
+                                <th>Restante</th>
+                                <th>SLA limite</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Rows)
+                            {
+                                var startedLocal = row.StartedAtUtc.ToLocalTime();
+                                var slaLocal = row.SlaDeadlineUtc.ToLocalTime();
+                                var toneClass = row.SemaphoreTone switch
+                                {
+                                    "danger" => "tone-danger",
+                                    "warning" => "tone-warning",
+                                    "info" => "tone-info",
+                                    "secondary" => "tone-secondary",
+                                    _ => "tone-success"
+                                };
+                                var remainingClass = row.RemainingHoursToSla < 0
+                                    ? "danger-text"
+                                    : row.RemainingHoursToSla <= 4
+                                        ? "warning-text"
+                                        : "ok-text";
+                                <tr>
+                                    <td><span class="pill @toneClass">@row.SemaphoreLabel</span></td>
+                                    <td>@row.Technician</td>
+                                    <td class="ticket">@row.TicketNumber</td>
+                                    <td>@row.UnitCode</td>
+                                    <td>@row.Site</td>
+                                    <td>@row.IncidentType</td>
+                                    <td>@row.MaintenanceStage</td>
+                                    <td>@StatusLabel(row.Status)</td>
+                                    <td>@startedLocal.ToString("dd/MM HH:mm")</td>
+                                    <td class="timer">@FormatDuration(row.ElapsedHours)</td>
+                                    <td class="timer @remainingClass">@FormatDuration(row.RemainingHoursToSla)</td>
+                                    <td>@slaLocal.ToString("dd/MM HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </section>
+
+        <div class="foot">Refresco automatico cada 60 segundos.</div>
+    </main>
+
+    <script>
+        (function () {
+            function updateClock() {
+                var now = new Date();
+                var clock = document.getElementById("clock");
+                if (!clock) return;
+                clock.textContent = now.toLocaleTimeString("es-NI", {
+                    hour12: false
+                });
+            }
+
+            updateClock();
+            window.setInterval(updateClock, 1000);
+            window.setTimeout(function () { window.location.reload(); }, 60000);
+
+            var fullscreenBtn = document.getElementById("fullscreenBtn");
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener("click", function () {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

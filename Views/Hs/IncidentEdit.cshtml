@@ -1,0 +1,50 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsIncidentEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Editar incidente H&S" : "Nuevo incidente H&S";
+    var sites = new SelectList(ViewBag.SiteOptions as string[] ?? Array.Empty<string>(), Model.Site);
+    var types = new SelectList(ViewBag.IncidentTypeOptions as string[] ?? Array.Empty<string>(), Model.IncidentType);
+    var severities = new SelectList(ViewBag.SeverityOptions as string[] ?? Array.Empty<string>(), Model.Severity);
+    var statuses = new SelectList(ViewBag.IncidentStatusOptions as string[] ?? Array.Empty<string>(), Model.Status);
+}
+
+<div class="container mt-4" style="max-width:980px;">
+    <h3>@ViewData["Title"]</h3>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="IncidentEdit" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-4"><label asp-for="OccurredAt" class="form-label fw-semibold"></label><input asp-for="OccurredAt" type="datetime-local" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Site" class="form-label fw-semibold"></label><select asp-for="Site" class="form-select" asp-items="sites"><option value="">Seleccionar</option></select></div>
+                <div class="col-md-4"><label asp-for="Area" class="form-label fw-semibold"></label><input asp-for="Area" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="ReportedBy" class="form-label fw-semibold"></label><input asp-for="ReportedBy" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="IncidentType" class="form-label fw-semibold"></label><select asp-for="IncidentType" class="form-select" asp-items="types"></select></div>
+                <div class="col-md-2"><label asp-for="Severity" class="form-label fw-semibold"></label><select asp-for="Severity" class="form-select" asp-items="severities"></select></div>
+                <div class="col-md-2"><label asp-for="Status" class="form-label fw-semibold"></label><select asp-for="Status" class="form-select" asp-items="statuses"></select></div>
+                <div class="col-12"><label asp-for="Description" class="form-label fw-semibold"></label><textarea asp-for="Description" class="form-control" rows="4"></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="ImmediateAction" class="form-label fw-semibold"></label><textarea asp-for="ImmediateAction" class="form-control" rows="3"></textarea></div>
+                <div class="col-md-6"><label asp-for="RootCause" class="form-label fw-semibold"></label><textarea asp-for="RootCause" class="form-control" rows="3"></textarea></div>
+                <div class="col-md-6"><label asp-for="ImmediateCause" class="form-label fw-semibold"></label><textarea asp-for="ImmediateCause" class="form-control" rows="3"></textarea></div>
+                <div class="col-md-6"><label asp-for="FiveWhyAnalysis" class="form-label fw-semibold"></label><textarea asp-for="FiveWhyAnalysis" class="form-control" rows="3"></textarea></div>
+                <div class="col-md-4"><label asp-for="Witnesses" class="form-label fw-semibold"></label><input asp-for="Witnesses" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Investigator" class="form-label fw-semibold"></label><input asp-for="Investigator" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="InvestigationDueDate" class="form-label fw-semibold"></label><input asp-for="InvestigationDueDate" type="date" class="form-control" /></div>
+                <div class="col-md-3"><label asp-for="RiskProbability" class="form-label fw-semibold"></label><input asp-for="RiskProbability" type="number" min="1" max="5" class="form-control" /></div>
+                <div class="col-md-3"><label asp-for="RiskSeverity" class="form-label fw-semibold"></label><input asp-for="RiskSeverity" type="number" min="1" max="5" class="form-control" /></div>
+                <div class="col-md-3"><label asp-for="ResidualRiskProbability" class="form-label fw-semibold"></label><input asp-for="ResidualRiskProbability" type="number" min="1" max="5" class="form-control" /></div>
+                <div class="col-md-3"><label asp-for="ResidualRiskSeverity" class="form-label fw-semibold"></label><input asp-for="ResidualRiskSeverity" type="number" min="1" max="5" class="form-control" /></div>
+                <div class="col-md-6"><label asp-for="CurrentControls" class="form-label fw-semibold"></label><textarea asp-for="CurrentControls" class="form-control" rows="3"></textarea></div>
+                <div class="col-md-6"><label asp-for="RecommendedControls" class="form-label fw-semibold"></label><textarea asp-for="RecommendedControls" class="form-control" rows="3"></textarea></div>
+                <div class="col-md-3"><div class="form-check mt-4"><input asp-for="LostTime" class="form-check-input" /><label asp-for="LostTime" class="form-check-label"></label></div></div>
+                <div class="col-md-3"><label asp-for="LostDays" class="form-label fw-semibold"></label><input asp-for="LostDays" type="number" min="0" class="form-control" /></div>
+                <div class="col-md-6"><label asp-for="EvidenceFile" class="form-label fw-semibold"></label><input asp-for="EvidenceFile" type="file" class="form-control" /></div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Incidents" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button></div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

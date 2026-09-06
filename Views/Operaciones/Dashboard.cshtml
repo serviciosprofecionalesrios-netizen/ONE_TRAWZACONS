@@ -1,0 +1,1588 @@
+﻿@model ITServiceDeskApp.ViewModels.Operaciones.OperacionesDashboardViewModel
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Dashboard Operaciones";
+    var topConductoresJson = JsonSerializer.Serialize(
+        Model.TopConductores.Select(x => new { nombre = x.Nombre, toneladas = x.Toneladas }));
+    var topEquiposJson = JsonSerializer.Serialize(
+        Model.TopEquipos.Select(x => new { nombre = x.Nombre, toneladas = x.Toneladas }));
+    var procedenciaJson = JsonSerializer.Serialize(
+        Model.DistribucionProcedencia.Select(x => new { categoria = x.Categoria, toneladas = x.Toneladas }));
+    var tendenciaJson = JsonSerializer.Serialize(
+        Model.TendenciaDiaria.Select(x => new { fecha = x.Fecha.ToString("dd/MM"), toneladas = x.Toneladas }));
+    var comparativoToneladasSitioJson = JsonSerializer.Serialize(
+        Model.ComparativoToneladasSitio.Select(x => new { mes = x.Mes, triton = x.Triton }));
+    var comparativoDieselSitioJson = JsonSerializer.Serialize(
+        Model.ComparativoDieselSitio.Select(x => new { mes = x.Mes, triton = x.Triton }));
+    var proyeccionPct = Model.MetaDiaria > 0
+        ? Math.Round((Model.PrediccionToneladasManana / Model.MetaDiaria) * 100m, 1)
+        : 0m;
+    var proyeccionMensualPct = Model.MetaMensualToneladas > 0
+        ? Math.Round((Model.ProyeccionCierreMensualToneladas / Model.MetaMensualToneladas) * 100m, 1)
+        : 0m;
+}
+
+<style>
+    .ops-dash-shell {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .layout-row {
+        width: 100%;
+    }
+
+    .row-main {
+        order: 1;
+    }
+
+    .row-comparativos {
+        order: 2;
+    }
+
+    .row-bars {
+        order: 3;
+    }
+
+    .row-tables {
+        order: 4;
+    }
+
+    .row-main .col-lg-6:first-child .ops-card {
+        height: auto;
+    }
+
+    .dash-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .dash-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-width: 240px;
+        padding-top: 0.15rem;
+    }
+
+    .ops-kpi {
+        border: 1px solid #9bbdea;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%);
+        box-shadow: none;
+        height: 100%;
+    }
+
+    .ops-kpi.p-3 {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        gap: 0.2rem;
+    }
+
+    .ops-kpi .label {
+        color: #5f6f85;
+        font-size: 0.84rem;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ops-kpi .value {
+        font-size: clamp(1.95rem, 2.2vw, 2.35rem);
+        font-weight: 800;
+        color: #1f2937;
+        line-height: 1.1;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ops-kpi .sub {
+        color: #6b7280;
+        font-size: 0.88rem;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ops-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: none;
+        height: 100%;
+    }
+
+    .ops-card__header {
+        border-bottom: 1px solid #edf1f6;
+        padding: 0.75rem 0.95rem;
+        font-weight: 700;
+        color: #1d2d44;
+    }
+
+    .ops-card__body {
+        padding: 0.9rem 0.95rem;
+    }
+
+    .ops-card canvas {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .rank-table td, .rank-table th {
+        vertical-align: middle;
+        font-size: 0.92rem;
+    }
+
+    .rank-table th {
+        color: #52627a;
+        font-weight: 700;
+    }
+
+    .rank-table tr.rank-top10 td {
+        background: #eaf3ff;
+    }
+
+    .rank-table tr.rank-top10 td:first-child {
+        border-left: 4px solid #1d4ed8;
+        padding-left: 0.55rem;
+    }
+
+    .rank-num {
+        font-weight: 800;
+        color: #11439A;
+        width: 42px;
+    }
+
+    .predict-wrap {
+        border: 1px solid #e4eaf3;
+        border-radius: 12px;
+        padding: 0.8rem;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .predict-meter {
+        height: 12px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+        margin-top: 0.45rem;
+    }
+
+    .predict-meter__value {
+        height: 100%;
+        background: linear-gradient(90deg, #22c55e 0%, #0ea5e9 100%);
+    }
+
+    .predict-legend-custom {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        margin-bottom: 0.35rem;
+        font-size: 0.95rem;
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .predict-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .predict-legend-box {
+        width: 34px;
+        height: 12px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .predict-legend-box--ton {
+        background: #c8a24a;
+    }
+
+    .predict-legend-box--meta {
+        border: 3px dashed #11439A;
+        background: transparent;
+        height: 10px;
+    }
+
+    .ops-state-badge {
+        border-radius: 999px;
+        padding: 0.2rem 0.6rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+    }
+
+    .ops-state-badge.success {
+        color: #166534;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .ops-state-badge.warning {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .ops-state-badge.danger {
+        color: #0B2F75;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .ops-state-badge.secondary {
+        color: #334155;
+        background: #e2e8f0;
+        border-color: #cbd5e1;
+    }
+
+    .ops-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+    }
+
+    .ops-quick-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.55rem 0.65rem;
+        background: #f8fafc;
+    }
+
+    .ops-quick-item .label {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+        margin-bottom: 0.2rem;
+    }
+
+    .ops-quick-item .value {
+        font-size: 1.08rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .ops-alert-list {
+        margin: 0;
+        padding-left: 1rem;
+        color: #334155;
+        font-size: 0.91rem;
+    }
+
+    .ops-alert-list li + li {
+        margin-top: 0.45rem;
+    }
+
+    .ops-desv-status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.1rem 0.5rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        line-height: 1.25;
+        border: 1px solid transparent;
+    }
+
+    .ops-desv-status.ok {
+        color: #166534;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .ops-desv-status.vigilar {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .ops-desv-status.critico {
+        color: #0B2F75;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .ops-turno-row + .ops-turno-row {
+        margin-top: 0.75rem;
+    }
+
+    .ops-turno-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .ops-turno-title {
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .ops-turno-meta {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+
+    .ops-turno-meter {
+        height: 9px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+        margin-top: 0.3rem;
+    }
+
+    .ops-turno-meter > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #0ea5e9 0%, #22c55e 100%);
+    }
+
+    .ops-proy-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        font-size: 0.92rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .ops-proy-label {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .ops-proy-value {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+</style>
+
+<div class="ops-dash-shell" id="dashboardCaptureRoot">
+    <div class="mb-3 dash-top">
+        <div>
+            <h2 class="fw-bold mb-1">Dashboard de Operaciones</h2>
+            <p class="text-muted mb-0">Analitica operativa con top 10, tendencia y prediccion en base al Excel de seguimiento.</p>
+        </div>
+        <div class="dash-actions no-export">
+            <button type="button"
+                    class="btn btn-outline-primary px-4"
+                    id="btnExportDashboardPdf">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF
+            </button>
+        </div>
+    </div>
+
+    @if (Model.IsFromUpload)
+    {
+        <div class="alert alert-success mb-3" role="alert">
+            Datos cargados desde: <strong>@Model.SourceFileName</strong>
+            @if (Model.LastUpdatedAt.HasValue)
+            {
+                <span class="ms-2 text-muted">Actualizado: @Model.LastUpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning mb-3" role="alert">
+            Aun no hay carga real de Excel. El dashboard muestra datos de referencia.
+        </div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="ops-kpi p-3">
+                <div class="label">Tn/H de Hoy</div>
+                <div class="value">@Model.ToneladasDescargadasDia.ToString("N1", CultureInfo.CurrentCulture)</div>
+                <div class="sub">Cumplimiento: @Model.CumplimientoPlanPorcentaje%</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="ops-kpi p-3">
+                <div class="label">Descargadas dia TRITON</div>
+                <div class="value">@Model.ToneladasDescargadasDiaTriton.ToString("N1", CultureInfo.CurrentCulture)</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="ops-kpi p-3">
+                <div class="label">Toneladas en ruta</div>
+                <div class="value">@Model.ToneladasEnRutaActual.ToString("N1", CultureInfo.CurrentCulture)</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="ops-kpi p-3">
+                <div class="label">Toneladas mes</div>
+                <div class="value">@Model.ToneladasMovilizadas.ToString("N1", CultureInfo.CurrentCulture)</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="ops-kpi p-3">
+                <div class="label">Diesel mes</div>
+                <div class="value">@Model.DieselConsumidoGalones.ToString("N0", CultureInfo.CurrentCulture)</div>
+                <div class="sub">@Model.DieselConsumidoLitros.ToString("N0", CultureInfo.CurrentCulture) L</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="ops-kpi p-3">
+                <div class="label">Predicción mañana</div>
+                <div class="value">@Model.PrediccionToneladasManana.ToString("N1", CultureInfo.CurrentCulture)</div>
+                <div class="sub">@Model.CumplimientoEstimadoMananaPorcentaje% de meta @Model.MetaDiaria.ToString("N0", CultureInfo.CurrentCulture)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-xl-4">
+            <div class="ops-card h-100">
+                <div class="ops-card__header d-flex justify-content-between align-items-center">
+                    <span>Estado Operativo del Dia</span>
+                    <span class="ops-state-badge @Model.EstadoOperativoClase">@Model.EstadoOperativoLabel</span>
+                </div>
+                <div class="ops-card__body">
+                    <div class="ops-quick-grid">
+                        <div class="ops-quick-item">
+                            <div class="label">Equipos finalizados</div>
+                            <div class="value">@Model.EquiposFinalizadosDia</div>
+                        </div>
+                        <div class="ops-quick-item">
+                            <div class="label">Equipos en ruta</div>
+                            <div class="value">@Model.EquiposEnRutaDia</div>
+                        </div>
+                        <div class="ops-quick-item">
+                            <div class="label">Brecha meta hoy</div>
+                            <div class="value">@(Model.BrechaMetaToneladas > 0 ? $"{Model.BrechaMetaToneladas.ToString("N1", CultureInfo.CurrentCulture)} Tn" : "Meta cubierta")</div>
+                        </div>
+                        <div class="ops-quick-item">
+                            <div class="label">Despachos del dia</div>
+                            <div class="value">@Model.DespachosDelDia</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="ops-card h-100">
+                <div class="ops-card__header">Eficiencia de Consumo (Mes)</div>
+                <div class="ops-card__body">
+                    <div class="ops-quick-grid">
+                        <div class="ops-quick-item">
+                            <div class="label">Rendimiento T/GAL</div>
+                            <div class="value">@Model.RendimientoToneladasPorGalonMes.ToString("N3", CultureInfo.CurrentCulture)</div>
+                        </div>
+                        <div class="ops-quick-item">
+                            <div class="label">Intensidad L/T</div>
+                            <div class="value">@Model.LitrosPorToneladaMes.ToString("N3", CultureInfo.CurrentCulture)</div>
+                        </div>
+                        <div class="ops-quick-item">
+                            <div class="label">Toneladas mes</div>
+                            <div class="value">@Model.ToneladasMovilizadas.ToString("N1", CultureInfo.CurrentCulture)</div>
+                        </div>
+                        <div class="ops-quick-item">
+                            <div class="label">Diesel mes (gal)</div>
+                            <div class="value">@Model.DieselConsumidoGalones.ToString("N0", CultureInfo.CurrentCulture)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="ops-card h-100">
+                <div class="ops-card__header">Alertas Operativas</div>
+                <div class="ops-card__body">
+                    <ul class="ops-alert-list">
+                        @foreach (var alerta in Model.AlertasOperativas)
+                        {
+                            <li>@alerta</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-xl-6">
+            <div class="ops-card h-100">
+                <div class="ops-card__header">Cumplimiento por turno (hoy)</div>
+                <div class="ops-card__body">
+                    @if (Model.CumplimientoPorTurno.Any())
+                    {
+                        @foreach (var turno in Model.CumplimientoPorTurno)
+                        {
+                            <div class="ops-turno-row">
+                                <div class="ops-turno-head">
+                                    <span class="ops-turno-title">@turno.Turno</span>
+                                    <span class="ops-turno-meta">@turno.Toneladas.ToString("N1", CultureInfo.CurrentCulture) / @turno.MetaTurno.ToString("N1", CultureInfo.CurrentCulture) Tn • @turno.Equipos equipos • @turno.CumplimientoPorcentaje%</span>
+                                </div>
+                                <div class="ops-turno-meter">
+                                    <span style="width:@Math.Clamp(turno.CumplimientoPorcentaje, 0, 100)%"></span>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted">Sin datos para calcular cumplimiento por turno.</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="ops-card h-100">
+                <div class="ops-card__header d-flex justify-content-between align-items-center">
+                    <span>Proyeccion de cierre mensual</span>
+                    <span class="ops-state-badge @Model.EstadoProyeccionMensualClase">@Model.EstadoProyeccionMensualLabel</span>
+                </div>
+                <div class="ops-card__body">
+                    <div class="ops-proy-line">
+                        <span class="ops-proy-label">Meta mensual</span>
+                        <span class="ops-proy-value">@Model.MetaMensualToneladas.ToString("N1", CultureInfo.CurrentCulture) Tn</span>
+                    </div>
+                    <div class="ops-proy-line">
+                        <span class="ops-proy-label">Proyeccion cierre</span>
+                        <span class="ops-proy-value">@Model.ProyeccionCierreMensualToneladas.ToString("N1", CultureInfo.CurrentCulture) Tn</span>
+                    </div>
+                    <div class="ops-proy-line">
+                        <span class="ops-proy-label">Brecha proyectada</span>
+                        <span class="ops-proy-value @(Model.BrechaProyectadaMensualToneladas > 0 ? "text-danger" : "text-success")">
+                            @(Model.BrechaProyectadaMensualToneladas > 0
+                                ? $"{Model.BrechaProyectadaMensualToneladas.ToString("N1", CultureInfo.CurrentCulture)} Tn faltantes"
+                                : "Meta cubierta")
+                        </span>
+                    </div>
+                    <div class="predict-meter mt-2">
+                        <div class="predict-meter__value" style="width:@Math.Clamp(proyeccionMensualPct, 0, 100)%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted">Cumplimiento proyectado: @Model.CumplimientoProyectadoMensualPorcentaje%</small>
+                        <small class="text-muted">Ritmo al @Model.FechaCorteOperativo.ToString("dd/MM")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="ops-card">
+                <div class="ops-card__header">Brechas de rendimiento por equipo (T/GAL vs promedio mensual)</div>
+                <div class="ops-card__body table-responsive">
+                    <table class="table table-sm rank-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Equipo</th>
+                                <th class="text-end">Toneladas</th>
+                                <th class="text-end">Galones</th>
+                                <th class="text-end">T/GAL</th>
+                                <th class="text-end">Var. vs prom.</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.DesviacionesRendimiento.Any())
+                            {
+                                @foreach (var item in Model.DesviacionesRendimiento)
+                                {
+                                    var statusClass = item.Estado == "CRITICO"
+                                        ? "critico"
+                                        : item.Estado == "VIGILAR"
+                                            ? "vigilar"
+                                            : "ok";
+                                    <tr>
+                                        <td>@item.Nombre</td>
+                                        <td class="text-end fw-semibold">@item.Toneladas.ToString("N1", CultureInfo.CurrentCulture)</td>
+                                        <td class="text-end fw-semibold">@item.Galones.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                        <td class="text-end fw-semibold">@item.ToneladasPorGalon.ToString("N3", CultureInfo.CurrentCulture)</td>
+                                        <td class="text-end fw-semibold @(item.VariacionVsPromedioPorcentaje < 0 ? "text-danger" : "text-success")">
+                                            @item.VariacionVsPromedioPorcentaje.ToString("N1", CultureInfo.CurrentCulture)%
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="ops-desv-status @statusClass">@item.Estado</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Sin registros suficientes para calcular desviaciones de rendimiento.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3 layout-row row-tables pdf-keep-together">
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Conductores por Toneladas (Mes) - Top 10 resaltado</div>
+                <div class="ops-card__body table-responsive">
+                    <table class="table table-sm rank-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">#</th>
+                                <th>Conductor</th>
+                                <th class="text-end">Toneladas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ConductoresMes.Any())
+                            {
+                                @for (var i = 0; i < Model.ConductoresMes.Count; i++)
+                                {
+                                    var isTop10 = i < 10;
+                                    <tr class="@(isTop10 ? "rank-top10" : string.Empty)">
+                                        <td class="rank-num">@(i + 1)</td>
+                                        <td>@Model.ConductoresMes[i].Nombre</td>
+                                        <td class="text-end fw-semibold">@Model.ConductoresMes[i].Toneladas.ToString("N1", CultureInfo.CurrentCulture)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="3" class="text-center text-muted">Sin datos de conductores del mes.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Equipos por Toneladas (Mes) - Top 10 resaltado</div>
+                <div class="ops-card__body table-responsive">
+                    <table class="table table-sm rank-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">#</th>
+                                <th>Equipo</th>
+                                <th class="text-end">Toneladas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.EquiposMes.Any())
+                            {
+                                @for (var i = 0; i < Model.EquiposMes.Count; i++)
+                                {
+                                    var isTop10 = i < 10;
+                                    <tr class="@(isTop10 ? "rank-top10" : string.Empty)">
+                                        <td class="rank-num">@(i + 1)</td>
+                                        <td>@Model.EquiposMes[i].Nombre</td>
+                                        <td class="text-end fw-semibold">@Model.EquiposMes[i].Toneladas.ToString("N1", CultureInfo.CurrentCulture)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="3" class="text-center text-muted">Sin datos de equipos del mes.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3 layout-row row-bars">
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Barras - Top Conductores</div>
+                <div class="ops-card__body">
+                    <canvas id="chartConductores" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Barras - Top Equipos</div>
+                <div class="ops-card__body">
+                    <canvas id="chartEquipos" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3 layout-row row-comparativos">
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Comparativo Toneladas (Enero, Febrero, Marzo) - TRITON</div>
+                <div class="ops-card__body">
+                    <canvas id="chartComparativoToneladasSitio" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Comparativo Diesel Despachado (Gal) - TRITON</div>
+                <div class="ops-card__body">
+                    <canvas id="chartComparativoDieselSitio" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-3 layout-row row-comparativos">
+        <div class="col-12">
+            <div class="ops-card">
+                <div class="ops-card__header">Prediccion mensual de toneladas (Mes siguiente)</div>
+                <div class="ops-card__body">
+                    <canvas id="chartPrediccionMesSiguiente" height="170"></canvas>
+                    <div id="prediccionMesSiguienteNota" class="small text-muted mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3 layout-row row-main">
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Linea de Tendencia Diaria (Toneladas Finalizadas)</div>
+                <div class="ops-card__body">
+                    <canvas id="chartTendencia" height="120"></canvas>
+                </div>
+            </div>
+            <div class="ops-card mt-3">
+                <div class="ops-card__header">Pastel - Procedencia</div>
+                <div class="ops-card__body">
+                    <canvas id="chartProcedencia" height="210"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ops-card">
+                <div class="ops-card__header">Gráfico Predictivo para Mañana</div>
+                <div class="ops-card__body">
+                    <div class="predict-wrap mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Toneladas previstas</span>
+                            <strong>@Model.PrediccionToneladasManana.ToString("N1", CultureInfo.CurrentCulture)</strong>
+                        </div>
+                        <div class="predict-meter">
+                            <div class="predict-meter__value" style="width:@Math.Clamp(proyeccionPct, 0, 100)%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">@proyeccionPct.ToString("N1", CultureInfo.CurrentCulture)% de meta</small>
+                            <small class="text-muted">Meta: @Model.MetaDiaria.ToString("N0", CultureInfo.CurrentCulture)</small>
+                        </div>
+                    </div>
+                    <div class="predict-legend-custom">
+                        <span class="predict-legend-item">
+                            <span class="predict-legend-box predict-legend-box--ton"></span>
+                            <span>Toneladas</span>
+                        </span>
+                        <span class="predict-legend-item">
+                            <span class="predict-legend-box predict-legend-box--meta"></span>
+                            <span>Meta diaria</span>
+                        </span>
+                    </div>
+                    <canvas id="chartPredictivo" height="150"></canvas>
+                    <div class="small text-muted mt-2">
+                        Proyección basada en toneladas en ruta actuales.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+    Chart.defaults.animation = false;
+    Chart.defaults.animations = false;
+    Chart.defaults.transitions.active.animation = false;
+    Chart.defaults.transitions.resize.animation = false;
+    Chart.defaults.transitions.show = { animations: false };
+    Chart.defaults.transitions.hide = { animations: false };
+    Chart.defaults.responsive = false;
+
+    const topConductores = @Html.Raw(topConductoresJson);
+    const topEquipos = @Html.Raw(topEquiposJson);
+    const procedencia = @Html.Raw(procedenciaJson);
+    const tendencia = @Html.Raw(tendenciaJson);
+    const comparativoToneladasSitio = @Html.Raw(comparativoToneladasSitioJson);
+    const comparativoDieselSitio = @Html.Raw(comparativoDieselSitioJson);
+    const prediccionManana = @Model.PrediccionToneladasManana.ToString(CultureInfo.InvariantCulture);
+    const toneladasDescargadasDia = @Model.ToneladasDescargadasDia.ToString(CultureInfo.InvariantCulture);
+    const metaDiaria = @Model.MetaDiaria.ToString(CultureInfo.InvariantCulture);
+    const paletteOps = {
+        rojo: '#11439A',
+        azul: '#1d4ed8',
+        oro: '#c8a24a',
+        verde: '#0f766e',
+        gris: '#64748b'
+    };
+
+    const commonTooltip = {
+        callbacks: {
+            label: (ctx) => `${ctx.dataset.label || ctx.label}: ${Number(ctx.raw).toLocaleString('es-NI', { maximumFractionDigits: 1 })} Tn`
+        }
+    };
+
+    const commonTooltipGal = {
+        callbacks: {
+            label: (ctx) => `${ctx.dataset.label || ctx.label}: ${Number(ctx.raw).toLocaleString('es-NI', { maximumFractionDigits: 2 })} gal`
+        }
+    };
+
+    const formatToneladas = (value, decimals = 1, withUnit = true) => {
+        const numberText = Number(value || 0).toLocaleString('es-NI', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        return withUnit ? `${numberText} Tn` : numberText;
+    };
+
+    const valueLabelsPlugin = {
+        id: 'valueLabels',
+        afterDatasetsDraw(chart, args, pluginOptions) {
+            if (!pluginOptions || pluginOptions.enabled === false) return;
+
+            const { ctx, chartArea } = chart;
+            const config = {
+                color: pluginOptions.color || '#1f2937',
+                font: pluginOptions.font || '700 11px Segoe UI',
+                stroke: pluginOptions.stroke || '#ffffff',
+                strokeWidth: pluginOptions.strokeWidth ?? 3,
+                decimals: pluginOptions.decimals ?? 1,
+                withUnit: pluginOptions.withUnit ?? true
+            };
+
+            const drawText = (text, x, y, align = 'center', baseline = 'middle') => {
+                ctx.save();
+                ctx.font = config.font;
+                ctx.textAlign = align;
+                ctx.textBaseline = baseline;
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = config.strokeWidth;
+                ctx.strokeStyle = config.stroke;
+                ctx.strokeText(text, x, y);
+                ctx.fillStyle = config.color;
+                ctx.fillText(text, x, y);
+                ctx.restore();
+            };
+
+            if (chart.config.type === 'pie' || chart.config.type === 'doughnut') {
+                const dataset = chart.data.datasets[0];
+                const meta = chart.getDatasetMeta(0);
+                if (!dataset || !meta || !meta.data?.length) return;
+
+                const values = dataset.data.map(v => Number(v || 0));
+                const total = values.reduce((acc, val) => acc + val, 0);
+
+                meta.data.forEach((arc, index) => {
+                    const value = values[index];
+                    if (!(value > 0)) return;
+                    const angle = (arc.startAngle + arc.endAngle) / 2;
+                    const radius = arc.innerRadius + (arc.outerRadius - arc.innerRadius) * 0.62;
+                    const x = arc.x + Math.cos(angle) * radius;
+                    const y = arc.y + Math.sin(angle) * radius;
+                    const pct = total > 0 ? ((value / total) * 100) : 0;
+                    drawText(`${formatToneladas(value, config.decimals, config.withUnit)} (${pct.toFixed(1)}%)`, x, y);
+                });
+
+                return;
+            }
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (!meta || meta.hidden || !meta.data?.length) return;
+                if (dataset.type === 'line' && pluginOptions.skipLine) return;
+
+                meta.data.forEach((element, index) => {
+                    const raw = dataset.data[index];
+                    const value = Number(raw || 0);
+                    if (!Number.isFinite(value)) return;
+
+                    const point = element.getProps(['x', 'y'], true);
+                    const label = formatToneladas(value, config.decimals, config.withUnit);
+
+                    if (meta.type === 'bar') {
+                        if (chart.options.indexAxis === 'y') {
+                            const x = Math.max(point.x - 8, chartArea.left + 36);
+                            drawText(label, x, point.y, 'right', 'middle');
+                        } else {
+                            const y = Math.max(point.y - 8, chartArea.top + 10);
+                            drawText(label, point.x, y, 'center', 'bottom');
+                        }
+                        return;
+                    }
+
+                    if (meta.type === 'line') {
+                        const y = Math.max(point.y - 10, chartArea.top + 10);
+                        drawText(label, point.x, y, 'center', 'bottom');
+                    }
+                });
+            });
+        }
+    };
+    Chart.register(valueLabelsPlugin);
+
+    const staticChartOptions = {
+        animation: false,
+        animations: false,
+        transitions: {
+            active: { animation: false },
+            resize: { animation: false },
+            show: { animations: false },
+            hide: { animations: false }
+        },
+        events: [],
+        responsive: false,
+        maintainAspectRatio: false
+    };
+
+    function lockCanvasSize(canvas) {
+        if (!canvas || !canvas.parentElement) return;
+        const desiredHeight = Number(canvas.getAttribute('height')) || 220;
+        const parentWidth = Math.max(canvas.parentElement.clientWidth - 8, 320);
+        canvas.width = parentWidth;
+        canvas.height = desiredHeight;
+    }
+
+    function createStaticChart(canvasId, config) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        lockCanvasSize(canvas);
+        const mergedOptions = {
+            ...staticChartOptions,
+            ...(config.options || {})
+        };
+        const chart = new Chart(canvas, { ...config, options: mergedOptions });
+        chart.update('none');
+        return chart;
+    }
+
+    createStaticChart('chartConductores', {
+        type: 'bar',
+        data: {
+            labels: topConductores.map(x => x.nombre),
+            datasets: [{
+                label: 'Toneladas',
+                data: topConductores.map(x => x.toneladas),
+                backgroundColor: paletteOps.rojo,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1
+                }
+            },
+            scales: { x: { beginAtZero: true } }
+        }
+    });
+
+    createStaticChart('chartEquipos', {
+        type: 'bar',
+        data: {
+            labels: topEquipos.map(x => x.nombre),
+            datasets: [{
+                label: 'Toneladas',
+                data: topEquipos.map(x => x.toneladas),
+                backgroundColor: paletteOps.oro,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1,
+                    withUnit: false
+                }
+            },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    createStaticChart('chartProcedencia', {
+        type: 'pie',
+        data: {
+            labels: procedencia.map(x => x.categoria),
+            datasets: [{
+                label: 'Toneladas',
+                data: procedencia.map(x => x.toneladas),
+                backgroundColor: [paletteOps.azul, paletteOps.oro, paletteOps.rojo, paletteOps.verde, paletteOps.gris]
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1,
+                    color: '#0f172a',
+                    font: '700 10px Segoe UI'
+                }
+            }
+        }
+    });
+
+    createStaticChart('chartComparativoToneladasSitio', {
+        type: 'bar',
+        data: {
+            labels: comparativoToneladasSitio.map(x => x.mes),
+            datasets: [
+                {
+                    label: 'TRITON',
+                    data: comparativoToneladasSitio.map(x => x.triton),
+                    backgroundColor: paletteOps.rojo,
+                    borderRadius: 8
+                },
+                {
+                    type: 'line',
+                    label: 'Nivel mensual TRITON',
+                    data: comparativoToneladasSitio.map(x => Number(x.triton || 0)),
+                    borderColor: '#1f2937',
+                    backgroundColor: '#1f2937',
+                    borderWidth: 2.5,
+                    tension: 0.25,
+                    fill: false,
+                    pointRadius: 3,
+                    pointHoverRadius: 3
+                }
+            ]
+        },
+        options: {
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1,
+                    skipLine: true
+                }
+            },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    createStaticChart('chartComparativoDieselSitio', {
+        type: 'bar',
+        data: {
+            labels: comparativoDieselSitio.map(x => x.mes),
+            datasets: [
+                {
+                    label: 'TRITON',
+                    data: comparativoDieselSitio.map(x => x.triton),
+                    backgroundColor: paletteOps.azul,
+                    borderRadius: 8
+                },
+                {
+                    type: 'line',
+                    label: 'Nivel mensual TRITON',
+                    data: comparativoDieselSitio.map(x => Number(x.triton || 0)),
+                    borderColor: '#1f2937',
+                    backgroundColor: '#1f2937',
+                    borderWidth: 2.5,
+                    tension: 0.25,
+                    fill: false,
+                    pointRadius: 3,
+                    pointHoverRadius: 3
+                }
+            ]
+        },
+        options: {
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: commonTooltipGal,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 2,
+                    withUnit: false,
+                    skipLine: true
+                }
+            },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    function normalizeMonthText(monthText) {
+        return String(monthText || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+    }
+
+    function getNextMonthLabel(monthLabel) {
+        const orderedMonths = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const current = normalizeMonthText(monthLabel);
+        const index = orderedMonths.indexOf(current);
+        if (index < 0) {
+            return 'Mes siguiente';
+        }
+
+        const nextIndex = (index + 1) % orderedMonths.length;
+        const nextMonth = orderedMonths[nextIndex];
+        return nextMonth.charAt(0).toUpperCase() + nextMonth.slice(1);
+    }
+
+    function forecastNextByLinearRegression(values) {
+        const cleanValues = (values || []).map(x => Number(x || 0));
+        const n = cleanValues.length;
+        if (n === 0) return 0;
+        if (n === 1) return Math.max(0, cleanValues[0]);
+
+        let sumX = 0;
+        let sumY = 0;
+        let sumXY = 0;
+        let sumXX = 0;
+
+        for (let i = 0; i < n; i++) {
+            const x = i + 1;
+            const y = cleanValues[i];
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumXX += x * x;
+        }
+
+        const denominator = (n * sumXX) - (sumX * sumX);
+        if (denominator === 0) {
+            return Math.max(0, cleanValues[n - 1]);
+        }
+
+        const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+        const intercept = (sumY - (slope * sumX)) / n;
+        const prediction = intercept + (slope * (n + 1));
+        return Math.max(0, prediction);
+    }
+
+    const historicoMeses = comparativoToneladasSitio.map(x => x.mes);
+    const historicoTotales = comparativoToneladasSitio.map(x => Number(x.triton || 0));
+    const ultimoMes = historicoMeses.length ? historicoMeses[historicoMeses.length - 1] : '';
+    const mesSiguiente = getNextMonthLabel(ultimoMes);
+    const prediccionMesSiguiente = forecastNextByLinearRegression(historicoTotales);
+    const labelsPrediccionMensual = [...historicoMeses, `${mesSiguiente} (Proy.)`];
+    const dataLineaMensual = [...historicoTotales, prediccionMesSiguiente];
+    const dataHistoricoMensual = [...historicoTotales, null];
+    const dataProyeccionMensual = new Array(historicoTotales.length).fill(null).concat(prediccionMesSiguiente);
+
+    createStaticChart('chartPrediccionMesSiguiente', {
+        type: 'bar',
+        data: {
+            labels: labelsPrediccionMensual,
+            datasets: [
+                {
+                    label: 'Historico mensual',
+                    data: dataHistoricoMensual,
+                    backgroundColor: paletteOps.oro,
+                    borderRadius: 8
+                },
+                {
+                    label: 'Proyeccion mes siguiente',
+                    data: dataProyeccionMensual,
+                    backgroundColor: paletteOps.verde,
+                    borderRadius: 8
+                },
+                {
+                    type: 'line',
+                    label: 'Tendencia y proyeccion',
+                    data: dataLineaMensual,
+                    borderColor: '#1f2937',
+                    backgroundColor: '#1f2937',
+                    borderWidth: 2.5,
+                    tension: 0.25,
+                    fill: false,
+                    pointRadius: 3,
+                    pointHoverRadius: 3
+                }
+            ]
+        },
+        options: {
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1,
+                    skipLine: true
+                }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    const prediccionNota = document.getElementById('prediccionMesSiguienteNota');
+    if (prediccionNota) {
+        prediccionNota.textContent = `Proyeccion estimada para ${mesSiguiente}: ${prediccionMesSiguiente.toLocaleString('es-NI', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} toneladas, calculada desde el historico mensual cargado.`;
+    }
+
+    createStaticChart('chartTendencia', {
+        type: 'line',
+        data: {
+            labels: tendencia.map(x => x.fecha),
+            datasets: [{
+                label: 'Toneladas finalizadas',
+                data: tendencia.map(x => x.toneladas),
+                borderColor: paletteOps.azul,
+                backgroundColor: 'rgba(29, 78, 216, 0.14)',
+                tension: 0.35,
+                fill: true,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            plugins: {
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1,
+                    font: '700 10px Segoe UI',
+                    withUnit: false
+                }
+            },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    createStaticChart('chartPredictivo', {
+        data: {
+            labels: ['Descargadas hoy', 'Predicción mañana'],
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Toneladas',
+                    data: [toneladasDescargadasDia, prediccionManana],
+                    backgroundColor: [paletteOps.oro, paletteOps.verde],
+                    borderRadius: 8
+                },
+                {
+                    type: 'line',
+                    label: 'Meta diaria',
+                    data: [metaDiaria, metaDiaria],
+                    borderColor: paletteOps.rojo,
+                    borderDash: [6, 5],
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: commonTooltip,
+                valueLabels: {
+                    enabled: true,
+                    decimals: 1,
+                    skipLine: true
+                }
+            },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    async function waitForDashboardReady() {
+        if (document.fonts && document.fonts.ready) {
+            try {
+                await document.fonts.ready;
+            } catch {
+                // Ignore font readiness errors.
+            }
+        }
+
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await new Promise(resolve => setTimeout(resolve, 120));
+    }
+
+    async function loadImageAsDataUrl(url) {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`No se pudo cargar imagen: ${url}`);
+        }
+
+        const blob = await response.blob();
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function resolveImageDimensions(dataUrl) {
+        return await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve({ width: img.naturalWidth || 0, height: img.naturalHeight || 0 });
+            img.onerror = reject;
+            img.src = dataUrl;
+        });
+    }
+
+    async function loadFirstAvailableLogo() {
+        const candidates = [
+            '@Url.Content("~/images/logo-trawzacons-corporativo.png")',
+            '@Url.Content("~/images/logo-trawzacons.png")'
+        ];
+
+        for (const url of candidates) {
+            try {
+                const dataUrl = await loadImageAsDataUrl(url);
+                if (!dataUrl) continue;
+                const size = await resolveImageDimensions(dataUrl).catch(() => ({ width: 0, height: 0 }));
+                return {
+                    dataUrl,
+                    width: Number(size.width || 0),
+                    height: Number(size.height || 0)
+                };
+            } catch {
+                // Sigue con el siguiente candidato.
+            }
+        }
+
+        return null;
+    }
+
+    function drawCorporateFrame(pdf, page, totalPages, generatedAt, logoAsset) {
+        const width = pdf.internal.pageSize.getWidth();
+        const height = pdf.internal.pageSize.getHeight();
+        let textStartX = 34;
+
+        if (logoAsset?.dataUrl) {
+            const maxW = 22;
+            const maxH = 12;
+            const srcW = Math.max(1, Number(logoAsset.width || 1));
+            const srcH = Math.max(1, Number(logoAsset.height || 1));
+            const ratio = srcW / srcH;
+
+            let drawW = maxW;
+            let drawH = drawW / ratio;
+            if (drawH > maxH) {
+                drawH = maxH;
+                drawW = drawH * ratio;
+            }
+
+            const x = 8;
+            const y = 5 + ((maxH - drawH) / 2);
+            pdf.addImage(logoAsset.dataUrl, 'PNG', x, y, drawW, drawH, undefined, 'SLOW');
+            textStartX = Math.max(34, x + drawW + 4);
+        }
+
+        pdf.setTextColor(201, 16, 16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text('TRAWZACONS', textStartX, 10);
+
+        pdf.setTextColor(33, 41, 55);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.text('Operaciones - Dashboard', textStartX, 14);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.text(`Generado: ${generatedAt}`, width - 8, 10, { align: 'right' });
+
+        pdf.setDrawColor(201, 16, 16);
+        pdf.setLineWidth(0.4);
+        pdf.line(8, 18, width - 8, 18);
+
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.2);
+        pdf.line(8, height - 8, width - 8, height - 8);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`Confidencial - TRAWZACONS | ${generatedAt}`, 8, height - 4.8);
+        pdf.text(`Pagina ${page} de ${totalPages}`, width - 8, height - 4.8, { align: 'right' });
+    }
+
+    function applyCorporateFormat(pdf, generatedAt, logoAsset) {
+        const total = pdf.getNumberOfPages();
+        for (let page = 1; page <= total; page++) {
+            pdf.setPage(page);
+            drawCorporateFrame(pdf, page, total, generatedAt, logoAsset);
+        }
+    }
+
+    function drawBlockCanvas(pdf, canvas, marginX, cursorY, usableWidth) {
+        const heightMm = (canvas.height * usableWidth) / canvas.width;
+        const imageData = canvas.toDataURL('image/png', 1.0);
+        pdf.addImage(imageData, 'PNG', marginX, cursorY, usableWidth, heightMm, undefined, 'FAST');
+        return heightMm;
+    }
+
+    async function exportDashboardAsPdf() {
+        const button = document.getElementById('btnExportDashboardPdf');
+        const captureRoot = document.getElementById('dashboardCaptureRoot');
+        if (!button || !captureRoot || !window.jspdf || !window.html2canvas) return;
+
+        const previousHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Generando...';
+
+        const hiddenNodes = Array
+            .from(captureRoot.querySelectorAll('.no-export'))
+            .filter(node => !node.contains(button));
+        const previousVisibility = hiddenNodes.map(node => node.style.visibility);
+        hiddenNodes.forEach(node => node.style.visibility = 'hidden');
+
+        try {
+            await waitForDashboardReady();
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const marginX = 8;
+            const contentTop = 21;
+            const contentBottom = 10;
+            const sectionGap = 3;
+            const usableWidth = pageWidth - (marginX * 2);
+            const usableHeight = pageHeight - contentTop - contentBottom;
+            const generatedAt = new Date().toLocaleString('es-NI', { hour12: false });
+            const logoAsset = await loadFirstAvailableLogo();
+
+            let cursorY = contentTop;
+            let page = 1;
+
+            const exportBlocks = Array
+                .from(captureRoot.children)
+                .filter(node => node instanceof HTMLElement)
+                .filter(node => !node.classList.contains('no-export'))
+                .filter(node => node.offsetWidth > 0 && node.offsetHeight > 0);
+            exportBlocks.sort((a, b) => {
+                const ar = a.getBoundingClientRect();
+                const br = b.getBoundingClientRect();
+                if (Math.abs(ar.top - br.top) > 1) {
+                    return ar.top - br.top;
+                }
+
+                return ar.left - br.left;
+            });
+
+            for (const block of exportBlocks) {
+                const blockCanvas = await html2canvas(block, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+
+                if (!blockCanvas.width || !blockCanvas.height) {
+                    continue;
+                }
+
+                const blockHeightMm = (blockCanvas.height * usableWidth) / blockCanvas.width;
+                const remainingMm = pageHeight - contentBottom - cursorY;
+
+                if (blockHeightMm <= remainingMm) {
+                    const consumed = drawBlockCanvas(pdf, blockCanvas, marginX, cursorY, usableWidth);
+                    cursorY += consumed + sectionGap;
+                    continue;
+                }
+
+                if (blockHeightMm <= usableHeight) {
+                    pdf.addPage();
+                    page++;
+                    cursorY = contentTop;
+                    const consumed = drawBlockCanvas(pdf, blockCanvas, marginX, cursorY, usableWidth);
+                    cursorY += consumed + sectionGap;
+                    continue;
+                }
+
+                // Bloque más alto que una página: se divide de forma controlada.
+                const pxPerMm = blockCanvas.width / usableWidth;
+                let offsetY = 0;
+                while (offsetY < blockCanvas.height) {
+                    let availableMm = pageHeight - contentBottom - cursorY;
+                    if (availableMm < 20) {
+                        pdf.addPage();
+                        page++;
+                        cursorY = contentTop;
+                        availableMm = pageHeight - contentBottom - cursorY;
+                    }
+
+                    const sliceHeightPx = Math.min(
+                        Math.floor(availableMm * pxPerMm),
+                        blockCanvas.height - offsetY);
+
+                    if (sliceHeightPx <= 0) {
+                        pdf.addPage();
+                        page++;
+                        cursorY = contentTop;
+                        continue;
+                    }
+
+                    const sliceCanvas = document.createElement('canvas');
+                    sliceCanvas.width = blockCanvas.width;
+                    sliceCanvas.height = sliceHeightPx;
+                    const sliceCtx = sliceCanvas.getContext('2d');
+                    if (!sliceCtx) {
+                        break;
+                    }
+
+                    sliceCtx.drawImage(
+                        blockCanvas,
+                        0, offsetY, blockCanvas.width, sliceHeightPx,
+                        0, 0, blockCanvas.width, sliceHeightPx
+                    );
+
+                    const consumed = drawBlockCanvas(pdf, sliceCanvas, marginX, cursorY, usableWidth);
+                    cursorY += consumed + sectionGap;
+                    offsetY += sliceHeightPx;
+
+                    if (offsetY < blockCanvas.height) {
+                        pdf.addPage();
+                        page++;
+                        cursorY = contentTop;
+                    }
+                }
+            }
+
+            applyCorporateFormat(pdf, generatedAt, logoAsset);
+
+            const stamp = new Date();
+            const fileName = `DashboardOperaciones_${stamp.getFullYear()}${String(stamp.getMonth() + 1).padStart(2, '0')}${String(stamp.getDate()).padStart(2, '0')}_${String(stamp.getHours()).padStart(2, '0')}${String(stamp.getMinutes()).padStart(2, '0')}.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error(error);
+            alert('No se pudo generar el PDF del dashboard. Intenta nuevamente.');
+        } finally {
+            hiddenNodes.forEach((node, index) => node.style.visibility = previousVisibility[index] ?? '');
+            button.disabled = false;
+            button.innerHTML = previousHtml;
+        }
+    }
+
+    document.getElementById('btnExportDashboardPdf')?.addEventListener('click', exportDashboardAsPdf);
+</script>
+}
+
+

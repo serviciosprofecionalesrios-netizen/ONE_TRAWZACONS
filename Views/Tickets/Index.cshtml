@@ -1,9 +1,25 @@
-﻿@model IEnumerable<ITServiceDeskApp.Models.Ticket>
+﻿@model ITServiceDeskApp.ViewModels.Tickets.TicketsIndexViewModel
 @using ITServiceDeskApp.Models
+@using System.Text.Json
 
 @{
-    ViewData["Title"] = "Gestión de Incidencias";
-    var tickets = Model ?? new List<Ticket>();
+    var isFinanceView = Model.IsFinanceView || string.Equals(Model.Department, "Finanzas", StringComparison.OrdinalIgnoreCase);
+    var isMineFinanceView = Model.IsMineFinanceView;
+    var pageTitle = Model.IsMaintenanceView
+        ? "Seguimiento de Ordenes de Mantenimiento"
+        : isFinanceView
+            ? (isMineFinanceView ? "Mis Solicitudes Financieras" : "Dashboard de Solicitudes Financieras")
+            : "Gestión de Incidencias";
+    var pageSubtitle = Model.IsMaintenanceView
+        ? "Control operativo de ordenes correctivas y preventivas"
+        : isFinanceView
+            ? (isMineFinanceView
+                ? "Vista personal de tus solicitudes del área de Finanzas"
+                : "Monitoreo de requerimientos y aprobaciones del área de Finanzas")
+            : "Administra y da seguimiento a todos los tickets del sistema";
+    ViewData["Title"] = pageTitle;
+    var tickets = Model.Tickets ?? Array.Empty<Ticket>();
+    var nowUtc = DateTime.UtcNow;
 
     var canCreateTicket =
         User.IsInRole(nameof(UserRole.Administrator)) ||
@@ -20,11 +36,143 @@
     var canDeleteTicket =
         User.IsInRole(nameof(UserRole.Administrator)) ||
         User.IsInRole(nameof(UserRole.CoordinadorIT));
+
+    var canFinanceWorkflow =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.GerenciaGeneral));
+
+    string QuickLabel(string? quick) => quick switch
+    {
+        "today" => "Hoy",
+        "overdue" => "Vencidos",
+        "overdue_unassigned" => "Vencidos sin tecnico",
+        "unassigned" => "Sin asignar",
+        "critical" => "Críticos",
+        "myload" => "Mi carga",
+        "finance_pending_approval" => "Aprobaciones pendientes",
+        "finance_close_ready" => "Listas para cierre",
+        "finance_rejected" => "Rechazadas",
+        "finance_returned" => "Devueltas para corrección",
+        "finance_escalated" => "Escaladas",
+        _ => "Todos"
+    };
+
+    string PriorityClass(PriorityLevel priority) => priority switch
+    {
+        PriorityLevel.Low => "bg-success",
+        PriorityLevel.Medium => "bg-warning text-dark",
+        PriorityLevel.High => "bg-danger",
+        PriorityLevel.Critical => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    string PriorityLabel(PriorityLevel priority) => priority switch
+    {
+        PriorityLevel.Low => "Baja",
+        PriorityLevel.Medium => "Media",
+        PriorityLevel.High => "Alta",
+        PriorityLevel.Critical => "Critica",
+        _ => priority.ToString()
+    };
+
+    string StatusClass(TicketStatus status) => status switch
+    {
+        TicketStatus.Open => "bg-primary",
+        TicketStatus.InProgress => "bg-info text-dark",
+        TicketStatus.Resolved => "bg-warning text-dark",
+        TicketStatus.Closed => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    string StatusLabel(TicketStatus status) => status switch
+    {
+        TicketStatus.Open => "Abierto",
+        TicketStatus.InProgress => "En progreso",
+        TicketStatus.Resolved => "Resuelto",
+        TicketStatus.Closed => "Cerrado",
+        _ => status.ToString()
+    };
+
+    string FormatDurationHours(double hours)
+    {
+        var absHours = Math.Abs(hours);
+        var span = TimeSpan.FromHours(absHours);
+        var dayPart = span.TotalDays >= 1 ? $"{(int)span.TotalDays}d " : string.Empty;
+        var hourPart = $"{span.Hours}h";
+        var minutePart = $"{span.Minutes}m";
+        var compact = $"{dayPart}{hourPart} {minutePart}".Trim();
+        return hours < 0 ? $"-{compact}" : compact;
+    }
+
+    string BuildUrl(
+        string? search,
+        TicketStatus? status,
+        PriorityLevel? priority,
+        string? quick,
+        int page,
+        int pageSize,
+        string? department = null,
+        string? site = null,
+        string? tenencia = null,
+        string? technician = null,
+        string? incidentType = null,
+        string? overdueBand = null,
+        string? maintenanceStage = null,
+        string? maintenanceView = null,
+        bool? mine = null) =>
+        Url.Action("Index", "Tickets", new
+        {
+            search,
+            status,
+            priority,
+            quick,
+            mine = mine ?? Model.IsMineFinanceView,
+            page,
+            pageSize,
+            department = department ?? Model.Department,
+            site = site ?? Model.SelectedSite,
+            tenencia = tenencia ?? Model.SelectedTenencia,
+            technician = technician ?? Model.SelectedAssignedTechnician,
+            incidentType = incidentType ?? Model.SelectedIncidentType,
+            maintenanceStage = maintenanceStage ?? Model.SelectedMaintenanceStage,
+            overdueBand = overdueBand ?? Model.SelectedOverdueBand,
+            maintenanceView = maintenanceView ?? Model.MaintenanceViewMode
+        }) ?? "#";
+
+    var hasActiveFilters =
+        !string.IsNullOrWhiteSpace(Model.Search) ||
+        Model.Status.HasValue ||
+        Model.Priority.HasValue ||
+        !string.IsNullOrWhiteSpace(Model.QuickFilter) ||
+        !string.IsNullOrWhiteSpace(Model.Department) ||
+        !string.IsNullOrWhiteSpace(Model.SelectedSite) ||
+        !string.IsNullOrWhiteSpace(Model.SelectedTenencia) ||
+        !string.IsNullOrWhiteSpace(Model.SelectedAssignedTechnician) ||
+        !string.IsNullOrWhiteSpace(Model.SelectedIncidentType) ||
+        !string.IsNullOrWhiteSpace(Model.SelectedMaintenanceStage) ||
+        !string.IsNullOrWhiteSpace(Model.SelectedOverdueBand);
+
+    var trendLabelsJson = JsonSerializer.Serialize(Model.TrendLabels);
+    var trendCreatedJson = JsonSerializer.Serialize(Model.TrendCreated);
+    var trendClosedJson = JsonSerializer.Serialize(Model.TrendClosed);
+    var maintenanceSiteOptions = Model.SiteOptions ?? Array.Empty<string>();
+    var maintenanceTenenciaOptions = Model.TenenciaOptions ?? Array.Empty<string>();
+    var maintenanceIncidentTypeOptions = Model.IncidentTypeOptions ?? Array.Empty<string>();
+    var maintenanceStageOptions = Model.MaintenanceStageOptions ?? Array.Empty<string>();
+    var maintenanceTechnicianOptions = Model.TechnicianOptions ?? Array.Empty<string>();
+    var maintenanceSiteCostRanking = Model.MaintenanceSiteCostRanking ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceSiteCostRankItem>();
+    var maintenanceReincidenceRanking = Model.MaintenanceReincidenceRanking ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceReincidenceItem>();
+    var maintenanceDetailRows = Model.MaintenanceDetailRows ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceOrderDetailItem>();
+    var maintenanceBoardRows = Model.MaintenanceBoardRows ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceAirportBoardItem>();
+    var maintenanceViewMode = string.IsNullOrWhiteSpace(Model.MaintenanceViewMode) ? "overview" : Model.MaintenanceViewMode;
 }
 
 <style>
     .tickets-grid {
-        min-width: 1080px;
+        min-width: 1700px;
+        width: max-content;
+        table-layout: auto;
     }
 
     .tickets-grid th {
@@ -32,10 +180,54 @@
         font-weight: 700;
     }
 
+    .tickets-grid td {
+        overflow-wrap: anywhere;
+    }
+
+    .tickets-grid th.col-ticket {
+        width: 140px;
+    }
+
+    .tickets-grid th.col-date {
+        width: 105px;
+    }
+
+    .tickets-grid th.col-user {
+        width: 210px;
+    }
+
+    .tickets-grid th.col-priority {
+        width: 115px;
+    }
+
+    .tickets-grid th.col-status {
+        width: 125px;
+    }
+
+    .tickets-grid th.col-stage {
+        width: 150px;
+    }
+
+    .tickets-grid th.col-sla {
+        width: 130px;
+    }
+
+    .tickets-grid th.col-age {
+        width: 85px;
+    }
+
+    .tickets-grid th.col-tech {
+        width: 210px;
+    }
+
+    .tickets-grid th.col-observations {
+        width: 260px;
+    }
+
     .ticket-number-cell {
         white-space: nowrap;
         font-weight: 700;
-        color: #198754;
+        color: #0f766e;
     }
 
     .date-main {
@@ -49,7 +241,7 @@
     }
 
     .obs-cell {
-        max-width: 240px;
+        max-width: 260px;
         color: #334155;
         line-height: 1.35;
     }
@@ -62,21 +254,59 @@
         word-break: break-word;
     }
 
+    .audit-cell {
+        min-width: 0;
+        color: #334155;
+        line-height: 1.3;
+    }
+
     .col-actions {
-        width: 150px;
+        width: 200px;
+        min-width: 200px;
+    }
+
+    .tickets-grid th.col-actions,
+    .tickets-grid td.col-actions {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .tickets-grid th.col-actions {
+        position: sticky;
+        right: 0;
+        z-index: 4;
+        background: #f8f9fa;
+    }
+
+    .tickets-grid td.col-actions {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: #ffffff;
+    }
+
+    .tickets-grid tbody tr.table-danger td.col-actions {
+        background: #f8d7da;
+    }
+
+    .col-audit {
+        width: 230px;
+        min-width: 230px;
     }
 
     .ticket-actions {
         display: flex;
-        gap: 0.35rem;
+        gap: 0.4rem;
         justify-content: center;
         align-items: center;
         flex-wrap: nowrap;
+        overflow: visible;
     }
 
     .btn-icon {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
         padding: 0;
         display: inline-flex;
         align-items: center;
@@ -87,84 +317,1333 @@
     .btn-icon i {
         font-size: 0.95rem;
     }
+
+    .btn-icon.disabled-placeholder {
+        pointer-events: none;
+        opacity: 0.45;
+    }
+
+    .quick-tab {
+        border-radius: 999px;
+        padding: 0.35rem 0.85rem;
+        font-weight: 600;
+        border: 1px solid #d1d5db;
+        color: #334155;
+        text-decoration: none;
+        background: #fff;
+    }
+
+    .quick-tab:hover {
+        color: #111827;
+        border-color: #9ca3af;
+        background: #f8fafc;
+    }
+
+    .quick-tab.active {
+        color: #fff;
+        border-color: #0f172a;
+        background: #0f172a;
+    }
+
+    .kpi-value {
+        font-size: 1.65rem;
+        font-weight: 700;
+        line-height: 1.05;
+    }
+
+    .inventory-alert {
+        border-left: 4px solid #dc2626;
+    }
+
+    .inventory-alert.warning {
+        border-left-color: #f59e0b;
+    }
+
+    .inventory-alert.success {
+        border-left-color: #16a34a;
+    }
+
+    .overdue-band-card {
+        border: 1px solid #dbe3ee;
+        border-radius: 12px;
+        padding: 0.75rem;
+        background: #fff;
+    }
+
+    .overdue-band-card.active {
+        border: 2px solid #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1);
+    }
+
+    .overdue-band-badge {
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .chip-link {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .chip-link:hover {
+        text-decoration: underline;
+    }
+
+    .sla-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .sla-detail {
+        display: block;
+        margin-top: 0.2rem;
+        color: #64748b;
+        font-size: 0.87rem;
+    }
+
+    .age-badge {
+        font-size: 0.78rem;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 0.22rem 0.55rem;
+    }
+
+    .chart-shell {
+        position: relative;
+        width: 100%;
+        height: 240px;
+    }
+
+    .quick-actions {
+        min-width: 0;
+        margin-top: 0.55rem;
+        max-width: 100%;
+    }
+
+    .quick-actions form.d-flex {
+        flex-wrap: wrap;
+    }
+
+    .quick-actions .form-select {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .quick-actions form.d-flex .btn {
+        width: 100%;
+    }
+
+    .quick-actions .form-select,
+    .quick-actions .btn {
+        font-size: 0.78rem;
+    }
+
+    .maintenance-workspace-tabs .quick-tab {
+        min-width: 180px;
+        text-align: center;
+    }
+
+    .maintenance-detail-grid {
+        min-width: 1440px;
+    }
+
+    .airport-board-grid {
+        min-width: 1260px;
+    }
+
+    .airport-ticket {
+        font-weight: 700;
+        color: #0b4aa2;
+    }
+
+    .airport-timer {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    @@media (max-width: 1400px) {
+        .tickets-grid th.col-observations {
+            width: 230px;
+        }
+
+        .col-audit {
+            width: 210px;
+            min-width: 210px;
+        }
+
+        .col-actions {
+            width: 186px;
+            min-width: 186px;
+        }
+    }
 </style>
 
 <div class="container mt-4">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h2 class="fw-bold mb-1">Gestión de Incidencias</h2>
-            <small class="text-muted">
-                Administra y da seguimiento a todos los tickets del sistema
-            </small>
+            <h2 class="fw-bold mb-1">@pageTitle</h2>
+            <small class="text-muted">@pageSubtitle</small>
         </div>
 
         @if (canCreateTicket)
         {
-            <a asp-action="Create" class="btn btn-success shadow-sm">
-                <i class="bi bi-plus-lg"></i> Nueva Incidencia
-            </a>
+            if (Model.IsMaintenanceView)
+            {
+                <a asp-action="CreateMaintenance" class="btn btn-success shadow-sm">
+                    <i class="bi bi-plus-lg"></i> Nueva Orden de Mantenimiento
+                </a>
+            }
+            else
+            {
+                if (isFinanceView)
+                {
+                    <a asp-action="CreateFinance" class="btn btn-success shadow-sm">
+                        <i class="bi bi-plus-lg"></i> Nueva Solicitud Financiera
+                    </a>
+                }
+                else
+                {
+                    <a asp-action="Create" class="btn btn-success shadow-sm">
+                        <i class="bi bi-plus-lg"></i> Nueva Incidencia
+                    </a>
+                }
+            }
         }
     </div>
 
-    @if (ViewBag.OverdueCount != null && ViewBag.OverdueCount > 0)
+    @if (Model.IsMaintenanceView)
+    {
+        <div class="alert alert-info shadow-sm">
+            Vista dedicada a <strong>Mantenimiento</strong>. Los filtros y acciones aplican solo a ese departamento.
+            <a class="ms-2 fw-semibold" href="@BuildUrl(null, null, null, null, 1, Model.PageSize, Model.Department, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, maintenanceStage: string.Empty)">Ver todo</a>
+        </div>
+    }
+    else if (isFinanceView)
+    {
+        <div class="alert alert-info shadow-sm">
+            Dashboard dedicado a <strong>Finanzas</strong>.
+            @if (isMineFinanceView)
+            {
+                <span> Aquí solo ves solicitudes registradas por tu usuario.</span>
+            }
+            else
+            {
+                <span> Aquí ves la operación completa del departamento.</span>
+            }
+            <a class="ms-2 fw-semibold" href="@BuildUrl(null, null, null, null, 1, Model.PageSize, Model.Department, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, mine: isMineFinanceView)">Ver todo</a>
+        </div>
+    }
+
+    @if (Model.IsMaintenanceView)
+    {
+        <div class="card shadow-sm mb-3 border-0">
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap gap-2 maintenance-workspace-tabs">
+                    <a class="quick-tab @(maintenanceViewMode == "overview" ? "active" : "")"
+                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: Model.SelectedOverdueBand, maintenanceStage: Model.SelectedMaintenanceStage, maintenanceView: "overview")">
+                        Resumen
+                    </a>
+                    <a class="quick-tab @(maintenanceViewMode == "detail" ? "active" : "")"
+                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: Model.SelectedOverdueBand, maintenanceStage: Model.SelectedMaintenanceStage, maintenanceView: "detail")">
+                        Tabla Detalle
+                    </a>
+                    <a class="quick-tab @(maintenanceViewMode == "board" ? "active" : "")"
+                       href="@Url.Action("MaintenanceBoard", "Tickets", new { site = Model.SelectedSite, technician = Model.SelectedAssignedTechnician, stage = Model.SelectedMaintenanceStage })">
+                        Pizarra Operativa
+                    </a>
+                </div>
+                <small class="text-muted d-block mt-2">
+                    Vistas de trabajo para Mantenimiento. Ultima actualizacion: @Model.DashboardGeneratedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                </small>
+            </div>
+        </div>
+    }
+
+    @if (TempData["TicketsMessage"] is string successMessage)
+    {
+        <div class="alert alert-success shadow-sm">@successMessage</div>
+    }
+
+    @if (TempData["TicketsError"] is string errorMessage)
+    {
+        <div class="alert alert-danger shadow-sm">@errorMessage</div>
+    }
+
+    @if (isFinanceView)
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a class="quick-tab @(!Model.Status.HasValue && string.IsNullOrWhiteSpace(Model.QuickFilter) ? "active" : "")"
+               href="@BuildUrl(Model.Search, null, Model.Priority, null, 1, Model.PageSize, mine: isMineFinanceView)">Todas</a>
+            <a class="quick-tab @(Model.Status == TicketStatus.Open ? "active" : "")"
+               href="@BuildUrl(Model.Search, TicketStatus.Open, Model.Priority, null, 1, Model.PageSize, mine: isMineFinanceView)">Pendientes</a>
+            <a class="quick-tab @(Model.Status == TicketStatus.InProgress ? "active" : "")"
+               href="@BuildUrl(Model.Search, TicketStatus.InProgress, Model.Priority, null, 1, Model.PageSize, mine: isMineFinanceView)">En evaluación</a>
+            <a class="quick-tab @(Model.Status == TicketStatus.Resolved ? "active" : "")"
+               href="@BuildUrl(Model.Search, TicketStatus.Resolved, Model.Priority, null, 1, Model.PageSize, mine: isMineFinanceView)">Listas para cierre</a>
+            <a class="quick-tab @(Model.Status == TicketStatus.Closed ? "active" : "")"
+               href="@BuildUrl(Model.Search, TicketStatus.Closed, Model.Priority, null, 1, Model.PageSize, mine: isMineFinanceView)">Cerradas</a>
+            <a class="quick-tab @(Model.QuickFilter == "finance_returned" ? "active" : "")"
+               href="@BuildUrl(Model.Search, null, Model.Priority, "finance_returned", 1, Model.PageSize, mine: isMineFinanceView)">Devueltas</a>
+            <a class="quick-tab @(Model.QuickFilter == "finance_escalated" ? "active" : "")"
+               href="@BuildUrl(Model.Search, null, Model.Priority, "finance_escalated", 1, Model.PageSize, mine: isMineFinanceView)">Escaladas</a>
+            <a class="quick-tab @(Model.QuickFilter == "overdue" ? "active" : "")"
+               href="@BuildUrl(Model.Search, null, Model.Priority, "overdue", 1, Model.PageSize, mine: isMineFinanceView)">Vencidas</a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a class="quick-tab @(string.IsNullOrWhiteSpace(Model.QuickFilter) ? "active" : "")"
+               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, null, 1, Model.PageSize)">Todos</a>
+            <a class="quick-tab @(Model.QuickFilter == "today" ? "active" : "")"
+               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "today", 1, Model.PageSize)">Hoy</a>
+            <a class="quick-tab @(Model.QuickFilter == "overdue" ? "active" : "")"
+               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "overdue", 1, Model.PageSize)">Vencidos</a>
+            @if (Model.IsMaintenanceView)
+            {
+                <a class="quick-tab @(Model.QuickFilter == "overdue_unassigned" ? "active" : "")"
+                   href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "overdue_unassigned", 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: Model.SelectedOverdueBand)">
+                    Vencidos sin técnico
+                </a>
+            }
+            <a class="quick-tab @(Model.QuickFilter == "unassigned" ? "active" : "")"
+               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "unassigned", 1, Model.PageSize)">Sin asignar</a>
+            <a class="quick-tab @(Model.QuickFilter == "critical" ? "active" : "")"
+               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "critical", 1, Model.PageSize)">Críticos</a>
+            <a class="quick-tab @(Model.QuickFilter == "myload" ? "active" : "")"
+               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "myload", 1, Model.PageSize)">Mi carga</a>
+        </div>
+    }
+
+    @if (Model.OverdueTickets > 0)
     {
         <div class="alert alert-danger shadow-sm">
-            <strong>@ViewBag.OverdueCount</strong> ticket(s) vencido(s) requieren atención inmediata.
+            <strong>@Model.OverdueTickets</strong> ticket(s) vencido(s) requieren atención inmediata.
+        </div>
+    }
+
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview")
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h6 class="fw-bold mb-0">Órdenes vencidas por tramo</h6>
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "overdue_unassigned", 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: string.Empty)">
+                        Asignar técnico rápido
+                    </a>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-4">
+                        <div class="overdue-band-card @(Model.SelectedOverdueBand == "0_24" ? "active" : string.Empty)">
+                            <div class="small text-muted">Atraso 0-24h</div>
+                            <div class="overdue-band-badge text-warning">@Model.OverdueBand0To24Count</div>
+                            <a class="small fw-semibold"
+                               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "overdue", 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: "0_24")">
+                                Ver órdenes
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="overdue-band-card @(Model.SelectedOverdueBand == "24_72" ? "active" : string.Empty)">
+                            <div class="small text-muted">Atraso 24-72h</div>
+                            <div class="overdue-band-badge text-danger">@Model.OverdueBand24To72Count</div>
+                            <a class="small fw-semibold"
+                               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "overdue", 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: "24_72")">
+                                Ver órdenes
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="overdue-band-card @(Model.SelectedOverdueBand == "72_plus" ? "active" : string.Empty)">
+                            <div class="small text-muted">Atraso &gt; 72h</div>
+                            <div class="overdue-band-badge text-danger-emphasis">@Model.OverdueBandOver72Count</div>
+                            <a class="small fw-semibold"
+                               href="@BuildUrl(Model.Search, Model.Status, Model.Priority, "overdue", 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: "72_plus")">
+                                Ver órdenes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview")
+    {
+        var inventoryAlertClass = Model.InventoryHealthTone switch
+        {
+            "danger" => "alert-danger",
+            "warning" => "alert-warning",
+            _ => "alert-success"
+        };
+
+        var inventoryToneClass = Model.InventoryHealthTone switch
+        {
+            "danger" => "danger",
+            "warning" => "warning",
+            _ => "success"
+        };
+
+        <div class="alert @inventoryAlertClass shadow-sm inventory-alert @inventoryToneClass">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong>Inventario repuestos:</strong> @Model.InventoryHealthLabel
+                    <span class="ms-2">En tránsito: <strong>@Model.InventoryInTransitUnits</strong></span>
+                </div>
+                <a class="btn btn-sm btn-outline-dark" asp-controller="MaintenanceInventory" asp-action="Detalle">
+                    Ver detalle inventario
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (isFinanceView)
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Pendientes</div>
+                        <div class="kpi-value text-primary">@Model.FinanceOpenCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">En evaluación</div>
+                        <div class="kpi-value text-warning">@Model.FinanceInProgressCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Listas para cierre</div>
+                        <div class="kpi-value text-info">@Model.FinanceResolvedCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Cerradas</div>
+                        <div class="kpi-value text-success">@Model.FinanceClosedCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Devueltas</div>
+                        <div class="kpi-value text-danger">@Model.FinanceReturnedCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Escaladas</div>
+                        <div class="kpi-value text-danger-emphasis">@Model.FinanceEscalatedCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Monto aprobado mes (C$)</div>
+                        <div class="kpi-value text-success">@Model.FinanceApprovedAmountCurrentMonthCordoba.ToString("N2")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Ciclo promedio (horas)</div>
+                        <div class="kpi-value text-primary">@Model.FinanceAverageCycleHours.ToString("0.0")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Uso presupuesto</div>
+                        <div class="kpi-value @(Model.FinanceBudgetUsagePercent >= 90 ? "text-danger" : Model.FinanceBudgetUsagePercent >= 75 ? "text-warning" : "text-success")">
+                            @Model.FinanceBudgetUsagePercent.ToString("0.#")%
+                        </div>
+                        <div class="small text-muted mt-1">
+                            C$ @Model.FinanceBudgetCommittedCordoba.ToString("N2") / C$ @Model.FinanceBudgetLimitCordoba.ToString("N2")
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Solicitudes con riesgo</div>
+                        <div class="kpi-value @(Model.FinanceOverBudgetRequests > 0 ? "text-danger" : "text-success")">@Model.FinanceOverBudgetRequests</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Vencidas</div>
+                        <div class="kpi-value text-danger">@Model.OverdueTickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Total solicitudes</div>
+                        <div class="kpi-value">@Model.TotalTickets</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Activos</div>
+                        <div class="kpi-value">@Model.ActiveTickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Vencidos</div>
+                        <div class="kpi-value text-danger">@Model.OverdueTickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Por vencer (&lt;=4h)</div>
+                        <div class="kpi-value text-warning">@Model.NearDueTickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Sin asignar</div>
+                        <div class="kpi-value">@Model.UnassignedActiveTickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">SLA en tiempo</div>
+                        <div class="kpi-value">@Model.SlaComplianceRate.ToString("0.#")%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Críticos activos</div>
+                        <div class="kpi-value">@Model.CriticalActiveTickets</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview")
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Preventivos</div>
+                        <div class="kpi-value text-success">@Model.PreventiveOrders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Correctivos</div>
+                        <div class="kpi-value text-danger">@Model.CorrectiveOrders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Pendientes por repuesto</div>
+                        <div class="kpi-value text-warning">@Model.PendingSparePartOrders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Con cambio de componente</div>
+                        <div class="kpi-value">@Model.ComponentChangeOrders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Cerradas hoy</div>
+                        <div class="kpi-value text-primary">@Model.ClosedTodayOrders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Costo acumulado (filtro actual)</div>
+                        <div class="kpi-value text-success">C$ @Model.TotalMaintenanceCostCordoba.ToString("N2")</div>
+                        <div class="small text-muted mt-1">$ @Model.TotalMaintenanceCostUsd.ToString("N2")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Promedio por orden con costo</div>
+                        <div class="kpi-value">C$ @Model.AverageMaintenanceCostCordoba.ToString("N2")</div>
+                        <div class="small text-muted mt-1">$ @Model.AverageMaintenanceCostUsd.ToString("N2")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Ordenes con costo trazado</div>
+                        <div class="kpi-value text-dark">@Model.OrdersWithTrackedCost</div>
+                        <div class="small text-muted mt-1">Repuestos y/o cambio de componente</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">MTTR taller (h)</div>
+                        <div class="kpi-value text-primary">@Model.MttrHours.ToString("0.#")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Costos por aprobar</div>
+                        <div class="kpi-value @(Model.PendingCostApprovalOrders > 0 ? "text-danger" : "text-success")">
+                            @Model.PendingCostApprovalOrders
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-2">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Uso capacidad tecnicos</div>
+                        <div class="kpi-value">@Model.TechnicianCapacityUtilizationRate.ToString("0.#")%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Tendencia 7 días (creados vs cerrados)</h6>
+                        <small class="text-muted">Backlog neto: @Model.BacklogDelta7Days.ToString("+0;-0;0")</small>
+                    </div>
+                    <div class="chart-shell">
+                        <canvas id="ticketsTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Semáforo SLA por técnico</h6>
+                    @if (Model.TechnicianLoads.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Técnico</th>
+                                        <th>Activos</th>
+                                        <th>Vencidos</th>
+                                        <th>Riesgo</th>
+                                        <th>En tiempo</th>
+                                        <th>SLA %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in Model.TechnicianLoads)
+                                    {
+                                        var slaClass = row.SlaOnTimeRate switch
+                                        {
+                                            >= 90 => "bg-success-subtle text-success-emphasis",
+                                            >= 70 => "bg-warning-subtle text-warning-emphasis",
+                                            _ => "bg-danger-subtle text-danger-emphasis"
+                                        };
+                                        <tr>
+                                            <td>@row.Technician</td>
+                                            <td><span class="badge bg-primary-subtle text-primary-emphasis">@row.ActiveTickets</span></td>
+                                            <td><span class="badge bg-danger-subtle text-danger-emphasis">@row.OverdueTickets</span></td>
+                                            <td><span class="badge bg-warning-subtle text-warning-emphasis">@row.NearDueTickets</span></td>
+                                            <td><span class="badge bg-success-subtle text-success-emphasis">@row.OnTimeTickets</span></td>
+                                            <td><span class="badge @slaClass">@row.SlaOnTimeRate.ToString("0.#")%</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <small class="text-muted">No hay tickets activos para los filtros aplicados.</small>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview")
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-xl-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Backlog por etapa de taller</h6>
+                        @if (Model.StageKpis.Any())
+                        {
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var stageRow in Model.StageKpis)
+                                {
+                                    var isActiveStage = string.Equals(Model.SelectedMaintenanceStage, stageRow.Stage, StringComparison.OrdinalIgnoreCase);
+                                    <a class="text-decoration-none"
+                                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: Model.SelectedOverdueBand, maintenanceStage: isActiveStage ? string.Empty : stageRow.Stage)">
+                                        <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 @(isActiveStage ? "bg-primary-subtle border-primary" : "bg-light")">
+                                            <span class="fw-semibold text-dark">@stageRow.Stage</span>
+                                            <span class="badge bg-dark">@stageRow.Total</span>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <small class="text-muted">No hay ordenes para distribuir por etapa.</small>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Capacidad por tecnico (turno)</h6>
+                        @if (Model.TechnicianCapacityItems.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Tecnico</th>
+                                            <th>Categoria</th>
+                                            <th>Turno</th>
+                                            <th class="text-end">Carga</th>
+                                            <th class="text-end">Uso</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var techRow in Model.TechnicianCapacityItems)
+                                        {
+                                            var utilizationClass = techRow.UtilizationRate switch
+                                            {
+                                                >= 100 => "bg-danger-subtle text-danger-emphasis",
+                                                >= 80 => "bg-warning-subtle text-warning-emphasis",
+                                                _ => "bg-success-subtle text-success-emphasis"
+                                            };
+                                            <tr>
+                                                <td>@techRow.Technician</td>
+                                                <td>@techRow.Category</td>
+                                                <td>@techRow.Shift</td>
+                                                <td class="text-end">
+                                                    <span class="badge @(techRow.IsOverCapacity ? "bg-danger-subtle text-danger-emphasis" : "bg-primary-subtle text-primary-emphasis")">
+                                                        @techRow.ActiveOrders/@techRow.Capacity
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <span class="badge @utilizationClass">@techRow.UtilizationRate.ToString("0.#")%</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <small class="text-muted">No hay tecnicos activos para calcular capacidad.</small>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.PendingCostApprovalOrders > 0 &&
+             (User.IsInRole(nameof(UserRole.Administrator)) ||
+              User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+              User.IsInRole(nameof(UserRole.GerenciaGeneral))))
+        {
+            <div class="alert alert-warning shadow-sm">
+                Hay <strong>@Model.PendingCostApprovalOrders</strong> orden(es) con costo pendiente de aprobacion.
+            </div>
+        }
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-xl-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Ranking de costo por sitio/taller</h6>
+                        @if (maintenanceSiteCostRanking.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Sitio</th>
+                                            <th class="text-end">Órdenes</th>
+                                            <th class="text-end">Total C$</th>
+                                            <th class="text-end">Prom. C$</th>
+                                            <th class="text-end">Reincid.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in maintenanceSiteCostRanking)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold">@row.Site</div>
+                                                    <div class="small text-muted">$ @row.TotalCostUsd.ToString("N2")</div>
+                                                </td>
+                                                <td class="text-end">@row.Orders</td>
+                                                <td class="text-end fw-semibold">C$ @row.TotalCostCordoba.ToString("N2")</td>
+                                                <td class="text-end">C$ @row.AverageCostCordoba.ToString("N2")</td>
+                                                <td class="text-end">
+                                                    <span class="badge @(row.ReincidenceOrders > 0 ? "bg-danger-subtle text-danger-emphasis" : "bg-success-subtle text-success-emphasis")">
+                                                        @row.ReincidenceOrders
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <small class="text-muted">No hay datos suficientes para ranking de costo.</small>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Reincidencia por unidad/equipo</h6>
+                        @if (maintenanceReincidenceRanking.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Unidad</th>
+                                            <th class="text-end">Órdenes</th>
+                                            <th class="text-end">Reincid.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in maintenanceReincidenceRanking)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold">@row.UnitCode</div>
+                                                    <div class="small text-muted">@row.TopFailureCategory · @row.MainSite</div>
+                                                </td>
+                                                <td class="text-end">@row.Orders</td>
+                                                <td class="text-end">
+                                                    <span class="badge bg-danger-subtle text-danger-emphasis">@row.ReincidenceCount</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <small class="text-muted">No hay reincidencias en el filtro actual.</small>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
     }
 
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <div class="row g-3">
+            <form id="ticketFiltersForm" method="get" asp-controller="Tickets" asp-action="Index">
+                <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                <input type="hidden" name="department" value="@Model.Department" />
+                <input type="hidden" name="mine" value="@(Model.IsMineFinanceView ? "true" : "false")" />
+                <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                <input type="hidden" name="maintenanceView" value="@maintenanceViewMode" />
+                <input type="hidden" name="page" value="1" />
 
-                <div class="col-md-6">
-                    <input type="text"
-                           id="searchBox"
-                           class="form-control"
-                           placeholder="Buscar por ticket, usuario o descripción..."
-                           value="@ViewBag.CurrentSearch" />
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <input type="text"
+                               id="searchBox"
+                               name="search"
+                               class="form-control"
+                               placeholder="Buscar por ticket, usuario o descripción..."
+                               value="@Model.Search" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <select id="statusFilter" name="status" class="form-select">
+                            <option value="">Todos los Estados</option>
+                            @foreach (TicketStatus s in Enum.GetValues(typeof(TicketStatus)))
+                            {
+                                if (Model.Status == s)
+                                {
+                                    <option value="@s" selected>@StatusLabel(s)</option>
+                                }
+                                else
+                                {
+                                    <option value="@s">@StatusLabel(s)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <select id="priorityFilter" name="priority" class="form-select">
+                            <option value="">Todas las Prioridades</option>
+                            @foreach (PriorityLevel p in Enum.GetValues(typeof(PriorityLevel)))
+                            {
+                                if (Model.Priority == p)
+                                {
+                                    <option value="@p" selected>@PriorityLabel(p)</option>
+                                }
+                                else
+                                {
+                                    <option value="@p">@PriorityLabel(p)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <select id="pageSizeFilter" name="pageSize" class="form-select">
+                            @foreach (var size in new[] { 10, 25, 50, 100 })
+                            {
+                                if (Model.PageSize == size)
+                                {
+                                    <option value="@size" selected>@size por página</option>
+                                }
+                                else
+                                {
+                                    <option value="@size">@size por página</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    @if (Model.IsMaintenanceView)
+                    {
+                        <div class="col-md-3">
+                            <select id="siteFilter" name="site" class="form-select">
+                                <option value="">Todos los Sitios</option>
+                                @foreach (var opt in maintenanceSiteOptions)
+                                {
+                                    if (string.Equals(Model.SelectedSite, opt, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@opt" selected>@opt</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@opt">@opt</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="tenenciaFilter" name="tenencia" class="form-select">
+                                <option value="">Todas las Tenencias</option>
+                                @foreach (var opt in maintenanceTenenciaOptions)
+                                {
+                                    if (string.Equals(Model.SelectedTenencia, opt, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@opt" selected>@opt</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@opt">@opt</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="technicianFilter" name="technician" class="form-select">
+                                <option value="">Todos los Técnicos</option>
+                                @foreach (var opt in maintenanceTechnicianOptions)
+                                {
+                                    if (string.Equals(Model.SelectedAssignedTechnician, opt, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@opt" selected>@opt</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@opt">@opt</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="incidentTypeFilter" name="incidentType" class="form-select">
+                                <option value="">Todos los Tipos</option>
+                                @foreach (var opt in maintenanceIncidentTypeOptions)
+                                {
+                                    if (string.Equals(Model.SelectedIncidentType, opt, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@opt" selected>@opt</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@opt">@opt</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="maintenanceStageFilter" name="maintenanceStage" class="form-select">
+                                <option value="">Todas las Etapas</option>
+                                @foreach (var opt in maintenanceStageOptions)
+                                {
+                                    if (string.Equals(Model.SelectedMaintenanceStage, opt, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@opt" selected>@opt</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@opt">@opt</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    }
                 </div>
+            </form>
 
-                <div class="col-md-3">
-                    <select id="statusFilter" class="form-select">
-                        <option value="">Todos los Estados</option>
-                        @foreach (TicketStatus s in Enum.GetValues(typeof(TicketStatus)))
+            @if (hasActiveFilters)
+            {
+                <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+                    <small class="text-muted">Filtros activos:</small>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Search))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(null, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType)">
+                            búsqueda: @Model.Search  x
+                        </a>
+                    }
+
+                    @if (Model.Status.HasValue)
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, null, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType)">
+                            estado: @StatusLabel(Model.Status.Value)  x
+                        </a>
+                    }
+
+                    @if (Model.Priority.HasValue)
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, null, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType)">
+                            prioridad: @PriorityLabel(Model.Priority.Value)  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.QuickFilter))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, null, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType)">
+                            rápido: @QuickLabel(Model.QuickFilter)  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Department))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, string.Empty, Model.SelectedSite, Model.SelectedTenencia, Model.SelectedAssignedTechnician, Model.SelectedIncidentType)">
+                            departamento: @Model.Department  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedSite))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: string.Empty, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType)">
+                            sitio: @Model.SelectedSite  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedTenencia))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: string.Empty, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType)">
+                            tenencia: @Model.SelectedTenencia  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedAssignedTechnician))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: string.Empty, incidentType: Model.SelectedIncidentType)">
+                            técnico: @Model.SelectedAssignedTechnician  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedIncidentType))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: string.Empty)">
+                            tipo: @Model.SelectedIncidentType  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedMaintenanceStage))
+                    {
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, maintenanceStage: string.Empty)">
+                            etapa: @Model.SelectedMaintenanceStage  x
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedOverdueBand))
+                    {
+                        var overdueBandLabel = Model.SelectedOverdueBand switch
                         {
-                            <option value="@s"
-                                    selected="@(ViewBag.CurrentStatus?.ToString() == s.ToString())">
-                                @s
-                            </option>
-                        }
-                    </select>
-                </div>
+                            "0_24" => "0-24h",
+                            "24_72" => "24-72h",
+                            "72_plus" => ">72h",
+                            _ => Model.SelectedOverdueBand
+                        };
+                        <a class="chip-link badge rounded-pill text-bg-light"
+                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: string.Empty)">
+                            tramo vencido: @overdueBandLabel  x
+                        </a>
+                    }
 
-                <div class="col-md-3">
-                    <select id="priorityFilter" class="form-select">
-                        <option value="">Todas las Prioridades</option>
-                        @foreach (PriorityLevel p in Enum.GetValues(typeof(PriorityLevel)))
-                        {
-                            <option value="@p"
-                                    selected="@(ViewBag.CurrentPriority?.ToString() == p.ToString())">
-                                @p
-                            </option>
-                        }
-                    </select>
+                    <a class="badge rounded-pill text-bg-dark chip-link" href="@BuildUrl(null, null, null, null, 1, Model.PageSize, Model.Department, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, maintenanceStage: string.Empty)">
+                        Limpiar todo
+                    </a>
                 </div>
-
-            </div>
+            }
         </div>
     </div>
 
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "detail")
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">Tabla Detalle de Ordenes de Mantenimiento</h6>
+                <small class="text-muted">Mostrando hasta 300 ordenes del filtro actual.</small>
+            </div>
+            <div class="card-body p-0">
+                @if (!maintenanceDetailRows.Any())
+                {
+                    <div class="p-4">
+                        <div class="alert alert-info mb-0">No hay ordenes en el filtro actual.</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 maintenance-detail-grid">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Orden</th>
+                                    <th>Creada</th>
+                                    <th>Sitio</th>
+                                    <th>Unidad / Equipo</th>
+                                    <th>Tipo</th>
+                                    <th>Falla</th>
+                                    <th>Etapa</th>
+                                    <th>Tecnico</th>
+                                    <th>Estado</th>
+                                    <th>SLA</th>
+                                    <th class="text-end">Costo C$</th>
+                                    <th class="text-end">Costo $</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in maintenanceDetailRows)
+                                {
+                                    var slaClass = row.RemainingHoursToSla < 0
+                                        ? "bg-danger"
+                                        : row.RemainingHoursToSla <= 4
+                                            ? "bg-warning text-dark"
+                                            : "bg-success";
+                                    var statusClass = StatusClass(row.Status);
+                                    var localCreated = row.CreatedDateUtc.ToLocalTime();
+                                    var localSla = row.SlaDeadlineUtc.ToLocalTime();
+                                    <tr>
+                                        <td class="fw-semibold">@row.TicketNumber</td>
+                                        <td>
+                                            <div class="date-main">@localCreated.ToString("yyyy-MM-dd")</div>
+                                            <div class="date-sub">@localCreated.ToString("HH:mm")</div>
+                                        </td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary-emphasis">@row.Site</span></td>
+                                        <td>@row.UnitCode</td>
+                                        <td>@row.IncidentType</td>
+                                        <td>@row.FailureCategory</td>
+                                        <td>@row.MaintenanceStage</td>
+                                        <td>@row.AssignedTechnician</td>
+                                        <td>
+                                            <span class="badge @statusClass">@StatusLabel(row.Status)</span>
+                                            @if (row.RequiresCostApproval && !row.CostApproved)
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1">Costo pendiente</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @slaClass">@FormatDurationHours(row.RemainingHoursToSla)</span>
+                                            <div class="small text-muted mt-1">@localSla.ToString("yyyy-MM-dd HH:mm")</div>
+                                        </td>
+                                        <td class="text-end fw-semibold">C$ @row.TotalCostCordoba.ToString("N2")</td>
+                                        <td class="text-end">$ @row.TotalCostUsd.ToString("N2")</td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <a asp-action="Details"
+                                                   asp-route-id="@row.TicketId"
+                                                   asp-route-department="@Model.Department"
+                                                   class="btn btn-sm btn-outline-info">Ver</a>
+                                                @if (canEditTicket)
+                                                {
+                                                    <a asp-action="Edit"
+                                                       asp-route-id="@row.TicketId"
+                                                       asp-route-department="@Model.Department"
+                                                       class="btn btn-sm btn-outline-primary">Editar</a>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "board")
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">Pizarra Operativa (estilo aeropuerto)</h6>
+                <small class="text-muted">Actualiza automaticamente cada 60 segundos.</small>
+            </div>
+            <div class="card-body p-0">
+                @if (!maintenanceBoardRows.Any())
+                {
+                    <div class="p-4">
+                        <div class="alert alert-info mb-0">No hay ordenes activas para mostrar en la pizarra.</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle mb-0 airport-board-grid">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Semaforo</th>
+                                    <th>Tecnico</th>
+                                    <th>Orden</th>
+                                    <th>Equipo</th>
+                                    <th>Sitio</th>
+                                    <th>Tipo</th>
+                                    <th>Etapa actual</th>
+                                    <th>Desde</th>
+                                    <th>Transcurrido</th>
+                                    <th>Tiempo restante</th>
+                                    <th>SLA limite</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in maintenanceBoardRows)
+                                {
+                                    var startedLocal = row.StartedAtUtc.ToLocalTime();
+                                    var slaLocal = row.SlaDeadlineUtc.ToLocalTime();
+                                    var toneClass = row.SemaphoreTone switch
+                                    {
+                                        "danger" => "bg-danger",
+                                        "warning" => "bg-warning text-dark",
+                                        "info" => "bg-info text-dark",
+                                        "secondary" => "bg-secondary",
+                                        _ => "bg-success"
+                                    };
+                                    <tr>
+                                        <td><span class="badge @toneClass">@row.SemaphoreLabel</span></td>
+                                        <td class="fw-semibold">@row.Technician</td>
+                                        <td>
+                                            <div class="airport-ticket">@row.TicketNumber</div>
+                                            <div class="small text-muted">@StatusLabel(row.Status)</div>
+                                        </td>
+                                        <td>@row.UnitCode</td>
+                                        <td>@row.Site</td>
+                                        <td>@row.IncidentType</td>
+                                        <td>@row.MaintenanceStage</td>
+                                        <td>@startedLocal.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td class="airport-timer">@FormatDurationHours(row.ElapsedHours)</td>
+                                        <td class="airport-timer">@FormatDurationHours(row.RemainingHoursToSla)</td>
+                                        <td>@slaLocal.ToString("yyyy-MM-dd HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!(Model.IsMaintenanceView && (maintenanceViewMode == "detail" || maintenanceViewMode == "board")))
+    {
     <div class="card shadow">
         <div class="card-body p-0">
-
             @if (!tickets.Any())
             {
                 <div class="p-4">
-                    <div class="alert alert-info mb-0">
-                        No hay incidencias registradas.
-                    </div>
+                    <div class="alert alert-info mb-0">No hay incidencias registradas para este filtro.</div>
                 </div>
             }
             else
@@ -173,23 +1652,51 @@
                     <table class="table table-hover align-middle mb-0 tickets-grid">
                         <thead class="table-light">
                             <tr>
-                                <th>Ticket</th>
-                                <th>Fecha</th>
-                                <th>Usuario</th>
-                                <th>Prioridad</th>
-                                <th>Estado</th>
-                                <th>SLA</th>
-                                <th>Técnico</th>
-                                <th>Observaciones</th>
+                                <th class="col-ticket">Ticket</th>
+                                <th class="col-date">Fecha</th>
+                                <th class="col-user">Usuario</th>
+                                <th class="col-priority">Prioridad</th>
+                                <th class="col-status">Estado</th>
+                                @if (Model.IsMaintenanceView)
+                                {
+                                    <th class="col-stage">Etapa</th>
+                                }
+                                <th class="col-sla">SLA</th>
+                                <th class="col-age">Edad</th>
+                                <th class="col-tech">Técnico</th>
+                                <th class="col-observations">Observaciones</th>
+                                <th class="col-audit">Auditoría</th>
                                 <th class="text-center col-actions">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var item in tickets)
                             {
-                                var now = DateTime.UtcNow;
-                                var isOverdue = item.SLADeadline < now && item.Status != TicketStatus.Closed;
-                                var isNear = item.SLADeadline < now.AddHours(4) && !isOverdue && item.Status != TicketStatus.Closed;
+                                var isOverdue = item.Status != TicketStatus.Closed && item.SLADeadline < nowUtc;
+                                var isNear = item.Status != TicketStatus.Closed && !isOverdue && item.SLADeadline < nowUtc.AddHours(4);
+                                var hoursToSla = (item.SLADeadline - nowUtc).TotalHours;
+                                var ageDays = (nowUtc - item.CreatedDate).TotalDays;
+                                var obsText = string.IsNullOrWhiteSpace(item.Observations)
+                                    ? "Sin observaciones"
+                                    : item.Observations!;
+                                var obsPreview = obsText.Length > 95 ? obsText.Substring(0, 95) + "..." : obsText;
+                                var obsModalId = $"obsModal_{item.Id}";
+
+                                var ageClass = ageDays switch
+                                {
+                                    <= 2 => "bg-success-subtle text-success-emphasis",
+                                    <= 7 => "bg-warning-subtle text-warning-emphasis",
+                                    _ => "bg-danger-subtle text-danger-emphasis"
+                                };
+
+                                var ageLabel = ageDays switch
+                                {
+                                    <= 2 => "0-2 días",
+                                    <= 7 => "3-7 días",
+                                    _ => "8+ días"
+                                };
+
+                                Model.LatestAuditByTicket.TryGetValue(item.Id, out var latestAudit);
 
                                 <tr class="@(isOverdue ? "table-danger" : "")">
                                     <td class="ticket-number-cell">@item.TicketNumber</td>
@@ -200,53 +1707,67 @@
                                     <td>@item.RequestingUser</td>
 
                                     <td>
-                                        @{
-                                            var priorityClass = item.Priority switch
-                                            {
-                                                PriorityLevel.Low => "bg-success",
-                                                PriorityLevel.Medium => "bg-warning text-dark",
-                                                PriorityLevel.High => "bg-danger",
-                                                _ => "bg-secondary"
-                                            };
-                                        }
-                                        <span class="badge @priorityClass">@item.Priority</span>
+                                        <span class="badge @PriorityClass(item.Priority)">@PriorityLabel(item.Priority)</span>
                                     </td>
 
                                     <td>
-                                        @{
-                                            var statusClass = item.Status switch
-                                            {
-                                                TicketStatus.Open => "bg-primary",
-                                                TicketStatus.InProgress => "bg-info text-dark",
-                                                TicketStatus.Resolved => "bg-warning text-dark",
-                                                TicketStatus.Closed => "bg-success",
-                                                _ => "bg-secondary"
-                                            };
+                                        <span class="badge @StatusClass(item.Status)">@StatusLabel(item.Status)</span>
+                                        @if (isFinanceView && item.FinanceReturnedForCorrection && item.Status != TicketStatus.Closed)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">Devuelta</span>
                                         }
-                                        <span class="badge @statusClass">@item.Status</span>
+                                        @if (isFinanceView && item.FinanceEscalatedAtUtc.HasValue && item.Status != TicketStatus.Closed)
+                                        {
+                                            <span class="badge bg-danger ms-1">Escalada</span>
+                                        }
                                     </td>
+
+                                    @if (Model.IsMaintenanceView)
+                                    {
+                                        <td>
+                                            @{
+                                                var stageValue = string.IsNullOrWhiteSpace(item.MaintenanceStage) ? "Sin etapa" : item.MaintenanceStage;
+                                                var stageBadgeClass = stageValue switch
+                                                {
+                                                    "Recibida" => "bg-secondary",
+                                                    "Diagnostico" => "bg-info text-dark",
+                                                    "En reparacion" => "bg-primary",
+                                                    "Prueba tecnica" => "bg-warning text-dark",
+                                                    "Lista para entrega" => "bg-success",
+                                                    "Cerrada" => "bg-dark",
+                                                    _ => "bg-light text-dark"
+                                                };
+                                            }
+                                            <span class="badge @stageBadgeClass">@stageValue</span>
+                                        </td>
+                                    }
 
                                     <td>
                                         @if (item.Status == TicketStatus.Closed)
                                         {
                                             <span class="badge bg-secondary">Cerrado</span>
+                                            <span class="sla-detail">@item.SLADeadline.ToString("yyyy-MM-dd HH:mm")</span>
                                         }
                                         else if (isOverdue)
                                         {
-                                            <span class="badge bg-danger">Vencido</span>
+                                            <span class="sla-state"><span class="badge bg-danger">Vencido</span></span>
+                                            <span class="sla-detail">Hace @Math.Abs(hoursToSla).ToString("0.0") h</span>
                                         }
                                         else if (isNear)
                                         {
-                                            <span class="badge bg-warning text-dark">Por vencer</span>
+                                            <span class="sla-state"><span class="badge bg-warning text-dark">Por vencer</span></span>
+                                            <span class="sla-detail">En @hoursToSla.ToString("0.0") h</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-success">En tiempo</span>
+                                            <span class="sla-state"><span class="badge bg-success">En tiempo</span></span>
+                                            <span class="sla-detail">@item.SLADeadline.ToString("yyyy-MM-dd HH:mm")</span>
                                         }
+                                    </td>
 
-                                        <div class="small text-muted mt-1">
-                                            @item.SLADeadline.ToString("yyyy-MM-dd HH:mm")
-                                        </div>
+                                    <td>
+                                        <span class="age-badge @ageClass">@ageLabel</span>
+                                        <div class="small text-muted mt-1">@ageDays.ToString("0.0") días</div>
                                     </td>
 
                                     <td>
@@ -256,13 +1777,134 @@
                                     </td>
 
                                     <td class="obs-cell">
-                                        @if (string.IsNullOrWhiteSpace(item.Observations))
+                                        <span class="obs-preview">@obsPreview</span>
+                                        @if (!string.IsNullOrWhiteSpace(item.Observations) && item.Observations.Length > 95)
                                         {
-                                            <span class="text-muted">Sin observaciones</span>
+                                            <button type="button"
+                                                    class="btn btn-link btn-sm p-0 mt-1"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#@obsModalId">
+                                                Ver más
+                                            </button>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Observations))
+                                        {
+                                            <div class="modal fade" id="@obsModalId" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-scrollable">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Observaciones - @item.TicketNumber</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                        </div>
+                                                        <div class="modal-body">@item.Observations</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </td>
+
+                                    <td class="audit-cell col-audit">
+                                        @if (latestAudit != null)
+                                        {
+                                            <div class="fw-semibold">@latestAudit.FieldLabel: @(string.IsNullOrWhiteSpace(latestAudit.NewValue) ? "Sin valor" : latestAudit.NewValue)</div>
+                                            <div class="small text-muted">@latestAudit.ChangedBy</div>
+                                            <div class="small text-muted">@latestAudit.ChangeDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
                                         }
                                         else
                                         {
-                                            <span class="obs-preview" title="@item.Observations">@item.Observations</span>
+                                            <span class="text-muted">Sin cambios recientes</span>
+                                        }
+
+                                        @if (canEditTicket && item.Status != TicketStatus.Closed && !isFinanceView)
+                                        {
+                                            <div class="quick-actions d-flex flex-column gap-1">
+                                                <form method="post" asp-action="QuickTake" class="d-grid">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <input type="hidden" name="search" value="@Model.Search" />
+                                                    <input type="hidden" name="status" value="@Model.Status" />
+                                                    <input type="hidden" name="priority" value="@Model.Priority" />
+                                                    <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                    <input type="hidden" name="department" value="@Model.Department" />
+                                                    <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                    <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                    <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                    <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                    <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                    <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                    <input type="hidden" name="page" value="@Model.Page" />
+                                                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Tomar ticket</button>
+                                                </form>
+
+                                                <form method="post" asp-action="QuickAssign" class="d-flex gap-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <input type="hidden" name="search" value="@Model.Search" />
+                                                    <input type="hidden" name="status" value="@Model.Status" />
+                                                    <input type="hidden" name="priority" value="@Model.Priority" />
+                                                    <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                    <input type="hidden" name="department" value="@Model.Department" />
+                                                    <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                    <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                    <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                    <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                    <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                    <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                    <input type="hidden" name="page" value="@Model.Page" />
+                                                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+                                                    <select name="assignedTechnician" class="form-select form-select-sm">
+                                                        <option value="">Sin asignar</option>
+                                                        @foreach (var tech in (Model.TechnicianOptions ?? Array.Empty<string>()))
+                                                        {
+                                                            if (string.Equals(item.AssignedTechnician, tech, StringComparison.OrdinalIgnoreCase))
+                                                            {
+                                                                <option value="@tech" selected>@tech</option>
+                                                            }
+                                                            else
+                                                            {
+                                                                <option value="@tech">@tech</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary">Asignar</button>
+                                                </form>
+
+                                                <form method="post" asp-action="QuickStatus" class="d-flex gap-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <input type="hidden" name="search" value="@Model.Search" />
+                                                    <input type="hidden" name="status" value="@Model.Status" />
+                                                    <input type="hidden" name="priority" value="@Model.Priority" />
+                                                    <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                    <input type="hidden" name="department" value="@Model.Department" />
+                                                    <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                    <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                    <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                    <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                    <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                    <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                    <input type="hidden" name="page" value="@Model.Page" />
+                                                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+                                                    <select name="newStatus" class="form-select form-select-sm">
+                                                        @foreach (TicketStatus s in Enum.GetValues(typeof(TicketStatus)))
+                                                        {
+                                                            if (item.Status == s)
+                                                            {
+                                                                <option value="@s" selected>@StatusLabel(s)</option>
+                                                            }
+                                                            else
+                                                            {
+                                                                <option value="@s">@StatusLabel(s)</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                    <button type="submit" class="btn btn-sm btn-outline-dark">Estado</button>
+                                                </form>
+                                            </div>
                                         }
                                     </td>
 
@@ -272,15 +1914,25 @@
                                             {
                                                 <a asp-action="Edit"
                                                    asp-route-id="@item.Id"
+                                                   asp-route-department="@Model.Department"
                                                    class="btn btn-sm btn-outline-primary btn-icon"
                                                    title="Editar"
                                                    aria-label="Editar">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>
                                             }
+                                            else
+                                            {
+                                                <span class="btn btn-sm btn-outline-primary btn-icon disabled-placeholder"
+                                                      title="Editar (sin permiso)"
+                                                      aria-label="Editar (sin permiso)">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </span>
+                                            }
 
                                             <a asp-action="Details"
                                                asp-route-id="@item.Id"
+                                               asp-route-department="@Model.Department"
                                                class="btn btn-sm btn-outline-info btn-icon"
                                                title="Detalles"
                                                aria-label="Detalles">
@@ -289,21 +1941,244 @@
 
                                             <a asp-action="DownloadPdf"
                                                asp-route-id="@item.Id"
+                                               asp-route-department="@Model.Department"
                                                class="btn btn-sm btn-outline-danger btn-icon"
                                                title="Descargar PDF"
                                                aria-label="Descargar PDF">
                                                 <i class="bi bi-file-earmark-pdf"></i>
                                             </a>
 
+                                            @if (Model.IsMaintenanceView &&
+                                                 item.RequiresCostApproval &&
+                                                 !item.CostApproved &&
+                                                 (User.IsInRole(nameof(UserRole.Administrator)) ||
+                                                  User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+                                                  User.IsInRole(nameof(UserRole.GerenciaGeneral))))
+                                            {
+                                                <form method="post" asp-action="ApproveMaintenanceCost" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <input type="hidden" name="search" value="@Model.Search" />
+                                                    <input type="hidden" name="status" value="@Model.Status" />
+                                                    <input type="hidden" name="priority" value="@Model.Priority" />
+                                                    <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                    <input type="hidden" name="department" value="@Model.Department" />
+                                                    <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                    <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                    <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                    <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                    <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                    <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                    <input type="hidden" name="page" value="@Model.Page" />
+                                                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                    <input type="hidden" name="approvalNotes" value="Aprobado desde dashboard de mantenimiento" />
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-success btn-icon"
+                                                            title="Aprobar costos"
+                                                            aria-label="Aprobar costos">
+                                                        <i class="bi bi-check2-circle"></i>
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            @if (isFinanceView && canFinanceWorkflow)
+                                            {
+                                                var canApproveOrReject = (item.Status == TicketStatus.Open || item.Status == TicketStatus.InProgress) && !item.CostApproved;
+                                                var canCloseFinance = item.Status == TicketStatus.Resolved && item.CostApproved;
+                                                var canReturnFinance = item.Status != TicketStatus.Closed &&
+                                                                       (item.Status == TicketStatus.Open ||
+                                                                        item.Status == TicketStatus.InProgress ||
+                                                                        item.Status == TicketStatus.Resolved);
+
+                                                if (item.Status != TicketStatus.Closed)
+                                                {
+                                                    <a asp-action="FinanceAccounting"
+                                                       asp-route-id="@item.Id"
+                                                       asp-route-mine="@(Model.IsMineFinanceView ? "true" : "false")"
+                                                       asp-route-search="@Model.Search"
+                                                       asp-route-status="@Model.Status"
+                                                       asp-route-priority="@Model.Priority"
+                                                       asp-route-quick="@Model.QuickFilter"
+                                                       asp-route-department="@Model.Department"
+                                                       asp-route-site="@Model.SelectedSite"
+                                                       asp-route-tenencia="@Model.SelectedTenencia"
+                                                       asp-route-technician="@Model.SelectedAssignedTechnician"
+                                                       asp-route-incidentType="@Model.SelectedIncidentType"
+                                                       asp-route-maintenanceStage="@Model.SelectedMaintenanceStage"
+                                                       asp-route-overdueBand="@Model.SelectedOverdueBand"
+                                                       asp-route-page="@Model.Page"
+                                                       asp-route-pageSize="@Model.PageSize"
+                                                       class="btn btn-sm btn-outline-secondary btn-icon"
+                                                       title="Trazabilidad contable"
+                                                       aria-label="Trazabilidad contable">
+                                                        <i class="bi bi-journal-check"></i>
+                                                    </a>
+                                                }
+
+                                                if (canApproveOrReject)
+                                                {
+                                                    <form method="post" asp-action="ApproveFinanceRequest" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <input type="hidden" name="mine" value="@(Model.IsMineFinanceView ? "true" : "false")" />
+                                                        <input type="hidden" name="search" value="@Model.Search" />
+                                                        <input type="hidden" name="status" value="@Model.Status" />
+                                                        <input type="hidden" name="priority" value="@Model.Priority" />
+                                                        <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                        <input type="hidden" name="department" value="@Model.Department" />
+                                                        <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                        <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                        <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                        <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                        <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                        <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                        <input type="hidden" name="page" value="@Model.Page" />
+                                                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                        <input type="hidden" name="approvalNotes" value="Aprobacion registrada desde dashboard de finanzas." />
+                                                        <button type="submit"
+                                                                class="btn btn-sm btn-outline-success btn-icon"
+                                                                title="Aprobar solicitud"
+                                                                aria-label="Aprobar solicitud">
+                                                            <i class="bi bi-check2-circle"></i>
+                                                        </button>
+                                                    </form>
+
+                                                    <form method="post" asp-action="RejectFinanceRequest" class="d-inline js-finance-note-form" data-note-message="Motivo de rechazo" data-note-field="rejectionReason">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <input type="hidden" name="mine" value="@(Model.IsMineFinanceView ? "true" : "false")" />
+                                                        <input type="hidden" name="search" value="@Model.Search" />
+                                                        <input type="hidden" name="status" value="@Model.Status" />
+                                                        <input type="hidden" name="priority" value="@Model.Priority" />
+                                                        <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                        <input type="hidden" name="department" value="@Model.Department" />
+                                                        <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                        <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                        <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                        <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                        <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                        <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                        <input type="hidden" name="page" value="@Model.Page" />
+                                                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                        <input type="hidden" name="rejectionReason" value="" />
+                                                        <button type="submit"
+                                                                class="btn btn-sm btn-outline-warning btn-icon"
+                                                                title="Rechazar solicitud"
+                                                                aria-label="Rechazar solicitud">
+                                                            <i class="bi bi-x-circle"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                if (canReturnFinance)
+                                                {
+                                                    <form method="post" asp-action="ReturnFinanceRequest" class="d-inline js-finance-note-form" data-note-message="Motivo de devolución" data-note-field="returnReason">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <input type="hidden" name="mine" value="@(Model.IsMineFinanceView ? "true" : "false")" />
+                                                        <input type="hidden" name="search" value="@Model.Search" />
+                                                        <input type="hidden" name="status" value="@Model.Status" />
+                                                        <input type="hidden" name="priority" value="@Model.Priority" />
+                                                        <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                        <input type="hidden" name="department" value="@Model.Department" />
+                                                        <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                        <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                        <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                        <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                        <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                        <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                        <input type="hidden" name="page" value="@Model.Page" />
+                                                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                        <input type="hidden" name="returnReason" value="" />
+                                                        <button type="submit"
+                                                                class="btn btn-sm btn-outline-warning btn-icon"
+                                                                title="Devolver para corrección"
+                                                                aria-label="Devolver para corrección">
+                                                            <i class="bi bi-arrow-return-left"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                if (canCloseFinance)
+                                                {
+                                                    <form method="post" asp-action="CloseFinanceRequest" class="d-inline js-finance-note-form" data-note-message="Notas de cierre" data-note-field="closureNotes">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <input type="hidden" name="mine" value="@(Model.IsMineFinanceView ? "true" : "false")" />
+                                                        <input type="hidden" name="search" value="@Model.Search" />
+                                                        <input type="hidden" name="status" value="@Model.Status" />
+                                                        <input type="hidden" name="priority" value="@Model.Priority" />
+                                                        <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                        <input type="hidden" name="department" value="@Model.Department" />
+                                                        <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                        <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                        <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                        <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                        <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                        <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                        <input type="hidden" name="page" value="@Model.Page" />
+                                                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                        <input type="hidden" name="closureNotes" value="" />
+                                                        <button type="submit"
+                                                                class="btn btn-sm btn-outline-dark btn-icon"
+                                                                title="Cerrar solicitud"
+                                                                aria-label="Cerrar solicitud">
+                                                            <i class="bi bi-lock"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            }
+
+                                            @if (isFinanceView &&
+                                                 item.FinanceReturnedForCorrection &&
+                                                 item.Status != TicketStatus.Closed &&
+                                                 (isMineFinanceView || canFinanceWorkflow))
+                                            {
+                                                <form method="post" asp-action="SubmitFinanceCorrection" class="d-inline js-finance-note-form" data-note-message="Notas de corrección" data-note-field="correctionNotes">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <input type="hidden" name="mine" value="@(Model.IsMineFinanceView ? "true" : "false")" />
+                                                    <input type="hidden" name="search" value="@Model.Search" />
+                                                    <input type="hidden" name="status" value="@Model.Status" />
+                                                    <input type="hidden" name="priority" value="@Model.Priority" />
+                                                    <input type="hidden" name="quick" value="@Model.QuickFilter" />
+                                                    <input type="hidden" name="department" value="@Model.Department" />
+                                                    <input type="hidden" name="site" value="@Model.SelectedSite" />
+                                                    <input type="hidden" name="tenencia" value="@Model.SelectedTenencia" />
+                                                    <input type="hidden" name="technician" value="@Model.SelectedAssignedTechnician" />
+                                                    <input type="hidden" name="incidentType" value="@Model.SelectedIncidentType" />
+                                                    <input type="hidden" name="maintenanceStage" value="@Model.SelectedMaintenanceStage" />
+                                                    <input type="hidden" name="overdueBand" value="@Model.SelectedOverdueBand" />
+                                                    <input type="hidden" name="page" value="@Model.Page" />
+                                                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                    <input type="hidden" name="correctionNotes" value="" />
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-primary btn-icon"
+                                                            title="Enviar corrección"
+                                                            aria-label="Enviar corrección">
+                                                        <i class="bi bi-send-check"></i>
+                                                    </button>
+                                                </form>
+                                            }
+
                                             @if (canDeleteTicket)
                                             {
                                                 <a asp-action="Delete"
                                                    asp-route-id="@item.Id"
+                                                   asp-route-department="@Model.Department"
                                                    class="btn btn-sm btn-outline-danger btn-icon"
                                                    title="Eliminar"
                                                    aria-label="Eliminar">
                                                     <i class="bi bi-trash"></i>
                                                 </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="btn btn-sm btn-outline-danger btn-icon disabled-placeholder"
+                                                      title="Eliminar (sin permiso)"
+                                                      aria-label="Eliminar (sin permiso)">
+                                                    <i class="bi bi-trash"></i>
+                                                </span>
                                             }
                                         </div>
                                     </td>
@@ -312,42 +2187,161 @@
                         </tbody>
                     </table>
                 </div>
-            }
 
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+                        <small class="text-muted">
+                            Mostrando página @Model.Page de @Model.TotalPages - @Model.TotalItems registro(s)
+                        </small>
+
+                        <nav aria-label="Paginación de tickets">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                                    <a class="page-link"
+                                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, Math.Max(1, Model.Page - 1), Model.PageSize)">Anterior</a>
+                                </li>
+
+                                @{
+                                    var startPage = Math.Max(1, Model.Page - 2);
+                                    var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                                }
+
+                                @for (var pageNumber = startPage; pageNumber <= endPage; pageNumber++)
+                                {
+                                    <li class="page-item @(pageNumber == Model.Page ? "active" : "")">
+                                        <a class="page-link"
+                                           href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, pageNumber, Model.PageSize)">@pageNumber</a>
+                                    </li>
+                                }
+
+                                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                                    <a class="page-link"
+                                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, Math.Min(Model.TotalPages, Model.Page + 1), Model.PageSize)">Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
         </div>
     </div>
+    }
 </div>
 
 @section Scripts {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("ticketFiltersForm");
     const searchBox = document.getElementById("searchBox");
     const statusFilter = document.getElementById("statusFilter");
     const priorityFilter = document.getElementById("priorityFilter");
+    const pageSizeFilter = document.getElementById("pageSizeFilter");
+    const siteFilter = document.getElementById("siteFilter");
+    const tenenciaFilter = document.getElementById("tenenciaFilter");
+    const technicianFilter = document.getElementById("technicianFilter");
+    const incidentTypeFilter = document.getElementById("incidentTypeFilter");
+    const maintenanceStageFilter = document.getElementById("maintenanceStageFilter");
 
-    function applyFilters() {
-        const search = searchBox.value;
-        const status = statusFilter.value;
-        const priority = priorityFilter.value;
+    if (form && searchBox && statusFilter && priorityFilter && pageSizeFilter) {
+        let typingTimer;
 
-        const params = new URLSearchParams();
+        searchBox.addEventListener("keyup", function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(function () {
+                form.submit();
+            }, 450);
+        });
 
-        if (search) params.append("search", search);
-        if (status) params.append("status", status);
-        if (priority) params.append("priority", priority);
-
-        window.location.href = "/Tickets?" + params.toString();
+        statusFilter.addEventListener("change", function () { form.submit(); });
+        priorityFilter.addEventListener("change", function () { form.submit(); });
+        pageSizeFilter.addEventListener("change", function () { form.submit(); });
+        if (siteFilter) siteFilter.addEventListener("change", function () { form.submit(); });
+        if (tenenciaFilter) tenenciaFilter.addEventListener("change", function () { form.submit(); });
+        if (technicianFilter) technicianFilter.addEventListener("change", function () { form.submit(); });
+        if (incidentTypeFilter) incidentTypeFilter.addEventListener("change", function () { form.submit(); });
+        if (maintenanceStageFilter) maintenanceStageFilter.addEventListener("change", function () { form.submit(); });
     }
 
-    let typingTimer;
+    const maintenanceMode = "@maintenanceViewMode";
+    const isMaintenanceView = @Model.IsMaintenanceView.ToString().ToLowerInvariant();
+    if (isMaintenanceView && maintenanceMode === "board") {
+        window.setTimeout(function () {
+            window.location.reload();
+        }, 60000);
+    }
 
-    searchBox.addEventListener("keyup", function () {
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(applyFilters, 400);
+    document.querySelectorAll(".js-finance-note-form").forEach(function (formEl) {
+        formEl.addEventListener("submit", function (evt) {
+            var fieldName = formEl.getAttribute("data-note-field");
+            if (!fieldName) return;
+
+            var input = formEl.querySelector('input[name="' + fieldName + '"]');
+            if (!input) return;
+
+            var message = formEl.getAttribute("data-note-message") || "Ingrese una nota";
+            var value = window.prompt(message, (input.value || "").trim());
+            if (value === null) {
+                evt.preventDefault();
+                return;
+            }
+
+            var normalized = value.trim();
+            if (!normalized) {
+                evt.preventDefault();
+                window.alert("Este campo es obligatorio.");
+                return;
+            }
+
+            input.value = normalized;
+        });
     });
 
-    statusFilter.addEventListener("change", applyFilters);
-    priorityFilter.addEventListener("change", applyFilters);
+    const trendCanvas = document.getElementById("ticketsTrendChart");
+    if (trendCanvas) {
+        const labels = @Html.Raw(trendLabelsJson);
+        const created = @Html.Raw(trendCreatedJson);
+        const closed = @Html.Raw(trendClosedJson);
+
+        new Chart(trendCanvas, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "Creados",
+                        data: created,
+                        borderColor: "#2563eb",
+                        backgroundColor: "rgba(37, 99, 235, 0.12)",
+                        fill: true,
+                        tension: 0.25
+                    },
+                    {
+                        label: "Cerrados",
+                        data: closed,
+                        borderColor: "#16a34a",
+                        backgroundColor: "rgba(22, 163, 74, 0.1)",
+                        fill: true,
+                        tension: 0.25
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                resizeDelay: 120,
+                plugins: {
+                    legend: { position: "bottom" }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 }

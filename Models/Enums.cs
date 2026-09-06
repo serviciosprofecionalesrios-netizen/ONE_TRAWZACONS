@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace ITServiceDeskApp.Models
 {
@@ -13,7 +13,7 @@ namespace ITServiceDeskApp.Models
         [Display(Name = "Alta")]
         High = 3,
 
-        [Display(Name = "Crítica")]
+        [Display(Name = "Critica")]
         Critical = 4
     }
 
@@ -37,7 +37,7 @@ namespace ITServiceDeskApp.Models
         [Display(Name = "Administrador")]
         Administrator = 1,
 
-        [Display(Name = "Técnico IT")]
+        [Display(Name = "Tecnico IT")]
         Technician = 2,
 
         [Display(Name = "Usuario Final")]
@@ -47,6 +47,16 @@ namespace ITServiceDeskApp.Models
         CoordinadorIT = 4,
 
         [Display(Name = "Gerencia General")]
-        GerenciaGeneral = 5
+        GerenciaGeneral = 5,
+
+        [Display(Name = "Gestor H&S")]
+        GestorHS = 6,
+
+        [Display(Name = "Gerente H&S")]
+        GerenteHS = 7,
+
+        [Display(Name = "Supervisor H&S")]
+        SupervisorHS = 8
     }
 }
+

@@ -1,0 +1,118 @@
+@model ITServiceDeskApp.Models.MaintenanceTechnician
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Linq
+
+@{
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "Editar tecnico de taller" : "Nuevo tecnico de taller";
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var shiftOptions = ViewBag.ShiftOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">@(isEdit ? "Editar tecnico de taller" : "Nuevo tecnico de taller")</h4>
+            <a asp-action="Index" class="btn btn-sm btn-light">Ver tecnicos</a>
+        </div>
+        <div class="card-body">
+            <form asp-action="@(isEdit ? "Edit" : "Create")" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                @if (isEdit)
+                {
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="RowVersion" />
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label asp-for="FullName" class="form-label fw-semibold">Nombre completo *</label>
+                        <input asp-for="FullName" class="form-control" placeholder="Nombre y apellido del tecnico" />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Category" class="form-label fw-semibold">Categoria tecnica *</label>
+                        <select asp-for="Category" class="form-select" asp-items="categoryOptions">
+                            <option value="">Seleccionar categoria</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Shift" class="form-label fw-semibold">Turno *</label>
+                        <select asp-for="Shift" class="form-select" asp-items="shiftOptions">
+                            <option value="">Seleccionar turno</option>
+                        </select>
+                        <span asp-validation-for="Shift" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MaxActiveOrders" class="form-label fw-semibold">Capacidad maxima (ordenes activas) *</label>
+                        <input asp-for="MaxActiveOrders" type="number" min="1" max="50" class="form-control" />
+                        <span asp-validation-for="MaxActiveOrders" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="PhoneNumber" class="form-label fw-semibold">Numero de celular *</label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="Ej: 8888-9999" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="EmergencyContactName" class="form-label fw-semibold">Contacto de emergencia *</label>
+                        <input asp-for="EmergencyContactName" class="form-control" placeholder="A quien llamar en emergencia" />
+                        <span asp-validation-for="EmergencyContactName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="EmergencyRelationship" class="form-label fw-semibold">Parentesco *</label>
+                        <input asp-for="EmergencyRelationship" class="form-control" placeholder="Ej: Esposa" />
+                        <span asp-validation-for="EmergencyRelationship" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="EmergencyContactPhone" class="form-label fw-semibold">Celular emergencia *</label>
+                        <input asp-for="EmergencyContactPhone" class="form-control" placeholder="Ej: 8888-0000" />
+                        <span asp-validation-for="EmergencyContactPhone" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="IsAvailable" class="form-label fw-semibold">Disponible para asignar</label>
+                        <div class="form-check mt-2">
+                            <input asp-for="IsAvailable" class="form-check-input" />
+                            <label asp-for="IsAvailable" class="form-check-label">Si, disponible</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="IsActive" class="form-label fw-semibold">Registro activo</label>
+                        <div class="form-check mt-2">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label">Si, activo</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Notes" class="form-label fw-semibold">Notas</label>
+                        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Observaciones del tecnico, turnos, especialidad, etc."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check2-circle"></i> @(isEdit ? "Guardar cambios" : "Guardar tecnico")
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

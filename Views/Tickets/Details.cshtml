@@ -3,11 +3,67 @@
 
 @{
     ViewData["Title"] = "Detalle del Ticket";
+    const string quickAuditPrefix = "QA::";
+    var returnDepartment = ViewBag.ReturnDepartment as string;
 
     var canEditTicket =
         User.IsInRole(nameof(UserRole.Administrator)) ||
         User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
         User.IsInRole(nameof(UserRole.Technician));
+
+    string DisplayAuditUser(string? changedBy)
+    {
+        if (string.IsNullOrWhiteSpace(changedBy))
+        {
+            return "Sistema";
+        }
+
+        return changedBy.StartsWith(quickAuditPrefix, StringComparison.Ordinal)
+            ? changedBy.Substring(quickAuditPrefix.Length)
+            : changedBy;
+    }
+
+    string DisplayAuditField(string? fieldChanged)
+    {
+        return fieldChanged switch
+        {
+            "Creacion" => "Creacion",
+            "Status" => "Estado",
+            "Priority" => "Prioridad",
+            "AssignedTechnician" => "Tecnico asignado",
+            "TechnicianCategory" => "Categoria tecnica",
+            "MaintenanceStage" => "Etapa de taller",
+            "RequestingUser" => "Solicitante",
+            "Site" => "Sitio",
+            "Tenencia" => "Tenencia",
+            "IncidentType" => "Tipo de mantenimiento",
+            "UnitCode" => "Unidad / Equipo / Area",
+            "FailureCategory" => "Categoria de falla",
+            "DamagedElement" => "Elemento danado",
+            "FailureOdometerKm" => "KM ingreso falla",
+            "ExitOdometerKm" => "KM salida taller",
+            "Description" => "Descripcion",
+            "SparePartDetails" => "Detalle de repuestos",
+            "ChangedComponentName" => "Componente cambiado",
+            "ChangedComponentCostCordoba" => "Costo componente C$",
+            "ChangedComponentCostUsd" => "Costo componente $",
+            "LaborCostCordoba" => "Mano de obra C$",
+            "LaborCostUsd" => "Mano de obra $",
+            "ExternalCostCordoba" => "Costo externo C$",
+            "ExternalCostUsd" => "Costo externo $",
+            "RequiresCostApproval" => "Requiere aprobacion de costos",
+            "CostApproved" => "Aprobacion de costos",
+            "CostApprovedBy" => "Aprobado por",
+            "CostApprovedAtUtc" => "Fecha aprobacion",
+            "CostApprovalNotes" => "Notas aprobacion",
+            "UserConformityConfirmed" => "Conformidad usuario",
+            "PreventiveRecommendations" => "Recomendaciones preventivas",
+            "Observations" => "Observaciones",
+            "SLADeadline" => "Fecha limite SLA",
+            "ClosedDate" => "Fecha cierre",
+            _ => string.IsNullOrWhiteSpace(fieldChanged) ? "Campo" : fieldChanged
+        };
+    }
 }
 
 <div class="container mt-4">
@@ -24,6 +80,22 @@
                     <p><strong>Fecha Creacion:</strong> @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</p>
                     <p><strong>Usuario:</strong> @Model.RequestingUser</p>
                     <p><strong>Sitio:</strong> @Model.Site</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Tenencia))
+                    {
+                        <p><strong>Tenencia:</strong> @Model.Tenencia</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.UnitCode))
+                    {
+                        <p><strong>Unidad / Equipo:</strong> @Model.UnitCode</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.FailureCategory))
+                    {
+                        <p><strong>Categoria de falla:</strong> @Model.FailureCategory</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.DamagedElement))
+                    {
+                        <p><strong>Elemento danado:</strong> @Model.DamagedElement</p>
+                    }
                     <p><strong>Departamento:</strong> @Model.Department</p>
                     <p><strong>Tipo Incidencia:</strong> @Model.IncidentType</p>
                 </div>
@@ -53,6 +125,14 @@
                     <p><strong>Estado:</strong> <span class="badge @statusClass">@Model.Status</span></p>
                     <p><strong>Tecnico Asignado:</strong> @(string.IsNullOrWhiteSpace(Model.AssignedTechnician) ? "Sin asignar" : Model.AssignedTechnician)</p>
                     <p><strong>SLA:</strong> @Model.SLADeadline.ToString("yyyy-MM-dd HH:mm")</p>
+                    @if (Model.FailureOdometerKm.HasValue)
+                    {
+                        <p><strong>KM ingreso falla:</strong> @Model.FailureOdometerKm.Value.ToString("N2")</p>
+                    }
+                    @if (Model.ExitOdometerKm.HasValue)
+                    {
+                        <p><strong>KM salida taller:</strong> @Model.ExitOdometerKm.Value.ToString("N2")</p>
+                    }
                 </div>
             </div>
 
@@ -148,11 +228,66 @@
                     <div>@(string.IsNullOrWhiteSpace(Model.PreventiveRecommendations) ? "Sin detalle" : Model.PreventiveRecommendations)</div>
                 </div>
             </div>
+
+            <hr />
+            <h5>Detalle de Repuestos Despachados</h5>
+            @if (Model.SparePartDispatches == null || !Model.SparePartDispatches.Any())
+            {
+                <div class="text-muted">No hay repuestos despachados para esta orden.</div>
+            }
+            else
+            {
+                var orderedDispatches = Model.SparePartDispatches
+                    .OrderBy(x => x.PartName)
+                    .ToList();
+
+                var totalCordoba = orderedDispatches.Sum(x => x.TotalCostCordoba ?? 0m);
+                var totalUsd = orderedDispatches.Sum(x => x.TotalCostUsd ?? 0m);
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Articulo</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end">Unitario C$</th>
+                                <th class="text-end">Total C$</th>
+                                <th class="text-end">Unitario $</th>
+                                <th class="text-end">Total $</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in orderedDispatches)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">@line.PartName</div>
+                                        <div class="text-muted small">@line.PartCode @(string.IsNullOrWhiteSpace(line.UnitOfMeasure) ? string.Empty : $"| {line.UnitOfMeasure}")</div>
+                                    </td>
+                                    <td class="text-end">@line.QuantityDispatched</td>
+                                    <td class="text-end">@((line.UnitCostCordoba ?? 0m).ToString("N2"))</td>
+                                    <td class="text-end">@((line.TotalCostCordoba ?? 0m).ToString("N2"))</td>
+                                    <td class="text-end">@((line.UnitCostUsd ?? 0m).ToString("N2"))</td>
+                                    <td class="text-end">@((line.TotalCostUsd ?? 0m).ToString("N2"))</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Total orden</th>
+                                <th class="text-end">C$ @totalCordoba.ToString("N2")</th>
+                                <th></th>
+                                <th class="text-end">$ @totalUsd.ToString("N2")</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
         </div>
     </div>
 
     <div class="card shadow">
-        <div class="card-header bg-dark text-white">Historial de Cambios</div>
+        <div class="card-header bg-dark text-white">Historial auditable de cambios</div>
 
         <div class="card-body">
             @if (!Model.HistoryEntries.Any())
@@ -176,10 +311,10 @@
                         {
                             <tr>
                                 <td>@item.ChangeDate.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td>@item.FieldChanged</td>
-                                <td>@item.OldValue</td>
-                                <td>@item.NewValue</td>
-                                <td>@item.ChangedBy</td>
+                                <td>@DisplayAuditField(item.FieldChanged)</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.OldValue) ? "-" : item.OldValue)</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.NewValue) ? "-" : item.NewValue)</td>
+                                <td>@DisplayAuditUser(item.ChangedBy)</td>
                             </tr>
                         }
                     </tbody>
@@ -191,10 +326,10 @@
     <div class="mt-4 text-end">
         @if (canEditTicket)
         {
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" asp-route-department="@returnDepartment" class="btn btn-primary">Editar</a>
         }
-        <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="btn btn-danger">Descargar PDF</a>
-        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+        <a asp-action="DownloadPdf" asp-route-id="@Model.Id" asp-route-department="@returnDepartment" class="btn btn-danger">Descargar PDF</a>
+        <a asp-action="Index" asp-route-department="@returnDepartment" class="btn btn-secondary">Volver</a>
     </div>
 
 </div>

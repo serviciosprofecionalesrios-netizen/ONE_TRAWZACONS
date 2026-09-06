@@ -1,0 +1,320 @@
+﻿@{
+    ViewData["Title"] = "Portal de Servicios";
+
+    var areas = new[]
+    {
+        new
+        {
+            Id = "usuarios",
+            Nombre = "Usuarios",
+            Color = "var(--usr)",
+            Servicios = new[]
+            {
+                new { Titulo = "Usuarios", Descripcion = "Administracion de cuentas y roles", Url = "/Users", Activo = true },
+                new { Titulo = "Credenciales", Descripcion = "Accesos de plataformas", Url = "/Credentials", Activo = true }
+            }
+        },
+        new
+        {
+            Id = "operaciones",
+            Nombre = "Operaciones",
+            Color = "var(--ops)",
+            Servicios = new[]
+            {
+                new { Titulo = "Dashboard", Descripcion = "KPIs e indicadores de operaciones", Url = "/Operaciones/Dashboard", Activo = true },
+                new { Titulo = "Calendario operativo", Descripcion = "Actividades y fechas operativas", Url = "/Operaciones/CalendarioOperativo", Activo = true },
+                new { Titulo = "Seguimiento de toneladas", Descripcion = "Control de tonelaje movilizado", Url = "/Operaciones/SeguimientoToneladas", Activo = true },
+                new { Titulo = "Seguimiento de Diésel", Descripcion = "Control de consumo por unidad", Url = "/Operaciones/SeguimientoDiesel", Activo = true },
+                new { Titulo = "Reportes", Descripcion = "Consolidado y reportes operativos", Url = "/Operaciones/Reportes", Activo = true },
+                new { Titulo = "Cumplimiento operativo", Descripcion = "Reporte de cumplimiento", Url = "/Operaciones/Reportes?reporte=CumplimientoOperativo", Activo = true },
+                new { Titulo = "Toneladas por ruta", Descripcion = "Reporte por rutas activas", Url = "/Operaciones/Reportes?reporte=ToneladasPorRuta", Activo = true },
+                new { Titulo = "Diesel por unidad", Descripcion = "Reporte de consumo por unidad", Url = "/Operaciones/Reportes?reporte=DieselPorUnidad", Activo = true }
+            }
+        },
+        new
+        {
+            Id = "mantenimiento",
+            Nombre = "Mantenimiento",
+            Color = "var(--mnt)",
+            Servicios = new[]
+            {
+                new { Titulo = "Orden de mantenimiento", Descripcion = "Crear solicitud de mantenimiento", Url = "/Tickets/Create?department=Mantenimiento", Activo = true },
+                new { Titulo = "Nueva orden de mantenimiento", Descripcion = "Registro directo de orden", Url = "/Tickets/CreateMaintenance", Activo = true },
+                new { Titulo = "Seguimiento de ordenes", Descripcion = "Control de trabajos", Url = "/Tickets?department=Mantenimiento", Activo = true },
+                new { Titulo = "Tabla detalle de ordenes", Descripcion = "Vista detallada por orden y costos", Url = "/Tickets?department=Mantenimiento&maintenanceView=detail", Activo = true },
+                new { Titulo = "Pizarra operativa", Descripcion = "Tablero en vivo estilo aeropuerto", Url = "/Tickets/MaintenanceBoard", Activo = true },
+                new { Titulo = "Ver ordenes vencidas", Descripcion = "Seguimiento de SLA vencido", Url = "/Tickets?department=Mantenimiento&quick=overdue", Activo = true },
+                new { Titulo = "Ver ordenes sin asignar", Descripcion = "Pendientes por asignacion", Url = "/Tickets?department=Mantenimiento&quick=unassigned", Activo = true },
+                new { Titulo = "Ver citas de hoy", Descripcion = "Agenda diaria de mantenimiento", Url = "/Calendar?scope=maintenance&sla=appointments", Activo = true },
+                new { Titulo = "Nueva cita de mantenimiento", Descripcion = "Programar nueva cita", Url = "/MaintenanceAppointments/Create", Activo = true },
+                new { Titulo = "Ver citas de mantenimiento", Descripcion = "Listado e historial de citas", Url = "/MaintenanceAppointments", Activo = true },
+                new { Titulo = "Nuevo tecnico", Descripcion = "Alta de personal tecnico", Url = "/MaintenanceTechnicians/Create", Activo = true },
+                new { Titulo = "Ver tecnicos", Descripcion = "Listado de tecnicos de taller", Url = "/MaintenanceTechnicians", Activo = true },
+                new { Titulo = "Inventario de repuestos", Descripcion = "Stock de taller mecanico y electrico", Url = "/MaintenanceInventory", Activo = true },
+                new { Titulo = "Detalle inventario", Descripcion = "Vista detallada de stock y transito", Url = "/MaintenanceInventory/Detalle", Activo = true },
+                new { Titulo = "Despacho de repuestos", Descripcion = "Salida de articulos por orden", Url = "/Tickets/CreateArticleOutput", Activo = true },
+                new { Titulo = "Reporteria de mantenimiento", Descripcion = "KPIs y reportes PDF", Url = "/MaintenanceReports", Activo = true }
+            }
+        },
+        new
+        {
+            Id = "inventario",
+            Nombre = "Inventario",
+            Color = "var(--inv)",
+            Servicios = new[]
+            {
+                new { Titulo = "Panel de inventario", Descripcion = "Vista general de movimientos", Url = "/InventoryHub", Activo = true },
+                new { Titulo = "Inventario TI", Descripcion = "Articulos y activos tecnologicos", Url = "/Inventory", Activo = true },
+                new { Titulo = "Inventario de repuestos", Descripcion = "Stock de repuestos", Url = "/MaintenanceInventory", Activo = true },
+                new { Titulo = "Nuevo articulo TI", Descripcion = "Registrar articulo de TI", Url = "/Inventory/Create", Activo = true },
+                new { Titulo = "Nuevo articulo de repuesto", Descripcion = "Registrar repuesto", Url = "/MaintenanceInventory/Create", Activo = true },
+                new { Titulo = "Orden de compra", Descripcion = "Gestion de orden de compra", Url = "/Tickets/CreateFinance?requestType=Orden%20de%20compra", Activo = true },
+                new { Titulo = "Salida de articulos", Descripcion = "Despacho de articulos", Url = "/Tickets/CreateArticleOutput", Activo = true },
+                new { Titulo = "Solicitudes de compras", Descripcion = "Listado de solicitudes", Url = "/Tickets?department=Inventario", Activo = true }
+            }
+        }
+    };
+}
+
+<style>
+    :root {
+        --ink: #0f172a;
+        --muted: #475569;
+        --panel: #f8fafc;
+        --usr: #0f766e;
+        --ops: #0ea5e9;
+        --mnt: #b45309;
+        --inv: #2563eb;
+    }
+
+    .portal-wrap {
+        max-width: 1240px;
+        margin: 1rem auto 1.4rem;
+        display: grid;
+        grid-template-columns: 270px 1fr;
+        gap: 1rem;
+    }
+
+    .portal-aside {
+        position: sticky;
+        top: 1rem;
+        align-self: start;
+        background: linear-gradient(170deg, #ffffff 0%, #f5f9ff 68%, #eef5ff 100%);
+        border: 1px solid #d2deeb;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 6px 14px rgba(30, 58, 138, 0.08);
+    }
+
+    .portal-aside h4 {
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        color: var(--ink);
+    }
+
+    .portal-nav {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .portal-nav a {
+        text-decoration: none;
+        color: #0b1220;
+        font-weight: 700;
+        background: #fff;
+        border: 1px solid #d9e3ee;
+        border-radius: 11px;
+        padding: 0.56rem 0.72rem;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    .portal-nav a:hover {
+        transform: translateX(3px);
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+    }
+
+    .portal-main {
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .portal-hero {
+        background: linear-gradient(120deg, #0f172a 0%, #1e3a8a 55%, #0f766e 100%);
+        color: #fff;
+        border-radius: 18px;
+        padding: 1.2rem 1.25rem;
+        border: 1px solid rgba(147, 197, 253, 0.35);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.24);
+    }
+
+    .portal-hero h2 {
+        margin: 0;
+        font-weight: 800;
+        font-size: 1.65rem;
+    }
+
+    .portal-hero p {
+        margin: 0.45rem 0 0;
+        color: #e0f2fe;
+        font-weight: 500;
+    }
+
+    .area-card {
+        background: #fff;
+        border: 1px solid #dce6f0;
+        border-radius: 16px;
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+    }
+
+    .area-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #e6edf5;
+        background: var(--panel);
+    }
+
+    .area-title {
+        font-weight: 800;
+        margin: 0;
+        color: var(--ink);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.48rem;
+    }
+
+    .area-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+        background: var(--dot);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot), transparent 74%);
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+        padding: 0.85rem;
+    }
+
+    .service-item {
+        border: 1px solid #dce7f2;
+        border-radius: 13px;
+        padding: 0.7rem;
+        background: #fff;
+        display: grid;
+        gap: 0.34rem;
+    }
+
+    .service-item h6 {
+        margin: 0;
+        font-size: 0.96rem;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .service-item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+    }
+
+    .service-link {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 0.85rem;
+        padding: 0.34rem 0.55rem;
+        border-radius: 9px;
+        border: 1px solid #d0e0f0;
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    .service-link:hover {
+        background: #edf4fb;
+    }
+
+    .service-link--off {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #6b7280;
+        cursor: not-allowed;
+    }
+
+    @@media (max-width: 992px) {
+        .portal-wrap {
+            grid-template-columns: 1fr;
+        }
+
+        .portal-aside {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .services-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="portal-wrap">
+    <aside class="portal-aside">
+        <h4>Areas</h4>
+        <div class="portal-nav">
+            @foreach (var area in areas)
+            {
+                <a href="#@area.Id">@area.Nombre</a>
+            }
+        </div>
+    </aside>
+
+    <main class="portal-main">
+        <section class="portal-hero">
+            <h2>Portal de Servicios Empresariales</h2>
+            <p>One page para toda la empresa con servicios por area y accesos rapidos a sus submenus de trabajo.</p>
+        </section>
+
+        @foreach (var area in areas)
+        {
+            <section id="@area.Id" class="area-card" style="--dot:@area.Color;">
+                <div class="area-header">
+                    <h5 class="area-title"><span class="area-dot"></span>@area.Nombre</h5>
+                    <span class="badge text-bg-light">@area.Servicios.Length servicios</span>
+                </div>
+
+                <div class="services-grid">
+                    @foreach (var servicio in area.Servicios)
+                    {
+                        <article class="service-item">
+                            <h6>@servicio.Titulo</h6>
+                            <p>@servicio.Descripcion</p>
+
+                            @if (servicio.Activo)
+                            {
+                                <a class="service-link" href="@servicio.Url">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                    Abrir submenu
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="service-link service-link--off">
+                                    <i class="bi bi-hourglass-split"></i>
+                                    Proximamente
+                                </span>
+                            }
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+    </main>
+</div>

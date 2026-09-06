@@ -1,0 +1,110 @@
+@model ITServiceDeskApp.ViewModels.FinanceDocuments.FinanceReceiptCreateViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Collections.Generic
+
+@{
+    ViewData["Title"] = "Nuevo Recibo";
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? new List<SelectListItem>();
+    var currencyOptions = ViewBag.CurrencyOptions as IEnumerable<SelectListItem> ?? new List<SelectListItem>();
+    var counterpartyOptions = ViewBag.CounterpartyOptions as IEnumerable<SelectListItem> ?? new List<SelectListItem>();
+    var nextNumberPreview = ViewBag.NextNumberPreview as string ?? "REC-YYYYMM-0001";
+}
+
+<div class="container mt-4" style="max-width:980px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-1">Nuevo Recibo</h3>
+            <div class="text-muted">Consecutivo automático: <strong>@nextNumberPreview</strong> (se asigna al guardar).</div>
+        </div>
+    </div>
+
+    @if (TempData["TicketsMessage"] is string ok && !string.IsNullOrWhiteSpace(ok))
+    {
+        <div class="alert alert-success">@ok</div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="ReceiptCreate" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Site" class="form-label fw-semibold"></label>
+                        <select asp-for="Site" class="form-select" asp-items="siteOptions">
+                            <option value="">Seleccionar sitio</option>
+                        </select>
+                        <span asp-validation-for="Site" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CounterpartyId" class="form-label fw-semibold"></label>
+                        <select asp-for="CounterpartyId" class="form-select" asp-items="counterpartyOptions"></select>
+                        <div class="form-text">Si seleccionas una contraparte, conserva tambien el nombre para el PDF.</div>
+                        <span asp-validation-for="CounterpartyId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ReceivedFrom" class="form-label fw-semibold"></label>
+                        <input asp-for="ReceivedFrom" class="form-control" />
+                        <span asp-validation-for="ReceivedFrom" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CounterpartyTaxId" class="form-label fw-semibold"></label>
+                        <input asp-for="CounterpartyTaxId" class="form-control" />
+                        <span asp-validation-for="CounterpartyTaxId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label asp-for="Concept" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Concept" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Concept" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="Amount" class="form-label fw-semibold"></label>
+                        <input asp-for="Amount" type="number" step="0.01" min="0.01" class="form-control" />
+                        <span asp-validation-for="Amount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="Currency" class="form-label fw-semibold"></label>
+                        <select asp-for="Currency" class="form-select" asp-items="currencyOptions"></select>
+                        <span asp-validation-for="Currency" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ReceiptDate" class="form-label fw-semibold"></label>
+                        <input asp-for="ReceiptDate" type="date" class="form-control" />
+                        <span asp-validation-for="ReceiptDate" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Attachments" class="form-label fw-semibold"></label>
+                        <input asp-for="Attachments" type="file" multiple class="form-control" />
+                        <div class="form-text">Cotizaciones, ordenes, comprobantes o soportes.</div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label asp-for="Notes" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a asp-controller="Tickets" asp-action="Index" asp-route-department="Finanzas" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar recibo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,777 @@
+@model ITServiceDeskApp.Models.Ticket
+@using ITServiceDeskApp.Models
+@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Nueva Orden de Mantenimiento";
+    var previewTicket = ViewBag.PreviewTicketNumber as string ?? "TK-0000";
+    var previewCreated = ViewBag.PreviewCreatedDate is DateTime dt ? dt.ToString("dd/MM/yyyy HH:mm") : DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+    var previewSla = ViewBag.SlaPreview as string ?? "Se calcula automaticamente";
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var tenenciaOptions = ViewBag.TenenciaOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceFailureCategoryOptions = ViewBag.MaintenanceFailureCategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceStageOptions = ViewBag.MaintenanceStageOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var incidentTypeOptions = ViewBag.IncidentTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var technicianOptions = ViewBag.TechnicianOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceTechnicianCategoryOptions = ViewBag.MaintenanceTechnicianCategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var requestingUserOptions = ViewBag.RequestingUserOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var ticketCostCenterOptions = ViewBag.TicketCostCenterOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceTechnicianCatalogJson = ViewBag.MaintenanceTechnicianCatalogJson as string ?? "[]";
+    var sparePartsCatalogJson = ViewBag.MaintenanceSparePartsCatalogJson as string ?? "[]";
+    var selectedSparePartsJson = ViewBag.SelectedSparePartsJson as string ?? "[]";
+    var maintenanceUiMetaJson = ViewBag.MaintenanceUiMetaJson as string ?? "{}";
+    var canSetPriority = ViewBag.CanSetPriority is bool canSet && canSet;
+}
+
+<style>
+    .m-shell{max-width:1120px;margin:0 auto;border:1px solid #d7dce3;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.09);overflow:hidden}
+    .m-head{border-bottom:1px solid #e3e8ef;padding:1rem 1.4rem;display:flex;justify-content:space-between;align-items:center}
+    .m-title{margin:0;font-size:1.5rem;font-weight:800;color:#0f172a}
+    .m-body{padding:1.2rem 1.4rem 1rem}
+    .m-label{font-weight:700;color:#334155;margin-bottom:.4rem;font-size:.95rem}
+    .m-label .req{color:#dc2626}
+    .m-foot{border-top:1px solid #e3e8ef;padding:1rem 1.4rem;display:flex;justify-content:flex-end;gap:.6rem;flex-wrap:wrap}
+    .m-note{color:#64748b;font-size:.82rem}
+    .m-box{border:1px solid #dbe3ee;border-radius:12px;padding:.95rem;background:#f8fbff}
+    .m-box h4{margin:0 0 .75rem;font-size:1rem;font-weight:800;color:#0f172a}
+    .m-live{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:.6rem}
+    .m-card{background:#fff;border:1px solid #dbe3ee;border-radius:10px;padding:.6rem .7rem}
+    .m-card small{display:block;color:#64748b;font-weight:700}
+    .m-card strong{display:block;color:#0f172a;font-size:1.08rem}
+    .m-check{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:.45rem 1rem}
+    .parts-box{border:1px solid #dbe3ee;border-radius:12px;padding:1rem;background:#f8fbff}
+    .parts-box .table > :not(caption) > * > *{vertical-align:middle}
+    .multi-dd{position:relative}
+    .multi-dd-toggle{width:100%;height:calc(2.5rem + 2px);border:1px solid #cfd7e3;border-radius:.5rem;background:#fff;padding:.52rem 2.2rem .52rem .78rem;text-align:left;color:#0f172a;font-weight:500}
+    .multi-dd-toggle:focus{outline:0;border-color:#86b7fe;box-shadow:0 0 0 .2rem rgba(13,110,253,.15)}
+    .multi-dd-toggle::after{content:"";position:absolute;right:.85rem;top:50%;margin-top:-.15rem;border-left:.28rem solid transparent;border-right:.28rem solid transparent;border-top:.38rem solid #667085;pointer-events:none}
+    .multi-dd-toggle-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:.25rem}
+    .multi-dd-menu{display:none;position:absolute;top:calc(100% + .3rem);left:0;right:0;z-index:1050;max-height:230px;overflow:auto;background:#fff;border:1px solid #d5dde9;border-radius:.65rem;box-shadow:0 12px 22px rgba(15,23,42,.14);padding:.45rem}
+    .multi-dd-menu.show{display:block}
+    .multi-dd-option{display:flex;align-items:flex-start;gap:.45rem;padding:.3rem .35rem;border-radius:.4rem}
+    .multi-dd-option:hover{background:#f1f5f9}
+    .multi-dd-option input{margin-top:.2rem}
+    .multi-dd-empty{color:#94a3b8;font-size:.86rem;padding:.35rem}
+    @@media (max-width:992px){.m-live{grid-template-columns:repeat(3,minmax(120px,1fr))}}
+    @@media (max-width:768px){.m-live{grid-template-columns:repeat(2,minmax(120px,1fr))}.m-check{grid-template-columns:1fr}}
+</style>
+
+<div class="m-shell mt-3">
+    <div class="m-head">
+        <h3 class="m-title">Nueva Orden de Mantenimiento</h3>
+        <a asp-action="Index" asp-route-department="Mantenimiento" class="btn-close" title="Cerrar"></a>
+    </div>
+
+    <form asp-action="CreateMaintenance" method="post" enctype="multipart/form-data" id="maintenanceCreateForm">
+        <div class="m-body">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="alert alert-info">Flujo dedicado para mantenimiento. El departamento queda fijo en <strong>Mantenimiento</strong>.</div>
+
+            <input asp-for="Department" type="hidden" value="Mantenimiento" />
+            <input asp-for="Status" type="hidden" value="@((int)TicketStatus.Open)" />
+            <input type="hidden" id="sparePartsJson" name="sparePartsJson" value="@selectedSparePartsJson" />
+            <input type="hidden" id="maintenanceUiMetaJson" name="maintenanceUiMetaJson" value="@maintenanceUiMetaJson" />
+
+            <div class="m-box mb-3">
+                <h4>Plantilla rapida</h4>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                        <label class="m-label mb-1" for="templatePresetSelect">Tipo de plantilla</label>
+                        <select id="templatePresetSelect" class="form-select">
+                            <option value="">Seleccionar plantilla</option>
+                            <option value="frenos_preventivo">Preventivo de frenos</option>
+                            <option value="motor_correctivo">Correctivo de motor</option>
+                            <option value="electrico_diagnostico">Diagnostico electrico</option>
+                            <option value="hidraulico_correctivo">Correctivo hidraulico</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-grid">
+                        <button type="button" id="applyTemplateBtn" class="btn btn-outline-primary">Aplicar plantilla</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="m-box mb-3">
+                <h4>Resumen en vivo</h4>
+                <div class="m-live">
+                    <div class="m-card"><small>SLA estimada</small><strong id="summarySla">@previewSla</strong></div>
+                    <div class="m-card"><small>Repuestos C$</small><strong id="summarySpareCordoba">C$ 0.00</strong></div>
+                    <div class="m-card"><small>Repuestos $</small><strong id="summarySpareUsd">$ 0.00</strong></div>
+                    <div class="m-card"><small>Total C$</small><strong id="summaryGrandCordoba">C$ 0.00</strong></div>
+                    <div class="m-card"><small>Total $</small><strong id="summaryGrandUsd">$ 0.00</strong></div>
+                    <div class="m-card"><small>Checklist</small><strong id="summaryChecklist">0/4</strong></div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4"><label class="m-label">Numero de orden</label><input class="form-control" value="@previewTicket" readonly /><div class="m-note">Se genera automaticamente al guardar.</div></div>
+                <div class="col-md-4"><label class="m-label">Fecha de creacion</label><input class="form-control" value="@previewCreated" readonly /></div>
+                <div class="col-md-4"><label class="m-label">Departamento</label><input class="form-control" value="Mantenimiento" readonly /></div>
+
+                <div class="col-md-5">
+                    <label asp-for="RequestingUser" class="m-label">Solicitante <span class="req">*</span></label>
+                    <select asp-for="RequestingUser" class="form-select" asp-items="requestingUserOptions"><option value="">Seleccionar solicitante</option></select>
+                    <span asp-validation-for="RequestingUser" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Site" class="m-label">Sitio / Ubicacion <span class="req">*</span></label>
+                    <select asp-for="Site" class="form-select" asp-items="siteOptions"><option value="">Seleccionar sitio</option></select>
+                    <span asp-validation-for="Site" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Tenencia" class="m-label">Tenencia <span class="req">*</span></label>
+                    <select asp-for="Tenencia" class="form-select" asp-items="tenenciaOptions" required><option value="">Seleccionar tenencia</option></select>
+                    <span asp-validation-for="Tenencia" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-5">
+                    <label asp-for="IncidentType" class="m-label">Tipo de orden <span class="req">*</span></label>
+                    <select asp-for="IncidentType" class="form-select" asp-items="incidentTypeOptions"><option value="">Seleccionar tipo</option></select>
+                    <span asp-validation-for="IncidentType" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Priority" class="m-label">Prioridad <span class="req">*</span></label>
+                    @if (canSetPriority)
+                    {
+                        <select asp-for="Priority" class="form-select" id="prioritySelect"><option value="1">Baja</option><option value="2" selected>Media</option><option value="3">Alta</option><option value="4">Critica</option></select>
+                    }
+                    else
+                    {
+                        <input class="form-control" value="Media" readonly /><input type="hidden" asp-for="Priority" value="@((int)PriorityLevel.Medium)" />
+                    }
+                    <span asp-validation-for="Priority" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4"><label class="m-label">Fecha compromiso (SLA)</label><input id="slaPreview" class="form-control" value="@previewSla" readonly /></div>
+                <div class="col-md-4">
+                    <label asp-for="MaintenanceStage" class="m-label">Etapa de taller <span class="req">*</span></label>
+                    <select asp-for="MaintenanceStage" class="form-select" asp-items="maintenanceStageOptions">
+                        <option value="">Seleccionar etapa</option>
+                    </select>
+                    <span asp-validation-for="MaintenanceStage" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="CostCenterCode" class="m-label">#CC del area</label>
+                    <select asp-for="CostCenterCode" class="form-select" asp-items="ticketCostCenterOptions">
+                        <option value="">Seleccionar #CC</option>
+                    </select>
+                    <span asp-validation-for="CostCenterCode" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="TechnicianCategoryMulti" class="m-label">Categoria tecnica <span class="req">*</span></label>
+                    <input asp-for="TechnicianCategory" type="hidden" />
+                    <select id="TechnicianCategoryMulti" class="d-none" multiple>
+                        @foreach (var option in maintenanceTechnicianCategoryOptions)
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    </select>
+                    <div class="multi-dd">
+                        <button type="button" class="multi-dd-toggle" data-dropdown-toggle="TechnicianCategoryMenu">
+                            <span id="technicianCategorySummary" class="multi-dd-toggle-text">Seleccionar categoria(s)</span>
+                        </button>
+                        <div id="TechnicianCategoryMenu" class="multi-dd-menu">
+                            <div id="TechnicianCategoryOptions"></div>
+                        </div>
+                    </div>
+                    <div class="m-note">Seleccion multiple en desplegable.</div>
+                    <span asp-validation-for="TechnicianCategory" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label for="AssignedTechnicianMulti" class="m-label">Tecnico asignado <span class="req">*</span></label>
+                    <input asp-for="AssignedTechnician" type="hidden" />
+                    <select id="AssignedTechnicianMulti" class="d-none" multiple>
+                        @foreach (var option in technicianOptions)
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    </select>
+                    <div class="multi-dd">
+                        <button type="button" class="multi-dd-toggle" data-dropdown-toggle="AssignedTechnicianMenu">
+                            <span id="assignedTechnicianSummary" class="multi-dd-toggle-text">Seleccionar tecnico(s)</span>
+                        </button>
+                        <div id="AssignedTechnicianMenu" class="multi-dd-menu">
+                            <div id="AssignedTechnicianOptions"></div>
+                        </div>
+                    </div>
+                    <div class="m-note">Puedes escoger dos o mas tecnicos.</div>
+                    <span asp-validation-for="AssignedTechnician" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6"><label class="m-label">Evidencia inicial</label><input type="file" name="reportEvidenceFile" class="form-control" accept=".jpg,.jpeg,.png,.webp,.pdf" /></div>
+
+                <div class="col-md-4"><label asp-for="UnitCode" class="m-label">Unidad / Equipo <span class="req">*</span></label><input asp-for="UnitCode" class="form-control" placeholder="Ej: U-102 / EXC-07" required /><span asp-validation-for="UnitCode" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="FailureCategory" class="m-label">Categoria de falla</label><select asp-for="FailureCategory" class="form-select" asp-items="maintenanceFailureCategoryOptions"><option value="">Seleccionar categoria</option></select><span asp-validation-for="FailureCategory" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="DamagedElement" class="m-label">Elemento danado</label><input asp-for="DamagedElement" class="form-control" placeholder="Ej: Bomba hidraulica, alternador" /><span asp-validation-for="DamagedElement" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="FailureOdometerKm" class="m-label">KM al ingreso por falla</label><input asp-for="FailureOdometerKm" class="form-control" type="number" step="0.01" min="0" /><span asp-validation-for="FailureOdometerKm" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="ExitOdometerKm" class="m-label">KM de salida de taller</label><input asp-for="ExitOdometerKm" class="form-control" type="number" step="0.01" min="0" /><span asp-validation-for="ExitOdometerKm" class="text-danger small"></span></div>
+
+                <div class="col-12">
+                    <label class="m-label">Repuestos despachados para esta orden</label>
+                    <div class="parts-box">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-7">
+                                <label class="form-label mb-1">Articulo</label>
+                                <input id="sparePartSearchInput" type="text" class="form-control mb-2" placeholder="Buscar por codigo, ITEM, N° Parte o descripcion..." autocomplete="off" />
+                                <select id="sparePartSelect" class="form-select"><option value="">Seleccionar repuesto</option></select>
+                            </div>
+                            <div class="col-md-2"><label class="form-label mb-1">Cantidad</label><input id="sparePartQty" type="number" class="form-control" min="1" step="1" value="1" /></div>
+                            <div class="col-md-3 d-grid"><button type="button" id="addSparePartBtn" class="btn btn-outline-primary">Agregar repuesto</button></div>
+                        </div>
+                        @if (ViewData.ModelState.TryGetValue("SparePartsJson", out var sparePartsErrors) && sparePartsErrors.Errors.Any()){ foreach (var err in sparePartsErrors.Errors){<div class="text-danger small mt-1">@err.ErrorMessage</div>} }
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm table-bordered mb-2">
+                                <thead class="table-light"><tr><th>Articulo</th><th>N° Parte</th><th class="text-end">Stock</th><th class="text-end">Cant.</th><th class="text-end">Unit C$</th><th class="text-end">Total C$</th><th class="text-end">Unit $</th><th class="text-end">Total $</th><th style="width: 90px;">Accion</th></tr></thead>
+                                <tbody id="sparePartsTableBody"><tr id="sparePartsEmptyRow"><td colspan="9" class="text-center text-muted">Sin repuestos agregados.</td></tr></tbody>
+                                <tfoot><tr><th colspan="5" class="text-end">Totales</th><th class="text-end" id="totalCordobaCell">C$ 0.00</th><th></th><th class="text-end" id="totalUsdCell">$ 0.00</th><th></th></tr></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3"><label class="m-label" for="laborCostCordoba">Mano de obra (C$)</label><input id="laborCostCordoba" class="form-control" type="number" step="0.01" min="0" /></div>
+                <div class="col-md-3"><label class="m-label" for="laborCostUsd">Mano de obra ($)</label><input id="laborCostUsd" class="form-control" type="number" step="0.01" min="0" /></div>
+                <div class="col-md-3"><label class="m-label" for="externalCostCordoba">Servicio externo (C$)</label><input id="externalCostCordoba" class="form-control" type="number" step="0.01" min="0" /></div>
+                <div class="col-md-3"><label class="m-label" for="externalCostUsd">Servicio externo ($)</label><input id="externalCostUsd" class="form-control" type="number" step="0.01" min="0" /></div>
+                <div class="col-md-12">
+                    <label asp-for="CostApprovalNotes" class="m-label">Notas de costo (opcional)</label>
+                    <textarea asp-for="CostApprovalNotes" class="form-control" rows="2" placeholder="Observaciones para aprobacion de costos, si aplica"></textarea>
+                    <span asp-validation-for="CostApprovalNotes" class="text-danger small"></span>
+                </div>
+                @if (ViewData.ModelState.TryGetValue("maintenanceUiMetaJson", out var maintenanceMetaErrors) && maintenanceMetaErrors.Errors.Any()){<div class="col-12">@foreach (var err in maintenanceMetaErrors.Errors){<div class="text-danger small">@err.ErrorMessage</div>}</div>}
+
+                <div class="col-12">
+                    <div class="m-box">
+                        <h4>Checklist tecnico rapido</h4>
+                        <div class="m-check">
+                            <div class="form-check"><input class="form-check-input maintenance-check" type="checkbox" id="checklistInspectionCompleted" /><label class="form-check-label" for="checklistInspectionCompleted">Inspeccion inicial completada</label></div>
+                            <div class="form-check"><input class="form-check-input maintenance-check" type="checkbox" id="checklistPartsValidated" /><label class="form-check-label" for="checklistPartsValidated">Repuestos validados</label></div>
+                            <div class="form-check"><input class="form-check-input maintenance-check" type="checkbox" id="checklistFinalTestCompleted" /><label class="form-check-label" for="checklistFinalTestCompleted">Prueba final realizada</label></div>
+                            <div class="form-check"><input class="form-check-input maintenance-check" type="checkbox" id="checklistUserConformityCompleted" /><label class="form-check-label" for="checklistUserConformityCompleted">Conformidad del usuario confirmada</label></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12"><label asp-for="Description" class="m-label">Descripcion del trabajo <span class="req">*</span></label><textarea asp-for="Description" class="form-control" rows="4"></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
+                <div class="col-12"><label asp-for="Observations" class="m-label">Datos del equipo / observaciones</label><textarea asp-for="Observations" class="form-control" rows="3"></textarea><span asp-validation-for="Observations" class="text-danger small"></span></div>
+            </div>
+        </div>
+        <div class="m-foot">
+            <a asp-action="Index" asp-route-department="Mantenimiento" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" name="submitAction" value="save" class="btn btn-success"><i class="bi bi-tools"></i> Crear Orden de Mantenimiento</button>
+            <button type="submit" name="submitAction" value="save_pdf" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> Guardar y descargar PDF</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("maintenanceCreateForm");
+            const prioritySelect = document.getElementById("prioritySelect");
+            const slaPreview = document.getElementById("slaPreview");
+            const siteSelect = document.getElementById("Site");
+            const tenenciaSelect = document.getElementById("Tenencia");
+            const technicianCategorySelect = document.getElementById("TechnicianCategoryMulti");
+            const technicianSelect = document.getElementById("AssignedTechnicianMulti");
+            const technicianCategoryInput = document.getElementById("TechnicianCategory");
+            const technicianInput = document.getElementById("AssignedTechnician");
+            const technicianCategoryOptionsWrap = document.getElementById("TechnicianCategoryOptions");
+            const technicianOptionsWrap = document.getElementById("AssignedTechnicianOptions");
+            const technicianCategorySummary = document.getElementById("technicianCategorySummary");
+            const assignedTechnicianSummary = document.getElementById("assignedTechnicianSummary");
+            const incidentTypeSelect = document.getElementById("IncidentType");
+            const failureCategorySelect = document.getElementById("FailureCategory");
+            const damagedElementInput = document.getElementById("DamagedElement");
+            const descriptionInput = document.getElementById("Description");
+            const sparePartSelect = document.getElementById("sparePartSelect");
+            const sparePartSearchInput = document.getElementById("sparePartSearchInput");
+            const sparePartQty = document.getElementById("sparePartQty");
+            const addSparePartBtn = document.getElementById("addSparePartBtn");
+            const sparePartsTableBody = document.getElementById("sparePartsTableBody");
+            const sparePartsJsonInput = document.getElementById("sparePartsJson");
+            const maintenanceUiMetaInput = document.getElementById("maintenanceUiMetaJson");
+            const totalCordobaCell = document.getElementById("totalCordobaCell");
+            const totalUsdCell = document.getElementById("totalUsdCell");
+            const templatePresetSelect = document.getElementById("templatePresetSelect");
+            const applyTemplateBtn = document.getElementById("applyTemplateBtn");
+            const laborCostCordobaInput = document.getElementById("laborCostCordoba");
+            const laborCostUsdInput = document.getElementById("laborCostUsd");
+            const externalCostCordobaInput = document.getElementById("externalCostCordoba");
+            const externalCostUsdInput = document.getElementById("externalCostUsd");
+            const checklistInspectionCompleted = document.getElementById("checklistInspectionCompleted");
+            const checklistPartsValidated = document.getElementById("checklistPartsValidated");
+            const checklistFinalTestCompleted = document.getElementById("checklistFinalTestCompleted");
+            const checklistUserConformityCompleted = document.getElementById("checklistUserConformityCompleted");
+            const summarySla = document.getElementById("summarySla");
+            const summarySpareCordoba = document.getElementById("summarySpareCordoba");
+            const summarySpareUsd = document.getElementById("summarySpareUsd");
+            const summaryGrandCordoba = document.getElementById("summaryGrandCordoba");
+            const summaryGrandUsd = document.getElementById("summaryGrandUsd");
+            const summaryChecklist = document.getElementById("summaryChecklist");
+
+            const maintenanceTechnicianCatalog = (() => { try { return @Html.Raw(maintenanceTechnicianCatalogJson); } catch { return []; } })();
+            const sparePartsCatalog = (() => { try { return @Html.Raw(sparePartsCatalogJson); } catch { return []; } })();
+            const initialSpareParts = (() => { try { return @Html.Raw(selectedSparePartsJson); } catch { return []; } })();
+            const initialMaintenanceUiMeta = (() => { try { return @Html.Raw(maintenanceUiMetaJson); } catch { return {}; } })();
+
+            const templatePresets = {
+                frenos_preventivo: { incidentType: "Mantenimiento Preventivo", failureCategory: "Frenos", damagedElement: "Sistema de frenos", description: "Inspeccion preventiva de frenos, limpieza, ajuste y validacion de seguridad.", checklist: { inspection: true, parts: true, finalTest: false, userConformity: false } },
+                motor_correctivo: { incidentType: "Mantenimiento Correctivo", failureCategory: "Motor", damagedElement: "Bloque / sistema de combustible", description: "Atender falla de motor reportada por operaciones y ejecutar pruebas de arranque.", checklist: { inspection: true, parts: false, finalTest: false, userConformity: false } },
+                electrico_diagnostico: { incidentType: "Electricidad", failureCategory: "Sistema electrico", damagedElement: "Arnes / alternador / bateria", description: "Diagnostico electrico completo con mediciones de voltaje y continuidad.", checklist: { inspection: true, parts: false, finalTest: true, userConformity: false } },
+                hidraulico_correctivo: { incidentType: "Mantenimiento Correctivo", failureCategory: "Sistema hidraulico", damagedElement: "Bomba / mangueras / sellos", description: "Corregir fuga o perdida de presion hidraulica y validar operacion final.", checklist: { inspection: true, parts: true, finalTest: true, userConformity: false } }
+            };
+
+            const selectedLines = new Map();
+            let currentSpareTotalCordoba = 0;
+            let currentSpareTotalUsd = 0;
+
+            const fnum = (v) => Number(v || 0).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const norm = (v) => (v || "").toString().trim().toUpperCase();
+            const normSearch = (v) => (v || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+            const normalizeSite = (v) => {
+                const site = norm(v);
+                if (site === "ACT" || site === "PCT") return "PCT";
+                if (site === "ASB" || site === "PSB") return "PSB";
+                if (site === "AOZ" || site === "POZ") return "POZ";
+                return site;
+            };
+            const getMoney = (el) => { const n = Number(el?.value || 0); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0; };
+            const setMoney = (el, v) => { const n = Number(v); if (el) el.value = Number.isFinite(n) && n > 0 ? n.toFixed(2) : ""; };
+            const parseMulti = (value) => (value || "").toString().split(",").map(x => x.trim()).filter(Boolean);
+            const joinMulti = (values) => values.filter(Boolean).join(", ");
+            const selectedValues = (selectElement) => {
+                if (!selectElement) return [];
+                return [...selectElement.selectedOptions].map(option => option.value).filter(Boolean);
+            };
+            function applySelectedValues(selectElement, values) {
+                if (!selectElement) return;
+                const normalized = new Set((values || []).map(norm));
+                [...selectElement.options].forEach(option => {
+                    option.selected = normalized.has(norm(option.value));
+                });
+            }
+            function setDropdownSummary(summaryElement, values, placeholder) {
+                if (!summaryElement) return;
+                if (!values || values.length === 0) {
+                    summaryElement.textContent = placeholder;
+                    return;
+                }
+
+                if (values.length <= 2) {
+                    summaryElement.textContent = values.join(", ");
+                    return;
+                }
+
+                summaryElement.textContent = `${values.slice(0, 2).join(", ")} +${values.length - 2}`;
+            }
+            function closeAllDropdowns(exceptMenuId) {
+                document.querySelectorAll(".multi-dd-menu.show").forEach(menu => {
+                    if (!exceptMenuId || menu.id !== exceptMenuId) {
+                        menu.classList.remove("show");
+                    }
+                });
+            }
+            function wireDropdownToggles() {
+                document.querySelectorAll("[data-dropdown-toggle]").forEach(toggle => {
+                    toggle.addEventListener("click", function () {
+                        const menuId = toggle.getAttribute("data-dropdown-toggle");
+                        if (!menuId) return;
+                        const menu = document.getElementById(menuId);
+                        if (!menu) return;
+                        const willOpen = !menu.classList.contains("show");
+                        closeAllDropdowns(menuId);
+                        if (willOpen) menu.classList.add("show");
+                    });
+                });
+
+                document.addEventListener("click", function (event) {
+                    const target = event.target;
+                    if (!(target instanceof Node)) return;
+                    if (target instanceof Element && target.closest(".multi-dd")) return;
+                    closeAllDropdowns();
+                });
+            }
+            function renderMultiDropdownOptions(selectElement, optionsWrap, summaryElement, placeholder, onChanged) {
+                if (!selectElement || !optionsWrap) return;
+
+                const selectedSet = new Set(selectedValues(selectElement).map(norm));
+                optionsWrap.innerHTML = "";
+
+                const options = [...selectElement.options].filter(option => (option.value || "").trim().length > 0);
+                if (options.length === 0) {
+                    optionsWrap.innerHTML = "<div class=\"multi-dd-empty\">Sin opciones disponibles.</div>";
+                    setDropdownSummary(summaryElement, [], placeholder);
+                    return;
+                }
+
+                options.forEach((option, index) => {
+                    const optionId = `${selectElement.id}_chk_${index}`;
+                    const row = document.createElement("label");
+                    row.className = "multi-dd-option";
+                    row.htmlFor = optionId;
+
+                    const check = document.createElement("input");
+                    check.type = "checkbox";
+                    check.id = optionId;
+                    check.value = option.value;
+                    check.checked = selectedSet.has(norm(option.value));
+                    check.className = "form-check-input";
+                    check.addEventListener("change", function () {
+                        option.selected = check.checked;
+                        setDropdownSummary(summaryElement, selectedValues(selectElement), placeholder);
+                        if (typeof onChanged === "function") onChanged();
+                    });
+
+                    const text = document.createElement("span");
+                    text.textContent = option.textContent || option.value;
+
+                    row.appendChild(check);
+                    row.appendChild(text);
+                    optionsWrap.appendChild(row);
+                });
+
+                setDropdownSummary(summaryElement, selectedValues(selectElement), placeholder);
+            }
+            function renderCategoryDropdown() {
+                renderMultiDropdownOptions(
+                    technicianCategorySelect,
+                    technicianCategoryOptionsWrap,
+                    technicianCategorySummary,
+                    "Seleccionar categoria(s)",
+                    function () {
+                        syncTechnicianInputs();
+                        syncTechnicianOptions();
+                        renderCategoryDropdown();
+                    });
+            }
+            function renderTechnicianDropdown() {
+                renderMultiDropdownOptions(
+                    technicianSelect,
+                    technicianOptionsWrap,
+                    assignedTechnicianSummary,
+                    "Seleccionar tecnico(s)",
+                    syncTechnicianInputs);
+            }
+            function syncTechnicianInputs() {
+                if (technicianCategoryInput) technicianCategoryInput.value = joinMulti(selectedValues(technicianCategorySelect));
+                if (technicianInput) technicianInput.value = joinMulti(selectedValues(technicianSelect));
+            }
+
+            function getSlaHours(p) { if (p === 1) return 48; if (p === 2) return 24; if (p === 3) return 8; if (p === 4) return 4; return 24; }
+            function isWorkingDay(d) { return d.getDay() !== 0; }
+            function getShift(d) { return d.getDay() === 6 ? { s: 8, e: 13 } : { s: 8, e: 17 }; }
+            function moveToWork(d) {
+                const c = new Date(d);
+                while (true) {
+                    if (!isWorkingDay(c)) { c.setDate(c.getDate() + 1); c.setHours(8, 0, 0, 0); continue; }
+                    const sh = getShift(c), st = new Date(c), en = new Date(c);
+                    st.setHours(sh.s, 0, 0, 0); en.setHours(sh.e, 0, 0, 0);
+                    if (c < st) return st;
+                    if (c >= en) { c.setDate(c.getDate() + 1); c.setHours(8, 0, 0, 0); continue; }
+                    return c;
+                }
+            }
+            function addWorkHours(base, h) {
+                let r = h, c = moveToWork(base);
+                while (r > 0) {
+                    c = moveToWork(c);
+                    const sh = getShift(c), end = new Date(c);
+                    end.setHours(sh.e, 0, 0, 0);
+                    const avail = (end.getTime() - c.getTime()) / 3600000;
+                    const use = Math.min(r, avail);
+                    c = new Date(c.getTime() + use * 3600000);
+                    r -= use;
+                    if (r > 0) { c.setDate(c.getDate() + 1); c.setHours(8, 0, 0, 0); }
+                }
+                return c;
+            }
+            function fmtDate(d) {
+                const dd = String(d.getDate()).padStart(2, "0"), mm = String(d.getMonth() + 1).padStart(2, "0"), yy = d.getFullYear();
+                const hh = String(d.getHours()).padStart(2, "0"), mi = String(d.getMinutes()).padStart(2, "0");
+                return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+            }
+
+            function lineMatches(part) {
+                if (!part) return false;
+                const s = normalizeSite(siteSelect?.value), t = norm(tenenciaSelect?.value), ps = normalizeSite(part.site), pt = norm(part.tenencia);
+                return (!s || s === ps) && (!t || t === pt);
+            }
+
+            function partMatchesSearch(part, searchTerm) {
+                if (!part) return false;
+                if (!searchTerm) return true;
+                const haystack = normSearch(`${part.label || ""} ${part.item || ""} ${part.partNumber || ""}`);
+                return haystack.includes(searchTerm);
+            }
+
+            function syncTechnicianOptions() {
+                if (!technicianSelect) return;
+
+                const previousValues = selectedValues(technicianSelect);
+                const selectedCategories = new Set(selectedValues(technicianCategorySelect).map(norm));
+                technicianSelect.innerHTML = "";
+
+                maintenanceTechnicianCatalog
+                    .filter(item => item && item.isActive && item.isAvailable && !item.isOverCapacity)
+                    .filter(item => selectedCategories.size === 0 || selectedCategories.has(norm(item.category)))
+                    .sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || "")))
+                    .forEach(item => {
+                        const load = `${Number(item.currentActiveOrders || 0)}/${Number(item.maxActiveOrders || 1)}`;
+                        const shift = item.shift ? ` - ${item.shift}` : "";
+                        const option = document.createElement("option");
+                        option.value = item.fullName || "";
+                        option.textContent = `${item.fullName || ""} (${load})${shift}`;
+                        technicianSelect.appendChild(option);
+                    });
+
+                previousValues.forEach(previousValue => {
+                    const hasPrevious = [...technicianSelect.options].some(opt => norm(opt.value) === norm(previousValue));
+                    if (hasPrevious) {
+                        const option = [...technicianSelect.options].find(opt => norm(opt.value) === norm(previousValue));
+                        if (option) option.selected = true;
+                        return;
+                    }
+
+                    const option = document.createElement("option");
+                    option.value = previousValue;
+                    option.textContent = `${previousValue} (No disponible)`;
+                    option.selected = true;
+                    technicianSelect.appendChild(option);
+                });
+
+                renderTechnicianDropdown();
+                syncTechnicianInputs();
+            }
+            const partById = (id) => sparePartsCatalog.find(x => Number(x.id) === Number(id));
+
+            function syncPartsJson() {
+                if (!sparePartsJsonInput) return;
+                const payload = [...selectedLines.entries()].map(([partId, quantity]) => ({ partId: Number(partId), quantity: Number(quantity) }));
+                sparePartsJsonInput.value = JSON.stringify(payload);
+            }
+
+            function syncUiMeta() {
+                if (!maintenanceUiMetaInput) return;
+                maintenanceUiMetaInput.value = JSON.stringify({
+                    templatePreset: templatePresetSelect?.value || null,
+                    laborCostCordoba: getMoney(laborCostCordobaInput) || null,
+                    laborCostUsd: getMoney(laborCostUsdInput) || null,
+                    externalCostCordoba: getMoney(externalCostCordobaInput) || null,
+                    externalCostUsd: getMoney(externalCostUsdInput) || null,
+                    checklistInspectionCompleted: Boolean(checklistInspectionCompleted?.checked),
+                    checklistPartsValidated: Boolean(checklistPartsValidated?.checked),
+                    checklistFinalTestCompleted: Boolean(checklistFinalTestCompleted?.checked),
+                    checklistUserConformityCompleted: Boolean(checklistUserConformityCompleted?.checked)
+                });
+            }
+
+            function updateLive() {
+                const totalC = currentSpareTotalCordoba + getMoney(laborCostCordobaInput) + getMoney(externalCostCordobaInput);
+                const totalU = currentSpareTotalUsd + getMoney(laborCostUsdInput) + getMoney(externalCostUsdInput);
+                const checks = [checklistInspectionCompleted?.checked, checklistPartsValidated?.checked, checklistFinalTestCompleted?.checked, checklistUserConformityCompleted?.checked].filter(Boolean).length;
+                if (summarySla && slaPreview) summarySla.textContent = slaPreview.value || "Sin calculo";
+                if (summarySpareCordoba) summarySpareCordoba.textContent = `C$ ${fnum(currentSpareTotalCordoba)}`;
+                if (summarySpareUsd) summarySpareUsd.textContent = `$ ${fnum(currentSpareTotalUsd)}`;
+                if (summaryGrandCordoba) summaryGrandCordoba.textContent = `C$ ${fnum(totalC)}`;
+                if (summaryGrandUsd) summaryGrandUsd.textContent = `$ ${fnum(totalU)}`;
+                if (summaryChecklist) summaryChecklist.textContent = `${checks}/4`;
+                syncUiMeta();
+            }
+
+            function syncPartsOptions() {
+                if (!sparePartSelect) return;
+                const cv = sparePartSelect.value;
+                const searchTerm = normSearch(sparePartSearchInput?.value);
+                sparePartSelect.innerHTML = "<option value=\"\">Seleccionar repuesto</option>";
+                const filteredParts = sparePartsCatalog
+                    .filter(part => lineMatches(part) && partMatchesSearch(part, searchTerm))
+                    .sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+
+                filteredParts.forEach(part => {
+                    const o = document.createElement("option");
+                    o.value = String(part.id);
+                    const itemText = part.item ? ` | ITEM: ${part.item}` : "";
+                    const partNumberText = part.partNumber ? ` | N° Parte: ${part.partNumber}` : "";
+                    o.textContent = `${part.label}${itemText}${partNumberText} | Stock: ${part.stock}`;
+                    sparePartSelect.appendChild(o);
+                });
+
+                if (filteredParts.length === 0) {
+                    const empty = document.createElement("option");
+                    empty.value = "";
+                    empty.textContent = "Sin resultados para la busqueda";
+                    empty.disabled = true;
+                    sparePartSelect.appendChild(empty);
+                }
+
+                if ([...sparePartSelect.options].some(x => x.value === cv)) sparePartSelect.value = cv;
+            }
+
+            function renderParts() {
+                if (!sparePartsTableBody) return;
+                sparePartsTableBody.innerHTML = "";
+                if (selectedLines.size === 0) {
+                    sparePartsTableBody.innerHTML = "<tr id=\"sparePartsEmptyRow\"><td colspan=\"9\" class=\"text-center text-muted\">Sin repuestos agregados.</td></tr>";
+                    currentSpareTotalCordoba = 0; currentSpareTotalUsd = 0;
+                    if (totalCordobaCell) totalCordobaCell.textContent = "C$ 0.00";
+                    if (totalUsdCell) totalUsdCell.textContent = "$ 0.00";
+                    syncPartsJson(); updateLive(); return;
+                }
+                let tc = 0, tu = 0;
+                [...selectedLines.entries()].sort((a, b) => (partById(a[0])?.label || "").localeCompare(partById(b[0])?.label || "")).forEach(([partId, qty]) => {
+                    const part = partById(partId); if (!part) return;
+                    const uc = Number(part.unitCostCordoba || 0), uu = Number(part.unitCostUsd || 0), lc = uc * Number(qty), lu = uu * Number(qty);
+                    const itemText = part.item ? ` | ITEM: ${part.item}` : "";
+                    const partNumberText = part.partNumber || "-";
+                    tc += lc; tu += lu;
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td><div class="fw-semibold">${part.label}</div><div class="small text-muted">${part.unitOfMeasure || "Unidad"}${itemText}</div></td><td>${partNumberText}</td><td class="text-end">${part.stock}</td><td class="text-end">${qty}</td><td class="text-end">${fnum(uc)}</td><td class="text-end">${fnum(lc)}</td><td class="text-end">${fnum(uu)}</td><td class="text-end">${fnum(lu)}</td><td><button type="button" class="btn btn-sm btn-outline-danger remove-part-btn" data-part-id="${partId}">Quitar</button></td>`;
+                    sparePartsTableBody.appendChild(row);
+                });
+                currentSpareTotalCordoba = tc; currentSpareTotalUsd = tu;
+                if (totalCordobaCell) totalCordobaCell.textContent = `C$ ${fnum(tc)}`;
+                if (totalUsdCell) totalUsdCell.textContent = `$ ${fnum(tu)}`;
+                syncPartsJson(); updateLive();
+            }
+
+            function addPart() {
+                const partId = Number(sparePartSelect?.value || 0);
+                const qty = Number(sparePartQty?.value || 0);
+                if (!partId) { alert("Selecciona un repuesto."); return; }
+                if (!Number.isFinite(qty) || qty <= 0 || !Number.isInteger(qty)) { alert("La cantidad debe ser un numero entero mayor a 0."); return; }
+                const part = partById(partId);
+                if (!part) { alert("No se encontro el repuesto seleccionado."); return; }
+                if (!lineMatches(part)) { alert("El repuesto no coincide con el sitio o la tenencia seleccionada."); return; }
+                const newQty = Number(selectedLines.get(partId) || 0) + qty;
+                if (newQty > Number(part.stock || 0)) { alert(`No hay suficiente stock. Disponible: ${part.stock}.`); return; }
+                selectedLines.set(partId, newQty);
+                if (sparePartQty) sparePartQty.value = "1";
+                renderParts();
+            }
+
+            function pruneByFilters() {
+                let removed = 0;
+                [...selectedLines.keys()].forEach(pid => { if (!lineMatches(partById(pid))) { selectedLines.delete(pid); removed += 1; } });
+                if (removed > 0) alert("Se removieron repuestos que no coinciden con el sitio/tenencia seleccionados.");
+                renderParts();
+            }
+
+            function loadInitialParts() {
+                if (!Array.isArray(initialSpareParts)) return;
+                initialSpareParts.forEach(line => {
+                    const pid = Number(line.partId || 0), qty = Number(line.quantity || 0), part = partById(pid);
+                    if (!part || qty <= 0 || !lineMatches(part) || qty > Number(part.stock || 0)) return;
+                    selectedLines.set(pid, qty);
+                });
+                renderParts();
+            }
+
+            function setSelectValue(selectElement, value) {
+                if (!selectElement || !value) return false;
+                const target = norm(value);
+                const option = [...selectElement.options].find(o => norm(o.value) === target || norm(o.textContent) === target);
+                if (!option) return false;
+                selectElement.value = option.value;
+                return true;
+            }
+
+            function applyTemplate() {
+                const key = templatePresetSelect?.value;
+                if (!key || !templatePresets[key]) return;
+                const tpl = templatePresets[key];
+                setSelectValue(incidentTypeSelect, tpl.incidentType);
+                setSelectValue(failureCategorySelect, tpl.failureCategory);
+                if (damagedElementInput) damagedElementInput.value = tpl.damagedElement || "";
+                if (descriptionInput) {
+                    if (descriptionInput.value.trim().length > 0) {
+                        const replace = window.confirm("La descripcion ya tiene texto. Deseas reemplazarla por la plantilla?");
+                        if (replace) descriptionInput.value = tpl.description || "";
+                    } else {
+                        descriptionInput.value = tpl.description || "";
+                    }
+                }
+                if (checklistInspectionCompleted) checklistInspectionCompleted.checked = Boolean(tpl.checklist?.inspection);
+                if (checklistPartsValidated) checklistPartsValidated.checked = Boolean(tpl.checklist?.parts);
+                if (checklistFinalTestCompleted) checklistFinalTestCompleted.checked = Boolean(tpl.checklist?.finalTest);
+                if (checklistUserConformityCompleted) checklistUserConformityCompleted.checked = Boolean(tpl.checklist?.userConformity);
+                updateLive();
+            }
+
+            function applyInitialMeta() {
+                if (!initialMaintenanceUiMeta || typeof initialMaintenanceUiMeta !== "object") return;
+                if (templatePresetSelect && typeof initialMaintenanceUiMeta.templatePreset === "string") templatePresetSelect.value = initialMaintenanceUiMeta.templatePreset;
+                setMoney(laborCostCordobaInput, initialMaintenanceUiMeta.laborCostCordoba);
+                setMoney(laborCostUsdInput, initialMaintenanceUiMeta.laborCostUsd);
+                setMoney(externalCostCordobaInput, initialMaintenanceUiMeta.externalCostCordoba);
+                setMoney(externalCostUsdInput, initialMaintenanceUiMeta.externalCostUsd);
+                if (checklistInspectionCompleted) checklistInspectionCompleted.checked = Boolean(initialMaintenanceUiMeta.checklistInspectionCompleted);
+                if (checklistPartsValidated) checklistPartsValidated.checked = Boolean(initialMaintenanceUiMeta.checklistPartsValidated);
+                if (checklistFinalTestCompleted) checklistFinalTestCompleted.checked = Boolean(initialMaintenanceUiMeta.checklistFinalTestCompleted);
+                if (checklistUserConformityCompleted) checklistUserConformityCompleted.checked = Boolean(initialMaintenanceUiMeta.checklistUserConformityCompleted);
+            }
+
+            function updateSla() {
+                if (!slaPreview) return;
+                const priority = Number(prioritySelect?.value || 2);
+                slaPreview.value = fmtDate(addWorkHours(new Date(), getSlaHours(priority)));
+                updateLive();
+            }
+
+            if (prioritySelect) prioritySelect.addEventListener("change", updateSla);
+            if (addSparePartBtn) addSparePartBtn.addEventListener("click", addPart);
+            if (applyTemplateBtn) applyTemplateBtn.addEventListener("click", applyTemplate);
+            if (sparePartsTableBody) {
+                sparePartsTableBody.addEventListener("click", function (event) {
+                    const target = event.target;
+                    if (!(target instanceof HTMLElement) || !target.classList.contains("remove-part-btn")) return;
+                    const pid = Number(target.getAttribute("data-part-id") || 0);
+                    if (!pid) return;
+                    selectedLines.delete(pid);
+                    renderParts();
+                });
+            }
+            if (siteSelect) siteSelect.addEventListener("change", function () { syncPartsOptions(); pruneByFilters(); });
+            if (tenenciaSelect) tenenciaSelect.addEventListener("change", function () { syncPartsOptions(); pruneByFilters(); });
+            if (sparePartSearchInput) sparePartSearchInput.addEventListener("input", function () { if (sparePartSelect) sparePartSelect.value = ""; syncPartsOptions(); });
+
+            [
+                laborCostCordobaInput,
+                laborCostUsdInput,
+                externalCostCordobaInput,
+                externalCostUsdInput,
+                checklistInspectionCompleted,
+                checklistPartsValidated,
+                checklistFinalTestCompleted,
+                checklistUserConformityCompleted,
+                templatePresetSelect
+            ].forEach(el => {
+                if (!el) return;
+                el.addEventListener("change", updateLive);
+                el.addEventListener("input", updateLive);
+            });
+
+            if (form) {
+                form.addEventListener("submit", function () {
+                    syncTechnicianInputs();
+                    syncPartsJson();
+                    syncUiMeta();
+                });
+            }
+
+            applySelectedValues(technicianCategorySelect, parseMulti(technicianCategoryInput?.value));
+            applySelectedValues(technicianSelect, parseMulti(technicianInput?.value));
+            wireDropdownToggles();
+            applyInitialMeta();
+            updateSla();
+            syncTechnicianOptions();
+            renderCategoryDropdown();
+            syncPartsOptions();
+            loadInitialParts();
+            renderParts();
+            updateLive();
+        });
+    </script>
+}

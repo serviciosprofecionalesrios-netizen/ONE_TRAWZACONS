@@ -1,0 +1,182 @@
+@model ITServiceDeskApp.Models.MaintenanceInventoryPart
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Linq
+
+@{
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var systemTypeOptions = ViewBag.SystemTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var equipmentTypeOptions = ViewBag.EquipmentTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var tenenciaOptions = ViewBag.TenenciaOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var unitOfMeasureOptions = ViewBag.UnitOfMeasureOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var stockStatusOptions = ViewBag.StockStatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="PartCode" class="form-label fw-semibold">Codigo de repuesto *</label>
+        <input asp-for="PartCode" class="form-control" placeholder="RMT-2026-0001" />
+        <div class="form-text">Si lo dejas vacio, se genera automatico.</div>
+        <span asp-validation-for="PartCode" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-8">
+        <label asp-for="PartName" class="form-label fw-semibold">Nombre del repuesto *</label>
+        <input asp-for="PartName" class="form-control" placeholder="Filtro de aire primario" />
+        <span asp-validation-for="PartName" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Category" class="form-label fw-semibold">Categoria *</label>
+        <select asp-for="Category" class="form-select" asp-items="categoryOptions">
+            <option value="">Seleccionar categoria</option>
+        </select>
+        <span asp-validation-for="Category" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Subcategory" class="form-label fw-semibold">Subcategoria</label>
+        <input asp-for="Subcategory" class="form-control" placeholder="Filtros / Correas / Sensores..." />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="SystemType" class="form-label fw-semibold">Sistema *</label>
+        <select asp-for="SystemType" class="form-select" asp-items="systemTypeOptions">
+            <option value="">Seleccionar sistema</option>
+        </select>
+        <span asp-validation-for="SystemType" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-5">
+        <label asp-for="EquipmentType" class="form-label fw-semibold">Tipo de unidad/equipo *</label>
+        <select asp-for="EquipmentType" class="form-select" asp-items="equipmentTypeOptions">
+            <option value="">Seleccionar equipo</option>
+        </select>
+        <span asp-validation-for="EquipmentType" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="CompatibleModel" class="form-label fw-semibold">Modelo compatible</label>
+        <input asp-for="CompatibleModel" class="form-control" placeholder="Cascadia 2019-2023" />
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="Brand" class="form-label fw-semibold">Marca</label>
+        <input asp-for="Brand" class="form-control" placeholder="Wabco" />
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="ManufacturerPartNumber" class="form-label fw-semibold">No. parte</label>
+        <input asp-for="ManufacturerPartNumber" class="form-control" placeholder="A12-7788" />
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="ItemCode" class="form-label fw-semibold">ITEM</label>
+        <input asp-for="ItemCode" class="form-control" placeholder="1010000731" />
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Site" class="form-label fw-semibold">Sitio / Ubicacion *</label>
+        <select asp-for="Site" class="form-select" asp-items="siteOptions">
+            <option value="">Seleccionar sitio</option>
+        </select>
+        <span asp-validation-for="Site" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="Tenencia" class="form-label fw-semibold">Tenencia *</label>
+        <select asp-for="Tenencia" class="form-select" asp-items="tenenciaOptions">
+            <option value="">Seleccionar tenencia</option>
+        </select>
+        <span asp-validation-for="Tenencia" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="UnitOfMeasure" class="form-label fw-semibold">Unidad medida *</label>
+        <select asp-for="UnitOfMeasure" class="form-select" asp-items="unitOfMeasureOptions">
+            <option value="">Seleccionar</option>
+        </select>
+        <span asp-validation-for="UnitOfMeasure" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="ShelfLocation" class="form-label fw-semibold">Ubicacion en bodega</label>
+        <input asp-for="ShelfLocation" class="form-control" placeholder="Rack A-03" />
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="QuantityOnHand" class="form-label fw-semibold">Stock actual *</label>
+        <input asp-for="QuantityOnHand" type="number" min="0" class="form-control" />
+        <span asp-validation-for="QuantityOnHand" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="MinimumStock" class="form-label fw-semibold">Stock minimo *</label>
+        <input asp-for="MinimumStock" type="number" min="0" class="form-control" />
+        <span asp-validation-for="MinimumStock" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="QuantityIssued" class="form-label fw-semibold">Salidas acum. *</label>
+        <input asp-for="QuantityIssued" type="number" min="0" class="form-control" />
+        <span asp-validation-for="QuantityIssued" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="QuantityInTransit" class="form-label fw-semibold">En transito *</label>
+        <input asp-for="QuantityInTransit" type="number" min="0" class="form-control" />
+        <span asp-validation-for="QuantityInTransit" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="LastIssueDate" class="form-label fw-semibold">Ultima salida</label>
+        <input asp-for="LastIssueDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="StockStatus" class="form-label fw-semibold">Estado stock *</label>
+        <select asp-for="StockStatus" class="form-select" asp-items="stockStatusOptions">
+            <option value="">Seleccionar estado</option>
+        </select>
+        <span asp-validation-for="StockStatus" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-5">
+        <label asp-for="Supplier" class="form-label fw-semibold">Proveedor</label>
+        <input asp-for="Supplier" class="form-control" placeholder="Distribuidora de Repuestos XYZ" />
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="InvoiceNumber" class="form-label fw-semibold">Numero de factura</label>
+        <input asp-for="InvoiceNumber" class="form-control" />
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="PurchaseDate" class="form-label fw-semibold">Fecha de compra</label>
+        <input asp-for="PurchaseDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="UnitCostCordoba" class="form-label fw-semibold">Costo unitario C$</label>
+        <input asp-for="UnitCostCordoba" type="number" min="0" step="0.01" class="form-control" />
+        <span asp-validation-for="UnitCostCordoba" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="UnitCostUsd" class="form-label fw-semibold">Costo unitario $</label>
+        <input asp-for="UnitCostUsd" type="number" min="0" step="0.01" class="form-control" />
+        <span asp-validation-for="UnitCostUsd" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label">Activo</label>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label fw-semibold">Notas de taller</label>
+        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Especificaciones, torque, observaciones, lote, etc."></textarea>
+    </div>
+</div>

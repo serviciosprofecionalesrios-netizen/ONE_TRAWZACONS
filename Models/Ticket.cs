@@ -24,6 +24,26 @@ namespace ITServiceDeskApp.Models
         [MaxLength(100)]
         public string Site { get; set; } = string.Empty;
 
+        [MaxLength(30)]
+        public string? Tenencia { get; set; }
+
+        [MaxLength(80)]
+        public string? UnitCode { get; set; }
+
+        [MaxLength(100)]
+        public string? FailureCategory { get; set; }
+
+        [MaxLength(150)]
+        public string? DamagedElement { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El KM de falla debe ser mayor o igual a 0.")]
+        public decimal? FailureOdometerKm { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El KM de salida debe ser mayor o igual a 0.")]
+        public decimal? ExitOdometerKm { get; set; }
+
         [Required]
         [MaxLength(100)]
         public string Department { get; set; } = string.Empty;
@@ -40,6 +60,15 @@ namespace ITServiceDeskApp.Models
 
         [MaxLength(100)]
         public string? AssignedTechnician { get; set; }
+
+        [MaxLength(40)]
+        public string? CostCenterCode { get; set; }
+
+        [MaxLength(60)]
+        public string? TechnicianCategory { get; set; }
+
+        [MaxLength(40)]
+        public string? MaintenanceStage { get; set; }
 
         public DateTime SLADeadline { get; set; }
 
@@ -90,6 +119,71 @@ namespace ITServiceDeskApp.Models
         [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El costo en $ debe ser mayor o igual a 0.")]
         public decimal? ChangedComponentCostUsd { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "La mano de obra en C$ debe ser mayor o igual a 0.")]
+        public decimal? LaborCostCordoba { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "La mano de obra en $ debe ser mayor o igual a 0.")]
+        public decimal? LaborCostUsd { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El costo externo en C$ debe ser mayor o igual a 0.")]
+        public decimal? ExternalCostCordoba { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "El costo externo en $ debe ser mayor o igual a 0.")]
+        public decimal? ExternalCostUsd { get; set; }
+
+        public bool RequiresCostApproval { get; set; }
+
+        public bool CostApproved { get; set; }
+
+        [MaxLength(120)]
+        public string? CostApprovedBy { get; set; }
+
+        public DateTime? CostApprovedAtUtc { get; set; }
+
+        [MaxLength(800)]
+        public string? CostApprovalNotes { get; set; }
+
+        [MaxLength(80)]
+        public string? FinanceAccountingEntryNumber { get; set; }
+
+        [MaxLength(80)]
+        public string? FinancePurchaseOrderNumber { get; set; }
+
+        [MaxLength(80)]
+        public string? FinanceInvoiceNumber { get; set; }
+
+        public DateTime? FinancePaymentDateUtc { get; set; }
+
+        [MaxLength(60)]
+        public string? FinanceFinalPaymentMethod { get; set; }
+
+        [MaxLength(40)]
+        public string? FinanceReconciliationStatus { get; set; }
+
+        public bool FinanceReturnedForCorrection { get; set; }
+
+        public DateTime? FinanceReturnedAtUtc { get; set; }
+
+        [MaxLength(120)]
+        public string? FinanceReturnedBy { get; set; }
+
+        [MaxLength(700)]
+        public string? FinanceReturnReason { get; set; }
+
+        public DateTime? FinanceEscalatedAtUtc { get; set; }
+
+        [MaxLength(120)]
+        public string? FinanceEscalatedTo { get; set; }
+
+        public DateTime? FinanceErpExportedAtUtc { get; set; }
+
+        [MaxLength(120)]
+        public string? FinanceErpExportReference { get; set; }
+
         [MaxLength(1000)]
         public string? TechnicalTestsPerformed { get; set; }
 
@@ -109,6 +203,9 @@ namespace ITServiceDeskApp.Models
 
         public ICollection<TicketHistory> HistoryEntries { get; set; }
             = new List<TicketHistory>();
+
+        public ICollection<TicketSparePartDispatch> SparePartDispatches { get; set; }
+            = new List<TicketSparePartDispatch>();
 
         [Timestamp]
         public byte[]? RowVersion { get; set; }

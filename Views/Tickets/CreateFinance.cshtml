@@ -1,0 +1,562 @@
+@model ITServiceDeskApp.ViewModels.Tickets.FinanceRequestCreateViewModel
+@using System.Linq
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    var requestingUserOptions = ViewBag.RequestingUserOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var requestTypeOptions = ViewBag.FinanceRequestTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var currencyOptions = ViewBag.FinanceCurrencyOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var paymentMethodOptions = ViewBag.FinancePaymentMethodOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var costCenterOptions = ViewBag.FinanceCostCenterOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var hasCostCenterCatalog = costCenterOptions.Any();
+    var canSetPriority = ViewBag.CanSetPriority is bool allowed && allowed;
+    var isOcRequest = string.Equals(Model.RequestType, "Orden de compra", StringComparison.OrdinalIgnoreCase)
+                      || string.Equals(Model.RequestType, "Solicitud de OC", StringComparison.OrdinalIgnoreCase);
+    var ocWorkflowStage = string.Equals(Model.OcWorkflowStage, "order", StringComparison.OrdinalIgnoreCase) ? "order" : "request";
+    var isOcOrderStage = isOcRequest && ocWorkflowStage == "order";
+    var formTitle = isOcRequest
+        ? (isOcOrderStage ? "Orden de compra Form" : "Solicitud de OC Form")
+        : "Nueva Solicitud Financiera";
+    ViewData["Title"] = formTitle;
+    var cancelUrl = isOcRequest
+        ? (Url.Action("Index", "InventoryHub") ?? "#")
+        : (Url.Action("Index", "Tickets", new { department = "Finanzas" }) ?? "#");
+}
+
+<style>
+    .finance-form-shell {
+        max-width: 980px;
+        margin: 0 auto;
+        border: 1px solid #d7dce3;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+    }
+
+    .finance-form-header {
+        border-bottom: 1px solid #e3e8ef;
+        padding: 1rem 1.4rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .finance-form-title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .finance-form-body {
+        padding: 1.2rem 1.4rem 1rem;
+    }
+
+    .finance-form-footer {
+        border-top: 1px solid #e3e8ef;
+        padding: 1rem 1.4rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+    }
+
+    .field-label {
+        font-weight: 700;
+        color: #3a475a;
+        margin-bottom: 0.4rem;
+        font-size: 0.95rem;
+    }
+
+    .field-label .required {
+        color: #dc2626;
+    }
+
+    .form-note {
+        color: #8a97aa;
+        font-size: 0.8rem;
+        margin-top: 0.35rem;
+    }
+
+    .btn-create {
+        background: #0f9a8f;
+        border-color: #0f9a8f;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .btn-create:hover {
+        background: #0c7f76;
+        border-color: #0c7f76;
+        color: #fff;
+    }
+
+    .dynamic-block {
+        border: 1px dashed #d4dde8;
+        border-radius: 10px;
+        padding: 0.9rem;
+        background: #fafcff;
+    }
+
+    .oc-form-title {
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.6rem;
+    }
+
+    .line-counter-group .btn {
+        min-width: 42px;
+        font-weight: 700;
+    }
+</style>
+
+<div class="finance-form-shell mt-3">
+    <div class="finance-form-header">
+        <h3 class="finance-form-title">@formTitle</h3>
+        <a href="@cancelUrl" class="btn-close" title="Cerrar"></a>
+    </div>
+
+    <form asp-action="CreateFinance" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="OcWorkflowStage" value="@ocWorkflowStage" />
+        <input type="hidden" asp-for="SourceOcTicketId" />
+        <div class="finance-form-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            @if (isOcRequest)
+            {
+                <div class="alert alert-info">
+                    @if (isOcOrderStage)
+                    {
+                        <span>Completa este formulario para registrar la <strong>Orden de compra</strong> usando la Solicitud OC ya guardada.</span>
+                        <span class="d-block mt-1"><strong>Paso 2 de 2:</strong> registra el numero de OC y el estado final.</span>
+                    }
+                    else
+                    {
+                        <span>Completa este formulario para registrar la <strong>Solicitud de OC</strong>.</span>
+                        <span class="d-block mt-1"><strong>Paso 1 de 2:</strong> al guardar, continuas automaticamente con la Orden de compra.</span>
+                    }
+                </div>
+                <input type="hidden" asp-for="Amount" value="0.01" />
+                <input type="hidden" asp-for="Currency" value="C$" />
+                <input type="hidden" asp-for="CostCenter" value="OC-TRAWZACONS" />
+                <input type="hidden" asp-for="Priority" value="@PriorityLevel.Medium" />
+                <input type="hidden" asp-for="PaymentMethod" value="N/A" />
+                <input type="hidden" asp-for="BusinessJustification" value="Solicitud de OC operativa para inventario." />
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    Completa este formulario para registrar un requerimiento financiero. Se creara como ticket del departamento <strong>Finanzas</strong>.
+                </div>
+            }
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="RequestingUser" class="field-label">Usuario Solicitante <span class="required">*</span></label>
+                    <select asp-for="RequestingUser" class="form-select" asp-items="requestingUserOptions">
+                        <option value="">Seleccionar usuario</option>
+                    </select>
+                    <span asp-validation-for="RequestingUser" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Site" class="field-label">Sitio / Sede <span class="required">*</span></label>
+                    <select asp-for="Site" class="form-select" asp-items="siteOptions">
+                        <option value="">Seleccionar sitio</option>
+                    </select>
+                    <span asp-validation-for="Site" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    @if (isOcRequest)
+                    {
+                        <label class="field-label">Tipo de Solicitud</label>
+                        <input class="form-control" value="@(isOcOrderStage ? "Orden de compra" : "Solicitud de OC")" readonly />
+                        <input type="hidden" asp-for="RequestType" value="@(isOcOrderStage ? "Orden de compra" : "Solicitud de OC")" />
+                    }
+                    else
+                    {
+                        <label asp-for="RequestType" class="field-label">Tipo de Solicitud <span class="required">*</span></label>
+                        <select asp-for="RequestType" class="form-select" asp-items="requestTypeOptions">
+                            <option value="">Seleccionar tipo</option>
+                        </select>
+                        <span asp-validation-for="RequestType" class="text-danger small"></span>
+                    }
+                </div>
+
+                <div class="@(isOcRequest ? "col-md-6" : "col-md-4")">
+                    <label asp-for="NeededByDate" class="field-label">Fecha Requerida <span class="required">*</span></label>
+                    <input asp-for="NeededByDate" type="date" class="form-control" />
+                    <span asp-validation-for="NeededByDate" class="text-danger small"></span>
+                </div>
+
+                @if (!isOcRequest)
+                {
+                    <div class="col-md-3">
+                        <label asp-for="Amount" class="field-label">Monto Solicitado <span class="required">*</span></label>
+                        <input asp-for="Amount" type="number" min="0.01" step="0.01" class="form-control" />
+                        <span asp-validation-for="Amount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Currency" class="field-label">Moneda <span class="required">*</span></label>
+                        <select asp-for="Currency" class="form-select" asp-items="currencyOptions"></select>
+                        <span asp-validation-for="Currency" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CostCenter" class="field-label">Centro de Costo <span class="required">*</span></label>
+                        @if (hasCostCenterCatalog)
+                        {
+                            <select asp-for="CostCenter" class="form-select" asp-items="costCenterOptions">
+                                <option value="">Seleccionar #CC</option>
+                            </select>
+                            <div class="form-note">Catalogo #CC por area.</div>
+                        }
+                        else
+                        {
+                            <input asp-for="CostCenter" class="form-control" placeholder="Ejemplo: CC-OP-001" />
+                            <div class="form-note">No hay #CC configurados. Registra centros de costo en Finanzas > #CC por Area.</div>
+                        }
+                        <span asp-validation-for="CostCenter" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Priority" class="field-label">Prioridad <span class="required">*</span></label>
+                        @if (canSetPriority)
+                        {
+                            <select asp-for="Priority" class="form-select">
+                                <option value="@PriorityLevel.Low">Baja</option>
+                                <option value="@PriorityLevel.Medium">Media</option>
+                                <option value="@PriorityLevel.High">Alta</option>
+                                <option value="@PriorityLevel.Critical">Critica</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <input class="form-control" value="Media" readonly />
+                            <input type="hidden" asp-for="Priority" value="@PriorityLevel.Medium" />
+                        }
+                        <span asp-validation-for="Priority" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="VendorName" class="field-label">Proveedor / Beneficiario</label>
+                        <input asp-for="VendorName" class="form-control" />
+                        <span asp-validation-for="VendorName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ReferenceNumber" class="field-label">Referencia (Factura/OC)</label>
+                        <input asp-for="ReferenceNumber" class="form-control" />
+                        <span asp-validation-for="ReferenceNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BeneficiaryDocument" class="field-label">Documento beneficiario</label>
+                        <input asp-for="BeneficiaryDocument" class="form-control" placeholder="RUC o cedula" />
+                        <span asp-validation-for="BeneficiaryDocument" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="PaymentMethod" class="field-label">Metodo de pago <span class="required">*</span></label>
+                        <select asp-for="PaymentMethod" class="form-select" asp-items="paymentMethodOptions">
+                            <option value="">Seleccionar metodo</option>
+                        </select>
+                        <span asp-validation-for="PaymentMethod" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4 js-payment-transfer dynamic-block">
+                        <label asp-for="BankAccount" class="field-label">Cuenta bancaria</label>
+                        <input asp-for="BankAccount" class="form-control" placeholder="Banco y numero de cuenta" />
+                        <div class="form-note">Obligatorio cuando el metodo de pago es transferencia.</div>
+                        <span asp-validation-for="BankAccount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 js-type-viaticos dynamic-block">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="TravelFromDate" class="field-label">Viatico desde</label>
+                                <input asp-for="TravelFromDate" type="date" class="form-control" />
+                                <span asp-validation-for="TravelFromDate" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="TravelToDate" class="field-label">Viatico hasta</label>
+                                <input asp-for="TravelToDate" type="date" class="form-control" />
+                                <span asp-validation-for="TravelToDate" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="col-12 js-type-oc dynamic-block" style="display:@(isOcRequest ? "" : "none")">
+                    <div class="oc-form-title">@(isOcOrderStage ? "Orden de compra (paso 2 de 2)" : "Solicitud de OC (paso 1 de 2)")</div>
+                    <div class="row g-3">
+                        @if (isOcOrderStage)
+                        {
+                            <div class="col-12">
+                                <div class="form-note">Datos base cargados desde la Solicitud de OC. En este paso solo completa la orden de compra.</div>
+                            </div>
+                        }
+
+                        <div class="col-12">
+                            <label asp-for="OcUsage" class="field-label">Uso <span class="required">*</span></label>
+                            @if (isOcOrderStage)
+                            {
+                                <input asp-for="OcUsage" class="form-control" maxlength="500" readonly />
+                            }
+                            else
+                            {
+                                <input asp-for="OcUsage" class="form-control" maxlength="500" />
+                            }
+                            <span asp-validation-for="OcUsage" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="OcRequirementJustification" class="field-label">Justificar a que se debe el requerimiento <span class="required">*</span></label>
+                            @if (isOcOrderStage)
+                            {
+                                <textarea asp-for="OcRequirementJustification" class="form-control" rows="2" maxlength="1200" readonly></textarea>
+                            }
+                            else
+                            {
+                                <textarea asp-for="OcRequirementJustification" class="form-control" rows="2" maxlength="1200"></textarea>
+                            }
+                            <span asp-validation-for="OcRequirementJustification" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="OcQuantityJustification" class="field-label">Justificar por que son necesarias las cantidades solicitadas <span class="required">*</span></label>
+                            @if (isOcOrderStage)
+                            {
+                                <textarea asp-for="OcQuantityJustification" class="form-control" rows="2" maxlength="1200" readonly></textarea>
+                            }
+                            else
+                            {
+                                <textarea asp-for="OcQuantityJustification" class="form-control" rows="2" maxlength="1200"></textarea>
+                            }
+                            <span asp-validation-for="OcQuantityJustification" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="OcStatus" class="field-label">Estado OC <span class="required">*</span></label>
+                            <select asp-for="OcStatus" class="form-select">
+                                <option value="PENDIENTE">PENDIENTE</option>
+                                <option value="EN REVISION">EN REVISION</option>
+                                <option value="APROBADA">APROBADA</option>
+                                <option value="RECHAZADA">RECHAZADA</option>
+                            </select>
+                            <span asp-validation-for="OcStatus" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="OcLineCount" class="field-label">Cant. Lineas <span class="required">*</span></label>
+                            @if (isOcOrderStage)
+                            {
+                                <input asp-for="OcLineCount" type="number" min="0" max="200" step="1" class="form-control text-center" readonly />
+                            }
+                            else
+                            {
+                                <div class="input-group line-counter-group">
+                                    <button type="button" class="btn btn-outline-secondary" id="ocLineMinus" aria-label="Disminuir lineas">-</button>
+                                    <input asp-for="OcLineCount" type="number" min="0" max="200" step="1" class="form-control text-center" />
+                                    <button type="button" class="btn btn-outline-secondary" id="ocLinePlus" aria-label="Aumentar lineas">+</button>
+                                </div>
+                            }
+                            <span asp-validation-for="OcLineCount" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="OcPurchaseOrderNumber" class="field-label">Orden de compra @(isOcOrderStage ? "*" : "")</label>
+                            @if (isOcOrderStage)
+                            {
+                                <input asp-for="OcPurchaseOrderNumber" class="form-control" maxlength="120" placeholder="Ejemplo: OC-0001" />
+                            }
+                            else
+                            {
+                                <input type="hidden" asp-for="OcPurchaseOrderNumber" />
+                                <input class="form-control" value="Se registra en el siguiente paso" readonly />
+                            }
+                            <span asp-validation-for="OcPurchaseOrderNumber" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="OcItemDescription" class="field-label">Descripcion Articulos <span class="required">*</span></label>
+                            @if (isOcOrderStage)
+                            {
+                                <textarea asp-for="OcItemDescription" class="form-control" rows="3" maxlength="2000" readonly></textarea>
+                            }
+                            else
+                            {
+                                <textarea asp-for="OcItemDescription" class="form-control" rows="3" maxlength="2000"></textarea>
+                            }
+                            <span asp-validation-for="OcItemDescription" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!isOcRequest)
+                {
+                    <div class="col-12">
+                        <label asp-for="BusinessJustification" class="field-label">Justificacion <span class="required">*</span></label>
+                        <textarea asp-for="BusinessJustification" class="form-control" rows="4" placeholder="Explica el motivo financiero y el impacto esperado..."></textarea>
+                        <span asp-validation-for="BusinessJustification" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="AdditionalNotes" class="field-label">Notas Adicionales</label>
+                        <textarea asp-for="AdditionalNotes" class="form-control" rows="3" placeholder="Informacion complementaria (opcional)"></textarea>
+                        <span asp-validation-for="AdditionalNotes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="field-label">Documento de soporte</label>
+                        <input type="file" name="supportDocumentFile" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" />
+                        <div class="form-note">Formatos permitidos: JPG, PNG, PDF, DOC, DOCX, XLS y XLSX (max. 10MB).</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="finance-form-footer">
+            <a href="@cancelUrl" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-create">
+                <i class="bi bi-plus-square"></i> @(isOcRequest
+                    ? (isOcOrderStage ? "Guardar Orden de compra" : "Guardar Solicitud OC y continuar")
+                    : "Crear Solicitud")
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var requestType = document.getElementById("RequestType");
+            var paymentMethod = document.getElementById("PaymentMethod");
+            var bankAccount = document.getElementById("BankAccount");
+            var travelFrom = document.getElementById("TravelFromDate");
+            var travelTo = document.getElementById("TravelToDate");
+            var ocUsage = document.getElementById("OcUsage");
+            var ocRequirementJustification = document.getElementById("OcRequirementJustification");
+            var ocQuantityJustification = document.getElementById("OcQuantityJustification");
+            var ocStatus = document.getElementById("OcStatus");
+            var ocLineCount = document.getElementById("OcLineCount");
+            var ocPurchaseOrderNumber = document.getElementById("OcPurchaseOrderNumber");
+            var ocItemDescription = document.getElementById("OcItemDescription");
+            var ocLineMinus = document.getElementById("ocLineMinus");
+            var ocLinePlus = document.getElementById("ocLinePlus");
+            var ocWorkflowStage = "@ocWorkflowStage";
+            var isOcOrderStage = ocWorkflowStage === "order";
+
+            function normalize(value) {
+                return (value || "").toString().trim().toLowerCase();
+            }
+
+            function toggleBlock(selector, shouldShow) {
+                document.querySelectorAll(selector).forEach(function (el) {
+                    el.style.display = shouldShow ? "" : "none";
+                });
+            }
+
+            function refreshFinanceDynamicRules() {
+                var typeValue = normalize(requestType ? requestType.value : "");
+                var paymentValue = normalize(paymentMethod ? paymentMethod.value : "");
+                var isViaticos = typeValue === "viaticos";
+                var isTransfer = paymentValue === "transferencia";
+                var isOcRequest = typeValue === "orden de compra" || typeValue === "solicitud de oc";
+
+                toggleBlock(".js-type-viaticos", isViaticos);
+                toggleBlock(".js-payment-transfer", isTransfer);
+                toggleBlock(".js-type-oc", isOcRequest);
+
+                if (bankAccount) {
+                    bankAccount.required = isTransfer;
+                }
+
+                if (travelFrom) {
+                    travelFrom.required = isViaticos;
+                    if (!isViaticos) {
+                        travelFrom.value = "";
+                    }
+                }
+
+                if (travelTo) {
+                    travelTo.required = isViaticos;
+                    if (!isViaticos) {
+                        travelTo.value = "";
+                    }
+                }
+
+                if (ocUsage) {
+                    ocUsage.required = isOcRequest && !isOcOrderStage;
+                }
+
+                if (ocRequirementJustification) {
+                    ocRequirementJustification.required = isOcRequest && !isOcOrderStage;
+                }
+
+                if (ocQuantityJustification) {
+                    ocQuantityJustification.required = isOcRequest && !isOcOrderStage;
+                }
+
+                if (ocStatus) {
+                    ocStatus.required = isOcRequest;
+                    if (isOcRequest && !ocStatus.value) {
+                        ocStatus.value = "PENDIENTE";
+                    }
+                }
+
+                if (ocLineCount) {
+                    ocLineCount.required = isOcRequest && !isOcOrderStage;
+                    if (!isOcRequest && (!ocLineCount.value || Number(ocLineCount.value) < 0)) {
+                        ocLineCount.value = "0";
+                    }
+                }
+
+                if (ocPurchaseOrderNumber) {
+                    ocPurchaseOrderNumber.required = isOcRequest && isOcOrderStage;
+                }
+
+                if (ocItemDescription) {
+                    ocItemDescription.required = isOcRequest && !isOcOrderStage;
+                }
+            }
+
+            function updateOcLineCount(delta) {
+                if (!ocLineCount) {
+                    return;
+                }
+
+                var current = Number(ocLineCount.value || 0);
+                if (!Number.isFinite(current)) {
+                    current = 0;
+                }
+
+                var next = Math.max(0, Math.min(200, current + delta));
+                ocLineCount.value = String(next);
+            }
+
+            if (requestType) {
+                requestType.addEventListener("change", refreshFinanceDynamicRules);
+            }
+
+            if (paymentMethod) {
+                paymentMethod.addEventListener("change", refreshFinanceDynamicRules);
+            }
+
+            if (ocLineMinus) {
+                ocLineMinus.addEventListener("click", function () { updateOcLineCount(-1); });
+            }
+
+            if (ocLinePlus) {
+                ocLinePlus.addEventListener("click", function () { updateOcLineCount(1); });
+            }
+
+            refreshFinanceDynamicRules();
+        });
+    </script>
+}

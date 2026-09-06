@@ -1,0 +1,2161 @@
+@{
+    ViewData["Title"] = "Nuevo ingreso de personal";
+}
+
+<style>
+    .card .btn-primary {
+        background-color: #0f3d8c;
+        border-color: #0f3d8c;
+    }
+
+    .card .btn-primary:hover,
+    .card .btn-primary:focus {
+        background-color: #0b2f6d;
+        border-color: #0b2f6d;
+    }
+
+    .card .btn-outline-primary {
+        color: #0f3d8c;
+        border-color: #0f3d8c;
+    }
+
+    .card .btn-outline-primary:hover,
+    .card .btn-outline-primary:focus {
+        color: #ffffff;
+        background-color: #0f3d8c;
+        border-color: #0f3d8c;
+    }
+
+    .card .form-label .text-danger {
+        color: #0f3d8c !important;
+    }
+
+    .ingreso-insight-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.85rem;
+        background: #f8fafc;
+        padding: 0.9rem;
+        height: 100%;
+    }
+
+    .ingreso-insight-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1f3555;
+        margin-bottom: 0.5rem;
+    }
+
+    .checklist-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .checklist-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid #dbe3ef;
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.85rem;
+        background: #ffffff;
+    }
+
+    .checklist-item strong {
+        font-size: 0.8rem;
+    }
+
+    .checklist-item.done {
+        border-color: #86efac;
+        background: #ecfdf3;
+    }
+
+    .checklist-item.pending {
+        border-color: #fecaca;
+        background: #fff5f5;
+    }
+
+    .timeline-compact {
+        max-height: 200px;
+        overflow: auto;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .timeline-row {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.65rem;
+        background: #fff;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.82rem;
+    }
+
+    .timeline-row-date {
+        color: #64748b;
+        font-size: 0.76rem;
+    }
+
+    .sla-mini-progress {
+        height: 10px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .sla-mini-bar {
+        height: 100%;
+        border-radius: 999px;
+        transition: width .25s ease;
+    }
+
+    .sla-badge {
+        font-size: 0.74rem;
+        font-weight: 700;
+        padding: 0.3rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .sla-badge.success {
+        color: #0f5132;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .sla-badge.warning {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .sla-badge.danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .solicitudes-sla-col {
+        min-width: 165px;
+    }
+
+    .sla-dashboard-grid {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .sla-kpi-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.8rem;
+        background: #f8fafc;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .sla-kpi-label {
+        font-size: 0.76rem;
+        color: #64748b;
+        margin-bottom: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-weight: 700;
+    }
+
+    .sla-kpi-value {
+        font-size: 1.3rem;
+        line-height: 1;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .sla-kpi-value.success {
+        color: #15803d;
+    }
+
+    .sla-kpi-value.warning {
+        color: #b45309;
+    }
+
+    .sla-kpi-value.danger {
+        color: #b91c1c;
+    }
+
+    .sla-tipo-grid {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .sla-tipo-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.8rem;
+        background: #ffffff;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .sla-tipo-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1f3555;
+        margin-bottom: 0.45rem;
+    }
+
+    .sla-tipo-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.76rem;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+
+    .sla-tipo-pill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .sla-tipo-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+    }
+
+    .sla-tipo-pill.success {
+        color: #0f5132;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .sla-tipo-pill.warning {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .sla-tipo-pill.danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+</style>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h2 class="fw-bold mb-2">Nuevo ingreso de personal</h2>
+        <p class="text-muted mb-4">Captura de solicitud con el mismo formato operativo.</p>
+
+        @if (TempData["NuevoIngresoPersonalOk"] is string okMessage)
+        {
+            <div class="alert alert-success">@okMessage</div>
+        }
+        @if (TempData["NuevoIngresoPersonalError"] is string errorMessage)
+        {
+            <div class="alert alert-warning">@errorMessage</div>
+        }
+
+        <div class="mb-4">
+            <label class="form-label fw-semibold d-block mb-2">Selecciona el tipo de solicitud</label>
+            <div class="d-flex flex-wrap gap-2" id="tipoIngresoButtons">
+                <button type="button" class="btn btn-outline-primary js-tipo-ingreso" data-tipo="1. Solicitud Ingreso">1. Solicitud Ingreso</button>
+                <button type="button" class="btn btn-outline-primary js-tipo-ingreso" data-tipo="1.1 Clinica">1.1 Clinica</button>
+                <button type="button" class="btn btn-outline-primary js-tipo-ingreso" data-tipo="1.2 RRHH">1.2 RRHH</button>
+                <button type="button" class="btn btn-outline-primary js-tipo-ingreso" data-tipo="1.3 H&amp;S">1.3 H&amp;S</button>
+                <button type="button" class="btn btn-outline-primary js-tipo-ingreso" data-tipo="1.4 Viaje de Reconocimiento">1.4 Viaje de Reconocimiento</button>
+            </div>
+            <div class="form-text mt-2">El formulario se habilita al seleccionar uno de los filtros.</div>
+        </div>
+
+        <form id="formNuevoIngresoPersonal" class="d-none" asp-controller="Operaciones" asp-action="NuevoIngresoPersonal" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="solicitud_id" id="solicitudIdInput" />
+            <input type="hidden" name="tipo" id="tipoSeleccionadoInput" required />
+
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMenuPrincipalIngreso">
+                    <i class="bi bi-house-door me-1"></i>
+                    Menu principal
+                </button>
+            </div>
+
+            <div class="row g-3 mb-2">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Tipo seleccionado</label>
+                    <input type="text" id="tipoSeleccionadoLabel" class="form-control" readonly />
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Asunto <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="asunto" required />
+                    <div id="tareaPadreHint" class="form-text"></div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Descripcion</label>
+                <textarea class="form-control" name="descripcion" rows="4"></textarea>
+            </div>
+
+            <div id="panelIngresoInsights" class="row g-3 mb-4 d-none">
+                <div class="col-lg-4">
+                    <div class="ingreso-insight-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="ingreso-insight-title mb-0">Checklist por etapa</div>
+                            <span id="checklistSummaryBadge" class="badge text-bg-light border">0/0</span>
+                        </div>
+                        <ul id="checklistStageList" class="checklist-list">
+                            <li class="text-muted small">Selecciona un tipo para iniciar.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="ingreso-insight-card">
+                        <div class="ingreso-insight-title">SLA operativo (48 h laborales)</div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span id="slaStatusBadgePreview" class="sla-badge success">
+                                <span class="rounded-circle bg-success" style="width:8px;height:8px;display:inline-block;"></span>
+                                Cumplido
+                            </span>
+                            <span id="slaDeadlinePreview" class="small text-muted">-</span>
+                        </div>
+                        <div id="slaRemainingPreview" class="small mb-2">Restan - h laborales.</div>
+                        <div class="sla-mini-progress mb-2">
+                            <div id="slaProgressBarPreview" class="sla-mini-bar" style="width:0%; background:#16a34a;"></div>
+                        </div>
+                        <div class="small text-muted">Horario: Lunes a Viernes, 07:30 a.m. - 05:00 p.m.</div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="ingreso-insight-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="ingreso-insight-title mb-0">Linea de tiempo</div>
+                            <span id="timelineCountBadge" class="badge text-bg-light border">0 eventos</span>
+                        </div>
+                        <div id="ingresoTimelineCompact" class="timeline-compact">
+                            <div class="text-muted small">Aun no hay eventos para mostrar.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionNoClinica" class="row g-4">
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 h-100">
+                        <h5 class="fw-bold mb-3">Datos del colaborador</h5>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">ID Empleado</label>
+                                <input type="text" class="form-control" name="id_empleado" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Nombres y Apellidos <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nombres_apellidos" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Numero INSS <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="numero_inss" required />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Genero <span class="text-danger">*</span></label>
+                                <select class="form-select" name="genero" required>
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>Masculino</option>
+                                    <option>Femenino</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Superintendencia <span class="text-danger">*</span></label>
+                                <select class="form-select" name="superintendencia" required>
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>Operacion Mina</option>
+                                    <option>Transporte</option>
+                                    <option>Planta</option>
+                                    <option>Mantenimiento</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Area <span class="text-danger">*</span></label>
+                                <select class="form-select" name="area" required>
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>Patio</option>
+                                    <option>Bascula</option>
+                                    <option>Logistica</option>
+                                    <option>Operaciones</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                                <select class="form-select" name="empresa" required>
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>TRITON</option>
+                                    <option>PAVON ASM</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ubicacion de Trabajo <span class="text-danger">*</span></label>
+                                <select class="form-select" name="ubicacion_trabajo" required>
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>El Limon</option>
+                                    <option>Pavon Norte</option>
+                                    <option>Pavon ASM</option>
+                                    <option>Tajo La Tigra</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cargo <span class="text-danger">*</span></label>
+                                <select class="form-select" name="cargo" required>
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>Conductor</option>
+                                    <option>Operador</option>
+                                    <option>Supervisor</option>
+                                    <option>Ayudante</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre Supervisor <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nombre_supervisor" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 h-100">
+                        <h5 class="fw-bold mb-3">Control administrativo</h5>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select" name="estado" required>
+                                    <option>New</option>
+                                    <option>En revision</option>
+                                    <option>Aprobado</option>
+                                    <option>Rechazado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                <select class="form-select" name="prioridad" required>
+                                    <option>Alta</option>
+                                    <option>Media</option>
+                                    <option>Baja</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Asignado a</label>
+                                <input type="text" class="form-control" name="asignado_a" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Tarea padre</label>
+                                <input type="text" class="form-control js-tarea-padre" name="tarea_padre" readonly required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fecha de inicio</label>
+                                <input type="date" class="form-control" name="fecha_inicio" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fecha fin</label>
+                                <input type="date" class="form-control" name="fecha_fin" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Tiempo estimado</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="tiempo_estimado" min="0" step="1" />
+                                    <span class="input-group-text">Horas</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">% Realizado</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="porcentaje_realizado" min="0" max="100" value="0" />
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Reingreso a Equinox?</label>
+                                <select class="form-select" name="reingreso_equinox">
+                                    <option value="">--- Por favor seleccione ---</option>
+                                    <option>Si</option>
+                                    <option>No</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Baja</label>
+                                <input type="date" class="form-control" name="fecha_baja" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contratista Anterior</label>
+                                <input type="text" class="form-control" name="contratista_anterior" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">VB Contratista Ant.</label>
+                                <input type="file" class="form-control" name="vb_contratista_anterior" accept=".pdf,.jpg,.jpeg,.png" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Foto tamano Carnet</label>
+                                <input type="file" class="form-control" name="foto_tamano_carnet" accept=".jpg,.jpeg,.png,.pdf" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Constancia Judicial</label>
+                                <input type="file" class="form-control" name="constancia_judicial" accept=".pdf,.jpg,.jpeg,.png" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Record Policial Ley 510</label>
+                                <input type="file" class="form-control" name="record_policial_510" accept=".pdf,.jpg,.jpeg,.png" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha Vencimiento</label>
+                                <input type="date" class="form-control" name="fecha_vencimiento" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Licencia de Conducir</label>
+                                <input type="file" class="form-control" name="licencia_conducir_archivo" accept=".pdf,.jpg,.jpeg,.png" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Categorias de Licencia</label>
+                                <div class="border rounded p-2 bg-light">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="cat1" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat1">1</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="2" id="cat2" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat2">2</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="3" id="cat3" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat3">3</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="4A" id="cat4a" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat4a">4A</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="4B" id="cat4b" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat4b">4B</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="5A" id="cat5a" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat5a">5A</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="5B" id="cat5b" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat5b">5B</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="6A" id="cat6a" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat6a">6A</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="6B" id="cat6b" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat6b">6B</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="7" id="cat7" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat7">7</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="8" id="cat8" name="categorias_licencia">
+                                        <label class="form-check-label" for="cat8">8</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionClinica" class="d-none">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">Clinica - Control de solicitud</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="estado" required>
+                                        <option>New</option>
+                                        <option>En revision</option>
+                                        <option>Aprobado</option>
+                                        <option>Rechazado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="prioridad" required>
+                                        <option>Alta</option>
+                                        <option>Media</option>
+                                        <option>Baja</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Asignado a</label>
+                                    <input type="text" class="form-control" name="asignado_a" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tarea padre</label>
+                                    <input type="text" class="form-control js-tarea-padre" name="tarea_padre" readonly required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha de inicio</label>
+                                    <input type="date" class="form-control" name="fecha_inicio" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha fin</label>
+                                    <input type="date" class="form-control" name="fecha_fin" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tiempo estimado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="tiempo_estimado" min="0" step="1" />
+                                        <span class="input-group-text">Horas</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">% Realizado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="porcentaje_realizado" min="0" max="100" value="0" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">Clinica - Adjuntos</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Test Psicologico <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="test_psicologico" accept=".pdf,.jpg,.jpeg,.png" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Examenes Clinicos <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="examenes_clinicos" accept=".pdf,.jpg,.jpeg,.png" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ficheros</label>
+                                    <input type="file" class="form-control" name="ficheros_clinica" multiple />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionRrhh" class="d-none">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">RRHH - Datos personales</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Cedula (Ambas Caras) <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="cedula_ambas_caras" accept=".pdf,.jpg,.jpeg,.png" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tipo de Contrato <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="tipo_contrato" required>
+                                        <option value="">--- Por favor seleccione ---</option>
+                                        <option>Indefinido</option>
+                                        <option>Temporal</option>
+                                        <option>Por obra</option>
+                                        <option>Prueba</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Fecha Inicio Contrato <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="fecha_inicio_contrato" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Rotacion</label>
+                                    <input type="text" class="form-control" name="rotacion" placeholder="Ej: 24/7" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Direccion Exacta <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" name="direccion_exacta" rows="3" required></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Localidad / Ciudad <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="localidad_ciudad" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Pais <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="pais" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Numero Telefonico <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="numero_telefonico" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ficheros</label>
+                                    <input type="file" class="form-control" name="ficheros_rrhh" multiple />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">RRHH - Control administrativo</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="estado" required>
+                                        <option>New</option>
+                                        <option>En revision</option>
+                                        <option>Aprobado</option>
+                                        <option>Rechazado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="prioridad" required>
+                                        <option>Alta</option>
+                                        <option>Media</option>
+                                        <option>Baja</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Asignado a</label>
+                                    <input type="text" class="form-control" name="asignado_a" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tarea padre</label>
+                                    <input type="text" class="form-control js-tarea-padre" name="tarea_padre" readonly required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha de inicio</label>
+                                    <input type="date" class="form-control" name="fecha_inicio" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha fin</label>
+                                    <input type="date" class="form-control" name="fecha_fin" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tiempo estimado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="tiempo_estimado" min="0" step="1" />
+                                        <span class="input-group-text">Horas</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">% Realizado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="porcentaje_realizado" min="0" max="100" value="0" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Correo Personal <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" name="correo_personal" required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tipo de Sangre <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="tipo_sangre" required>
+                                        <option value="">--- Por favor seleccione ---</option>
+                                        <option>O+</option>
+                                        <option>O-</option>
+                                        <option>A+</option>
+                                        <option>A-</option>
+                                        <option>B+</option>
+                                        <option>B-</option>
+                                        <option>AB+</option>
+                                        <option>AB-</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Nombre/parentezco Fam. Cercano <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="nombre_parentesco_fam_cercano" required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Num. Fam. Cercano <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="num_fam_cercano" required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Contrato de Trabajo <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="contrato_trabajo" accept=".pdf,.jpg,.jpeg,.png" required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha Fin Contrato</label>
+                                    <input type="date" class="form-control" name="fecha_fin_contrato" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tipo de Documento INSS <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="tipo_documento_inss" required>
+                                        <option value="">--- Por favor seleccione ---</option>
+                                        <option>INSS activo</option>
+                                        <option>Constancia INSS</option>
+                                        <option>NSS provisional</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Comprobante INSS <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="comprobante_inss" accept=".pdf,.jpg,.jpeg,.png" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionHs" class="d-none">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">H&amp;S - Control de solicitud</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="estado" required>
+                                        <option>New</option>
+                                        <option>En revision</option>
+                                        <option>Aprobado</option>
+                                        <option>Rechazado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="prioridad" required>
+                                        <option>Alta</option>
+                                        <option>Media</option>
+                                        <option>Baja</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Asignado a</label>
+                                    <input type="text" class="form-control" name="asignado_a" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tarea padre</label>
+                                    <input type="text" class="form-control js-tarea-padre" name="tarea_padre" readonly required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha de inicio</label>
+                                    <input type="date" class="form-control" name="fecha_inicio" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha fin</label>
+                                    <input type="date" class="form-control" name="fecha_fin" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tiempo estimado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="tiempo_estimado" min="0" step="1" />
+                                        <span class="input-group-text">Horas</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">% Realizado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="porcentaje_realizado" min="0" max="100" value="0" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">H&amp;S - Capacitaciones y cursos</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Induccion General</label>
+                                    <input type="date" class="form-control" name="induccion_general_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Prevencion de Incendios</label>
+                                    <input type="date" class="form-control" name="prevencion_incendios_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Sitio</label>
+                                    <input type="date" class="form-control" name="sitio_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ATS</label>
+                                    <input type="date" class="form-control" name="ats_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">IPER</label>
+                                    <input type="date" class="form-control" name="iper_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Oper. Traslado Mina a Mina</label>
+                                    <input type="date" class="form-control" name="oper_traslado_mina_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Manejo de Residuos Solidos</label>
+                                    <input type="date" class="form-control" name="manejo_residuos_solidos_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Uso de Formato de Transporte</label>
+                                    <input type="date" class="form-control" name="uso_formato_transporte_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Manejo de Hidrocarburos</label>
+                                    <input type="date" class="form-control" name="manejo_hidrocarburos_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Educacion Vial</label>
+                                    <input type="date" class="form-control" name="educacion_vial_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Sistema de Gestion Social</label>
+                                    <input type="date" class="form-control" name="sistema_gestion_social_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Manejo Defensivo (Vehiculo Pesado)</label>
+                                    <input type="date" class="form-control" name="manejo_defensivo_pesado_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Gestion de Fatiga</label>
+                                    <input type="date" class="form-control" name="gestion_fatiga_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Manejo Defensivo (Vehiculo Liviano)</label>
+                                    <input type="date" class="form-control" name="manejo_defensivo_liviano_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Sistema 5 puntos</label>
+                                    <input type="date" class="form-control" name="sistema_5_puntos_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Respuestas ante Emergencia</label>
+                                    <input type="date" class="form-control" name="respuestas_emergencia_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Primeros Auxilios Tecnico</label>
+                                    <input type="date" class="form-control" name="primeros_auxilios_tecnico_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Primeros Auxilios Practico</label>
+                                    <input type="date" class="form-control" name="primeros_auxilios_practico_fecha" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Estatus de Capacitacion</label>
+                                    <input type="file" class="form-control" name="estatus_capacitacion_archivo" accept=".pdf,.jpg,.jpeg,.png" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ficha C-Safe</label>
+                                    <input type="file" class="form-control" name="ficha_csafe_archivo" accept=".pdf,.jpg,.jpeg,.png" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ficheros</label>
+                                    <input type="file" class="form-control" name="ficheros_hs" multiple />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionReconocimiento" class="d-none">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">Viaje de Reconocimiento - Datos operativos</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="estado" required>
+                                        <option>New</option>
+                                        <option>En revision</option>
+                                        <option>Aprobado</option>
+                                        <option>Rechazado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="prioridad" required>
+                                        <option>Alta</option>
+                                        <option>Media</option>
+                                        <option>Baja</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Asignado a</label>
+                                    <input type="text" class="form-control" name="asignado_a" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tarea padre</label>
+                                    <input type="text" class="form-control js-tarea-padre" name="tarea_padre" readonly required />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha de inicio</label>
+                                    <input type="date" class="form-control" name="fecha_inicio" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha fin</label>
+                                    <input type="date" class="form-control" name="fecha_fin" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tiempo estimado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="tiempo_estimado" min="0" step="1" />
+                                        <span class="input-group-text">Horas</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">% Realizado</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="porcentaje_realizado" min="0" max="100" value="0" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Se realizara el viaje</label>
+                                    <input type="date" class="form-control" name="se_realizara_viaje_fecha" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Viaje Completado</label>
+                                    <input type="date" class="form-control" name="viaje_completado_fecha" />
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Evidencia V. de Reconocimiento</label>
+                                    <input type="file" class="form-control" name="evidencia_viaje_reconocimiento" accept=".pdf,.jpg,.jpeg,.png" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h5 class="fw-bold mb-3">Viaje de Reconocimiento - Participantes</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Conductor en Reconocimiento <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="conductor_reconocimiento" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Supervisor en La Libertad</label>
+                                    <input type="text" class="form-control" name="supervisor_la_libertad" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Conductor Instructor 1 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="conductor_instructor_1" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Supervisor en EBM</label>
+                                    <input type="text" class="form-control" name="supervisor_ebm" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Equipo 1 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="equipo_1" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Supervisor en Pavon</label>
+                                    <input type="text" class="form-control" name="supervisor_pavon" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Conductor Instructor 2</label>
+                                    <input type="text" class="form-control" name="conductor_instructor_2" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Supervisor en Limon</label>
+                                    <input type="text" class="form-control" name="supervisor_limon" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Equipo 2</label>
+                                    <input type="text" class="form-control" name="equipo_2" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ficheros</label>
+                                    <input type="file" class="form-control" name="ficheros_reconocimiento" multiple />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end gap-2">
+                <button type="reset" class="btn btn-outline-secondary">Limpiar</button>
+                <button type="button" class="btn btn-outline-secondary d-none" id="btnCancelarEdicionSolicitud">Cancelar edicion</button>
+                <button type="submit" class="btn btn-primary" id="btnGuardarSolicitudIngresoPersonal">
+                    <i class="bi bi-save me-1"></i>
+                    Guardar solicitud
+                </button>
+            </div>
+        </form>
+
+        <div id="solicitudesIngresoPanel" class="mt-4 border rounded p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold mb-0">Solicitudes guardadas</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshSolicitudes">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                </button>
+            </div>
+            <div class="mb-3">
+                <div id="solicitudesSlaGlobalCards" class="sla-dashboard-grid mb-2">
+                    <div class="sla-kpi-card">
+                        <div class="sla-kpi-label">Solicitudes</div>
+                        <div class="sla-kpi-value">0</div>
+                    </div>
+                </div>
+                <div id="solicitudesSlaByTipo" class="sla-tipo-grid">
+                    <div class="text-muted small">Cargando resumen SLA por tipo...</div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Asunto</th>
+                            <th>Solicitante</th>
+                            <th>Tarea padre</th>
+                            <th>Estado</th>
+                            <th>Prioridad</th>
+                            <th class="solicitudes-sla-col">SLA limite</th>
+                            <th class="solicitudes-sla-col">Semaforo SLA</th>
+                            <th class="solicitudes-sla-col">Restante</th>
+                            <th>Actualizado</th>
+                            <th style="width: 170px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="solicitudesIngresoBody">
+                        <tr>
+                            <td colspan="12" class="text-muted text-center py-3">Cargando solicitudes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="historialTrazabilidadPanel" class="mt-4 border rounded p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold mb-0">Historial de trazabilidad</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshHistory">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                </button>
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <input type="text"
+                           id="traceSearchInput"
+                           class="form-control form-control-sm"
+                           placeholder="Buscar por nombre del solicitante..." />
+                </div>
+                <div class="col-md-6">
+                    <select id="traceTypeFilter" class="form-select form-select-sm">
+                        <option value="">Todos los tipos</option>
+                        <option value="1. Solicitud Ingreso">1. Solicitud Ingreso</option>
+                        <option value="1.1 Clinica">1.1 Clinica</option>
+                        <option value="1.2 RRHH">1.2 RRHH</option>
+                        <option value="1.3 H&S">1.3 H&S</option>
+                        <option value="1.4 Viaje de Reconocimiento">1.4 Viaje de Reconocimiento</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Solicitante</th>
+                            <th>Tarea padre</th>
+                            <th>Tipo origen</th>
+                            <th>Ultimo tipo</th>
+                            <th>Ultimo asunto</th>
+                            <th>Creado</th>
+                            <th>Actualizado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="traceHistoryBody">
+                        <tr>
+                            <td colspan="7" class="text-muted text-center py-3">Cargando historial...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const SLA_TOTAL_HOURS = 48;
+            const SLA_NEAR_HOURS = 8;
+            const WORK_START_MINUTES = 7 * 60 + 30;
+            const WORK_END_MINUTES = 17 * 60;
+            const buttons = document.querySelectorAll('.js-tipo-ingreso');
+            const form = document.getElementById('formNuevoIngresoPersonal');
+            const hiddenTipo = document.getElementById('tipoSeleccionadoInput');
+            const labelTipo = document.getElementById('tipoSeleccionadoLabel');
+            const sectionNoClinica = document.getElementById('sectionNoClinica');
+            const sectionClinica = document.getElementById('sectionClinica');
+            const sectionRrhh = document.getElementById('sectionRrhh');
+            const sectionHs = document.getElementById('sectionHs');
+            const sectionReconocimiento = document.getElementById('sectionReconocimiento');
+            const asuntoInput = form ? form.querySelector('input[name="asunto"]') : null;
+            const hint = document.getElementById('tareaPadreHint');
+            const tareaPadreInputs = form ? form.querySelectorAll('.js-tarea-padre') : [];
+            const resolveUrl = '@Url.Action("ResolveTareaPadreIngresoPersonal", "Operaciones")';
+            const historyUrl = '@Url.Action("GetIngresoPersonalTraceHistory", "Operaciones")';
+            const historyBody = document.getElementById('traceHistoryBody');
+            const refreshHistoryBtn = document.getElementById('btnRefreshHistory');
+            const btnMenuPrincipal = document.getElementById('btnMenuPrincipalIngreso');
+            const historialPanel = document.getElementById('historialTrazabilidadPanel');
+            const searchInput = document.getElementById('traceSearchInput');
+            const typeFilter = document.getElementById('traceTypeFilter');
+            const solicitudesUrl = '@Url.Action("GetIngresoPersonalRequests", "Operaciones")';
+            const solicitudByIdTemplate = '@Url.Action("GetIngresoPersonalRequestById", "Operaciones", new { id = "__id__" })';
+            const deleteSolicitudUrl = '@Url.Action("DeleteIngresoPersonalRequest", "Operaciones")';
+            const solicitudesBody = document.getElementById('solicitudesIngresoBody');
+            const btnRefreshSolicitudes = document.getElementById('btnRefreshSolicitudes');
+            const solicitudIdInput = document.getElementById('solicitudIdInput');
+            const btnGuardarSolicitud = document.getElementById('btnGuardarSolicitudIngresoPersonal');
+            const btnCancelarEdicion = document.getElementById('btnCancelarEdicionSolicitud');
+            const insightsPanel = document.getElementById('panelIngresoInsights');
+            const checklistStageList = document.getElementById('checklistStageList');
+            const checklistSummaryBadge = document.getElementById('checklistSummaryBadge');
+            const slaStatusBadgePreview = document.getElementById('slaStatusBadgePreview');
+            const slaDeadlinePreview = document.getElementById('slaDeadlinePreview');
+            const slaRemainingPreview = document.getElementById('slaRemainingPreview');
+            const slaProgressBarPreview = document.getElementById('slaProgressBarPreview');
+            const timelineCompact = document.getElementById('ingresoTimelineCompact');
+            const timelineCountBadge = document.getElementById('timelineCountBadge');
+            const solicitudesSlaGlobalCards = document.getElementById('solicitudesSlaGlobalCards');
+            const solicitudesSlaByTipo = document.getElementById('solicitudesSlaByTipo');
+            let allHistoryRows = [];
+            let allSolicitudesRows = [];
+            let anchorCreatedAt = null;
+            let anchorUpdatedAt = null;
+
+            if (!buttons.length || !form || !hiddenTipo || !labelTipo || !asuntoInput) return;
+
+            function escapeHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function formatDate(date) {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                    return '-';
+                }
+
+                return date.toLocaleString('es-NI', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
+
+            function toDate(dateValue) {
+                const parsed = new Date(dateValue);
+                return Number.isNaN(parsed.getTime()) ? null : parsed;
+            }
+
+            function parseDateInputValue(value) {
+                if (!value || typeof value !== 'string') {
+                    return null;
+                }
+
+                const iso = /^(\d{4})-(\d{2})-(\d{2})$/;
+                const match = value.match(iso);
+                if (!match) {
+                    return null;
+                }
+
+                const year = Number(match[1]);
+                const month = Number(match[2]) - 1;
+                const day = Number(match[3]);
+                return new Date(year, month, day, 7, 30, 0, 0);
+            }
+
+            function isBusinessDay(date) {
+                const day = date.getDay();
+                return day >= 1 && day <= 5;
+            }
+
+            function normalizeBusinessMoment(date) {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                    return null;
+                }
+
+                const current = new Date(date.getTime());
+                while (!isBusinessDay(current)) {
+                    current.setDate(current.getDate() + 1);
+                    current.setHours(7, 30, 0, 0);
+                }
+
+                const minutes = current.getHours() * 60 + current.getMinutes();
+                if (minutes < WORK_START_MINUTES) {
+                    current.setHours(7, 30, 0, 0);
+                    return current;
+                }
+
+                if (minutes >= WORK_END_MINUTES) {
+                    return nextBusinessStart(current);
+                }
+
+                return current;
+            }
+
+            function nextBusinessStart(date) {
+                const current = new Date(date.getTime());
+                current.setHours(0, 0, 0, 0);
+                do {
+                    current.setDate(current.getDate() + 1);
+                } while (!isBusinessDay(current));
+
+                current.setHours(7, 30, 0, 0);
+                return current;
+            }
+
+            function addBusinessHours(start, hours) {
+                let current = normalizeBusinessMoment(start);
+                if (!current || !Number.isFinite(hours) || hours <= 0) {
+                    return current;
+                }
+
+                let remaining = hours;
+                while (remaining > 0) {
+                    const endDay = new Date(current.getTime());
+                    endDay.setHours(17, 0, 0, 0);
+                    const available = (endDay.getTime() - current.getTime()) / 3600000;
+                    if (available <= 0) {
+                        current = nextBusinessStart(current);
+                        continue;
+                    }
+
+                    const used = Math.min(remaining, available);
+                    current = new Date(current.getTime() + used * 3600000);
+                    remaining -= used;
+
+                    if (remaining > 0) {
+                        current = nextBusinessStart(current);
+                    }
+                }
+
+                return current;
+            }
+
+            function businessHoursBetween(from, to) {
+                if (!(from instanceof Date) || !(to instanceof Date)) {
+                    return 0;
+                }
+
+                if (to <= from) {
+                    return 0;
+                }
+
+                let total = 0;
+                let cursor = new Date(from.getTime());
+                while (cursor < to) {
+                    if (!isBusinessDay(cursor)) {
+                        cursor = nextBusinessStart(cursor);
+                        continue;
+                    }
+
+                    const dayStart = new Date(cursor.getTime());
+                    dayStart.setHours(7, 30, 0, 0);
+                    const dayEnd = new Date(cursor.getTime());
+                    dayEnd.setHours(17, 0, 0, 0);
+
+                    if (cursor < dayStart) {
+                        cursor = dayStart;
+                    }
+
+                    if (cursor >= dayEnd) {
+                        cursor = nextBusinessStart(cursor);
+                        continue;
+                    }
+
+                    const segmentEnd = to < dayEnd ? to : dayEnd;
+                    if (segmentEnd > cursor) {
+                        total += (segmentEnd.getTime() - cursor.getTime()) / 3600000;
+                    }
+
+                    cursor = segmentEnd;
+                    if (cursor >= dayEnd) {
+                        cursor = nextBusinessStart(cursor);
+                    }
+                }
+
+                return total;
+            }
+
+            function isClosedStatus(status) {
+                const raw = String(status ?? '').trim().toLowerCase();
+                return raw === 'aprobado' || raw === 'rechazado' || raw === 'cerrado' || raw === 'finalizado';
+            }
+
+            function getSlaColor(statusClass) {
+                if (statusClass === 'warning') return '#f59e0b';
+                if (statusClass === 'danger') return '#ef4444';
+                return '#16a34a';
+            }
+
+            function computeSlaSnapshot() {
+                const status = (form.querySelector('[name="estado"]') || {}).value || '';
+                const baseStart = anchorCreatedAt instanceof Date ? anchorCreatedAt : new Date();
+                const deadline = addBusinessHours(baseStart, SLA_TOTAL_HOURS);
+                const reference =
+                    isClosedStatus(status) && anchorUpdatedAt instanceof Date
+                        ? anchorUpdatedAt
+                        : new Date();
+
+                const consumedHours = Math.max(0, businessHoursBetween(baseStart, reference));
+                const remainingHours = SLA_TOTAL_HOURS - consumedHours;
+                const progress = Math.max(0, Math.min(100, (consumedHours / SLA_TOTAL_HOURS) * 100));
+
+                let statusLabel = 'Cumplido';
+                let statusClass = 'success';
+                let remainingLabel = `Restan ${remainingHours.toFixed(1)} h laborales.`;
+
+                if (remainingHours <= 0) {
+                    statusLabel = 'Vencido';
+                    statusClass = 'danger';
+                    remainingLabel = `Vencido por ${Math.abs(remainingHours).toFixed(1)} h laborales.`;
+                } else if (remainingHours <= SLA_NEAR_HOURS) {
+                    statusLabel = 'Por vencer';
+                    statusClass = 'warning';
+                    remainingLabel = `Restan ${remainingHours.toFixed(1)} h laborales.`;
+                }
+
+                return {
+                    deadline,
+                    statusLabel,
+                    statusClass,
+                    remainingLabel,
+                    progress
+                };
+            }
+
+            function renderSlaBadge(statusLabel, statusClass) {
+                const dotClass = statusClass === 'warning'
+                    ? 'bg-warning'
+                    : (statusClass === 'danger' ? 'bg-danger' : 'bg-success');
+                return `<span class="sla-badge ${statusClass}"><span class="rounded-circle ${dotClass}" style="width:8px;height:8px;display:inline-block;"></span>${escapeHtml(statusLabel)}</span>`;
+            }
+
+            function renderSlaPreview() {
+                if (!slaStatusBadgePreview || !slaDeadlinePreview || !slaRemainingPreview || !slaProgressBarPreview) {
+                    return;
+                }
+
+                const sla = computeSlaSnapshot();
+                slaStatusBadgePreview.className = `sla-badge ${sla.statusClass}`;
+                slaStatusBadgePreview.innerHTML = `<span class="rounded-circle ${sla.statusClass === 'warning' ? 'bg-warning' : (sla.statusClass === 'danger' ? 'bg-danger' : 'bg-success')}" style="width:8px;height:8px;display:inline-block;"></span>${escapeHtml(sla.statusLabel)}`;
+                slaDeadlinePreview.textContent = `Limite: ${formatDate(sla.deadline)}`;
+                slaRemainingPreview.textContent = sla.remainingLabel;
+                slaProgressBarPreview.style.width = `${sla.progress.toFixed(1)}%`;
+                slaProgressBarPreview.style.background = getSlaColor(sla.statusClass);
+            }
+
+            function getField(name) {
+                return form.querySelector(`[name="${name}"]`);
+            }
+
+            function hasValue(name) {
+                const field = getField(name);
+                if (!field || field.disabled) return false;
+
+                if (field.type === 'checkbox') {
+                    const checked = form.querySelectorAll(`[name="${name}"]:checked`);
+                    return checked.length > 0;
+                }
+
+                const value = (field.value || '').trim();
+                return value.length > 0;
+            }
+
+            function hasPositiveNumber(name) {
+                const field = getField(name);
+                if (!field || field.disabled) return false;
+                const value = Number(field.value);
+                return Number.isFinite(value) && value > 0;
+            }
+
+            function getChecklistDefinition() {
+                const tipo = (hiddenTipo.value || '').trim();
+                const isClinica = tipo.startsWith('1.1');
+                const isRrhh = tipo.startsWith('1.2');
+                const isHs = tipo.startsWith('1.3');
+                const isReconocimiento = tipo.startsWith('1.4');
+
+                const etapa2Special = isClinica
+                    ? () => hasValue('estado') && hasValue('prioridad') && hasValue('asignado_a')
+                    : isRrhh
+                        ? () => hasValue('correo_personal') && hasValue('tipo_sangre') && hasValue('num_fam_cercano')
+                        : isHs
+                            ? () => hasValue('induccion_general_fecha') && hasValue('iper_fecha') && hasValue('sistema_5_puntos_fecha')
+                            : isReconocimiento
+                                ? () => hasValue('conductor_reconocimiento') && hasValue('conductor_instructor_1') && hasValue('equipo_1')
+                                : () => hasValue('nombres_apellidos') && hasValue('numero_inss') && hasValue('empresa');
+
+                return [
+                    {
+                        title: 'Registro base',
+                        done: () => hasValue('tipo') && hasValue('asunto') && hasValue('tarea_padre')
+                    },
+                    {
+                        title: 'Datos por etapa',
+                        done: etapa2Special
+                    },
+                    {
+                        title: 'Asignacion y plan',
+                        done: () => hasValue('estado') && hasValue('prioridad') && hasPositiveNumber('tiempo_estimado')
+                    },
+                    {
+                        title: 'Cierre',
+                        done: () => isClosedStatus((getField('estado') || {}).value || '') || hasValue('fecha_fin') || Number((getField('porcentaje_realizado') || {}).value || 0) >= 100
+                    }
+                ];
+            }
+
+            function renderChecklist() {
+                if (!checklistStageList || !checklistSummaryBadge) return;
+
+                const stages = getChecklistDefinition();
+                const rows = stages.map(stage => {
+                    const done = stage.done();
+                    return {
+                        title: stage.title,
+                        done
+                    };
+                });
+
+                const doneCount = rows.filter(x => x.done).length;
+                checklistSummaryBadge.textContent = `${doneCount}/${rows.length}`;
+                checklistStageList.innerHTML = rows.map(row => `
+                    <li class="checklist-item ${row.done ? 'done' : 'pending'}">
+                        <strong>${escapeHtml(row.title)}</strong>
+                        <span class="badge ${row.done ? 'text-bg-success' : 'text-bg-secondary'}">${row.done ? 'Completo' : 'Pendiente'}</span>
+                    </li>
+                `).join('');
+            }
+
+            function getDateInputLabel(input) {
+                if (!(input instanceof HTMLElement)) return 'Fecha';
+                const wrapper = input.closest('.col-md-4, .col-md-6, .col-md-8, .col-12');
+                if (!wrapper) return input.name || 'Fecha';
+                const label = wrapper.querySelector('label');
+                return (label ? label.textContent : input.name || 'Fecha')?.trim() || 'Fecha';
+            }
+
+            function renderTimeline() {
+                if (!timelineCompact || !timelineCountBadge) return;
+
+                const events = [];
+                const createdDate = anchorCreatedAt instanceof Date ? anchorCreatedAt : new Date();
+                const updatedDate = anchorUpdatedAt instanceof Date ? anchorUpdatedAt : null;
+                const sla = computeSlaSnapshot();
+
+                events.push({
+                    date: createdDate,
+                    title: 'Solicitud registrada',
+                    subtitle: 'Inicio de flujo'
+                });
+
+                events.push({
+                    date: sla.deadline,
+                    title: 'Limite SLA',
+                    subtitle: '48 h laborales'
+                });
+
+                if (updatedDate) {
+                    events.push({
+                        date: updatedDate,
+                        title: 'Ultima actualizacion',
+                        subtitle: 'Bitacora de solicitud'
+                    });
+                }
+
+                const dateInputs = form.querySelectorAll('input[type="date"]');
+                dateInputs.forEach(input => {
+                    if (!input || input.disabled || !input.value) return;
+                    const eventDate = parseDateInputValue(input.value);
+                    if (!eventDate) return;
+
+                    events.push({
+                        date: eventDate,
+                        title: getDateInputLabel(input),
+                        subtitle: 'Fecha capturada en formulario'
+                    });
+                });
+
+                const ordered = events
+                    .filter(x => x.date instanceof Date && !Number.isNaN(x.date.getTime()))
+                    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+                timelineCountBadge.textContent = `${ordered.length} evento${ordered.length === 1 ? '' : 's'}`;
+                if (!ordered.length) {
+                    timelineCompact.innerHTML = '<div class="text-muted small">Aun no hay eventos para mostrar.</div>';
+                    return;
+                }
+
+                timelineCompact.innerHTML = ordered.map(eventItem => `
+                    <div class="timeline-row">
+                        <div class="timeline-row-date">${escapeHtml(formatDate(eventItem.date))}</div>
+                        <div class="fw-semibold">${escapeHtml(eventItem.title)}</div>
+                        <div class="text-muted">${escapeHtml(eventItem.subtitle || '')}</div>
+                    </div>
+                `).join('');
+            }
+
+            function refreshInsights() {
+                if (insightsPanel && insightsPanel.classList.contains('d-none') && !form.classList.contains('d-none')) {
+                    insightsPanel.classList.remove('d-none');
+                }
+                renderChecklist();
+                renderSlaPreview();
+                renderTimeline();
+            }
+
+            function renderSolicitudesSlaDashboard(rows) {
+                if (!solicitudesSlaGlobalCards || !solicitudesSlaByTipo) {
+                    return;
+                }
+
+                const items = Array.isArray(rows) ? rows : [];
+                const total = items.length;
+                const cumplidas = items.filter(r => (r.slaStatusClass || '').toLowerCase() === 'success').length;
+                const porVencer = items.filter(r => (r.slaStatusClass || '').toLowerCase() === 'warning').length;
+                const vencidas = items.filter(r => (r.slaStatusClass || '').toLowerCase() === 'danger').length;
+                const cumplimientoPct = total > 0 ? Math.round((cumplidas / total) * 100) : 0;
+
+                solicitudesSlaGlobalCards.innerHTML = `
+                    <div class="sla-kpi-card">
+                        <div class="sla-kpi-label">Solicitudes</div>
+                        <div class="sla-kpi-value">${total}</div>
+                    </div>
+                    <div class="sla-kpi-card">
+                        <div class="sla-kpi-label">Cumplidas</div>
+                        <div class="sla-kpi-value success">${cumplidas}</div>
+                    </div>
+                    <div class="sla-kpi-card">
+                        <div class="sla-kpi-label">Por vencer</div>
+                        <div class="sla-kpi-value warning">${porVencer}</div>
+                    </div>
+                    <div class="sla-kpi-card">
+                        <div class="sla-kpi-label">Vencidas</div>
+                        <div class="sla-kpi-value danger">${vencidas}</div>
+                    </div>
+                    <div class="sla-kpi-card">
+                        <div class="sla-kpi-label">% Cumplimiento</div>
+                        <div class="sla-kpi-value">${cumplimientoPct}%</div>
+                    </div>
+                `;
+
+                if (!total) {
+                    solicitudesSlaByTipo.innerHTML = '<div class="text-muted small">Sin datos de solicitudes para calcular SLA por tipo.</div>';
+                    return;
+                }
+
+                const grouped = new Map();
+                items.forEach(item => {
+                    const key = (item.tipo || 'Sin tipo').trim() || 'Sin tipo';
+                    if (!grouped.has(key)) {
+                        grouped.set(key, { total: 0, success: 0, warning: 0, danger: 0 });
+                    }
+
+                    const bucket = grouped.get(key);
+                    bucket.total += 1;
+                    const status = (item.slaStatusClass || '').toLowerCase();
+                    if (status === 'danger') bucket.danger += 1;
+                    else if (status === 'warning') bucket.warning += 1;
+                    else bucket.success += 1;
+                });
+
+                const ordered = Array.from(grouped.entries())
+                    .sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0], 'es'));
+
+                solicitudesSlaByTipo.innerHTML = ordered.map(([tipo, data]) => {
+                    const pct = data.total > 0 ? Math.round((data.success / data.total) * 100) : 0;
+                    return `
+                        <div class="sla-tipo-card">
+                            <div class="sla-tipo-title">${escapeHtml(tipo)}</div>
+                            <div class="sla-tipo-meta">
+                                <span>Total: ${data.total}</span>
+                                <strong>${pct}% cumplido</strong>
+                            </div>
+                            <div class="sla-tipo-pill-list">
+                                <span class="sla-tipo-pill success">Cumplidas: ${data.success}</span>
+                                <span class="sla-tipo-pill warning">Por vencer: ${data.warning}</span>
+                                <span class="sla-tipo-pill danger">Vencidas: ${data.danger}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function setSectionState(section, enabled) {
+                if (!section) return;
+
+                section.classList.toggle('d-none', !enabled);
+                section.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (enabled) {
+                        field.disabled = false;
+                        if (field.dataset.wasRequired === '1') {
+                            field.required = true;
+                        }
+                    } else {
+                        if (field.required) {
+                            field.dataset.wasRequired = '1';
+                            field.required = false;
+                        }
+                        field.disabled = true;
+                    }
+                });
+            }
+
+            function setTareaPadreValue(value) {
+                tareaPadreInputs.forEach(input => {
+                    input.value = value || '';
+                });
+                refreshInsights();
+            }
+
+            function setEditMode(enabled) {
+                if (!solicitudIdInput || !btnGuardarSolicitud || !btnCancelarEdicion) return;
+
+                if (enabled) {
+                    btnGuardarSolicitud.innerHTML = '<i class="bi bi-save me-1"></i>Actualizar solicitud';
+                    btnCancelarEdicion.classList.remove('d-none');
+                } else {
+                    solicitudIdInput.value = '';
+                    btnGuardarSolicitud.innerHTML = '<i class="bi bi-save me-1"></i>Guardar solicitud';
+                    btnCancelarEdicion.classList.add('d-none');
+                }
+            }
+
+            function renderSolicitudes(rows) {
+                if (!solicitudesBody) return;
+                renderSolicitudesSlaDashboard(rows);
+
+                if (!rows || !rows.length) {
+                    solicitudesBody.innerHTML = '<tr><td colspan="12" class="text-muted text-center py-3">No hay solicitudes registradas.</td></tr>';
+                    return;
+                }
+
+                solicitudesBody.innerHTML = rows.map(row => `
+                    <tr>
+                        <td>${row.id}</td>
+                        <td>${row.tipo || ''}</td>
+                        <td>${row.asunto || ''}</td>
+                        <td>${row.solicitante || ''}</td>
+                        <td><span class="badge text-bg-light border">${row.tareaPadre || ''}</span></td>
+                        <td>${row.estado || ''}</td>
+                        <td>${row.prioridad || ''}</td>
+                        <td>${row.slaDeadline || '-'}</td>
+                        <td>${renderSlaBadge(row.slaStatus || 'Cumplido', row.slaStatusClass || 'success')}</td>
+                        <td>
+                            <div>${escapeHtml(row.slaRemainingLabel || '-')}</div>
+                            <div class="sla-mini-progress mt-1">
+                                <div class="sla-mini-bar" style="width:${Math.max(0, Math.min(100, Number(row.slaProgress || 0))).toFixed(1)}%; background:${getSlaColor(row.slaStatusClass || 'success')};"></div>
+                            </div>
+                        </td>
+                        <td>${row.updatedAt || ''}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary js-edit-solicitud" data-id="${row.id}">Editar</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger js-delete-solicitud" data-id="${row.id}">Eliminar</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            async function loadSolicitudes() {
+                if (!solicitudesBody) return;
+                try {
+                    const response = await fetch(`${solicitudesUrl}?take=100`, { method: 'GET' });
+                    if (!response.ok) throw new Error('Requests error');
+                    const result = await response.json();
+                    allSolicitudesRows = (result && result.rows) ? result.rows : [];
+                    renderSolicitudes(allSolicitudesRows);
+                } catch {
+                    solicitudesBody.innerHTML = '<tr><td colspan="12" class="text-danger text-center py-3">No se pudo cargar el listado.</td></tr>';
+                    renderSolicitudesSlaDashboard([]);
+                }
+            }
+
+            function resetFormValuesForEdit() {
+                form.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name === '__RequestVerificationToken' || field.name === 'solicitud_id' || field.name === 'tipo') {
+                        return;
+                    }
+
+                    if (field.type === 'file') {
+                        return;
+                    }
+
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.checked = false;
+                        return;
+                    }
+
+                    field.value = '';
+                });
+            }
+
+            function applyPayload(payload) {
+                if (!payload) return;
+
+                Object.entries(payload).forEach(([name, values]) => {
+                    if (!name || name === '__RequestVerificationToken' || name === 'solicitud_id') {
+                        return;
+                    }
+
+                    const fields = form.querySelectorAll(`[name="${name}"]`);
+                    if (!fields.length) {
+                        return;
+                    }
+
+                    const valueArray = Array.isArray(values) ? values : [values];
+
+                    fields.forEach(field => {
+                        if (field.type === 'file') {
+                            return;
+                        }
+
+                        if (field.type === 'checkbox' || field.type === 'radio') {
+                            field.checked = valueArray.includes(field.value);
+                            return;
+                        }
+
+                        field.value = valueArray.length ? (valueArray[0] ?? '') : '';
+                    });
+                });
+            }
+
+            async function editSolicitud(id) {
+                if (!id || !Number.isInteger(id)) {
+                    return;
+                }
+
+                try {
+                    const url = solicitudByIdTemplate.replace('__id__', String(id));
+                    const response = await fetch(url, { method: 'GET' });
+                    if (!response.ok) throw new Error('Detail error');
+                    const result = await response.json();
+                    if (!result || !result.success || !result.detail) {
+                        alert((result && result.message) ? result.message : 'No se encontró el detalle de la solicitud.');
+                        return;
+                    }
+
+                    const detail = result.detail;
+                    const button = Array.from(buttons).find(btn => (btn.getAttribute('data-tipo') || '') === (detail.tipo || ''));
+                    if (button) {
+                        selectTipo(button, false);
+                    } else {
+                        form.classList.remove('d-none');
+                    }
+
+                    resetFormValuesForEdit();
+                    applyPayload(detail.payload);
+
+                    if (solicitudIdInput) {
+                        solicitudIdInput.value = String(detail.id || '');
+                    }
+
+                    if (detail.tareaPadre) {
+                        setTareaPadreValue(detail.tareaPadre);
+                    }
+
+                    anchorCreatedAt = toDate(detail.createdAtIso) || new Date();
+                    anchorUpdatedAt = toDate(detail.updatedAtIso);
+                    setEditMode(true);
+                    refreshInsights();
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } catch {
+                    alert('No se pudo cargar la solicitud para editar.');
+                }
+            }
+
+            async function deleteSolicitud(id) {
+                if (!id || !Number.isInteger(id)) {
+                    return;
+                }
+
+                if (!confirm('¿Deseas eliminar esta solicitud? Esta accion no se puede deshacer.')) {
+                    return;
+                }
+
+                try {
+                    const tokenField = form.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenField ? tokenField.value : '';
+                    const body = new URLSearchParams();
+                    body.append('id', String(id));
+                    body.append('__RequestVerificationToken', token);
+
+                    const response = await fetch(deleteSolicitudUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: body.toString()
+                    });
+
+                    if (!response.ok) throw new Error('Delete error');
+                    const result = await response.json();
+                    if (!result || !result.success) {
+                        alert((result && result.message) ? result.message : 'No se pudo eliminar la solicitud.');
+                        return;
+                    }
+
+                    if (solicitudIdInput && Number(solicitudIdInput.value) === id) {
+                        backToMenuPrincipal();
+                    }
+
+                    loadSolicitudes();
+                } catch {
+                    alert('No se pudo eliminar la solicitud en este momento.');
+                }
+            }
+
+            function renderHistory(rows) {
+                if (!historyBody) return;
+
+                if (!rows || !rows.length) {
+                    historyBody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">Sin registros de trazabilidad.</td></tr>';
+                    return;
+                }
+
+                historyBody.innerHTML = rows.map(row => `
+                    <tr>
+                        <td>${row.solicitante || ''}</td>
+                        <td><span class="badge text-bg-light border">${row.tareaPadre || ''}</span></td>
+                        <td>${row.tipoOrigen || ''}</td>
+                        <td>${row.ultimoTipo || ''}</td>
+                        <td>${row.ultimoAsunto || ''}</td>
+                        <td>${row.createdAt || ''}</td>
+                        <td>${row.updatedAt || ''}</td>
+                    </tr>
+                `).join('');
+            }
+
+            function applyHistoryFilters() {
+                const query = ((searchInput && searchInput.value) ? searchInput.value : '').trim().toLowerCase();
+                const type = ((typeFilter && typeFilter.value) ? typeFilter.value : '').trim();
+
+                const filtered = allHistoryRows.filter(row => {
+                    const byName = !query || ((row.solicitante || '').toLowerCase().includes(query));
+                    const byType = !type || row.tipoOrigen === type || row.ultimoTipo === type;
+                    return byName && byType;
+                });
+
+                renderHistory(filtered);
+            }
+
+            async function loadHistory() {
+                if (!historyBody) return;
+                try {
+                    const response = await fetch(`${historyUrl}?take=20`, { method: 'GET' });
+                    if (!response.ok) throw new Error('History error');
+                    const result = await response.json();
+                    allHistoryRows = (result && result.rows) ? result.rows : [];
+                    applyHistoryFilters();
+                } catch {
+                    historyBody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-3">No se pudo cargar el historial.</td></tr>';
+                }
+            }
+
+            async function resolveTareaPadre() {
+                const tipo = (hiddenTipo.value || '').trim();
+                const asunto = (asuntoInput.value || '').trim();
+
+                if (!tipo || !asunto) {
+                    setTareaPadreValue('');
+                    if (hint) hint.textContent = '';
+                    return;
+                }
+
+                try {
+                    const query = `?tipo=${encodeURIComponent(tipo)}&asunto=${encodeURIComponent(asunto)}`;
+                    const response = await fetch(`${resolveUrl}${query}`, { method: 'GET' });
+                    if (!response.ok) {
+                        throw new Error('Resolve error');
+                    }
+
+                    const result = await response.json();
+                    if (result && result.success) {
+                        setTareaPadreValue(result.tareaPadre || '');
+                        if (hint) {
+                            hint.textContent = result.message || '';
+                            hint.classList.remove('text-danger');
+                            hint.classList.add('text-success');
+                        }
+                        loadHistory();
+                    } else {
+                        setTareaPadreValue('');
+                        if (hint) {
+                            hint.textContent = (result && result.message) ? result.message : 'No fue posible generar la tarea padre.';
+                            hint.classList.remove('text-success');
+                            hint.classList.add('text-danger');
+                        }
+                    }
+                } catch {
+                    setTareaPadreValue('');
+                    if (hint) {
+                        hint.textContent = 'No se pudo validar la trazabilidad en este momento.';
+                        hint.classList.remove('text-success');
+                        hint.classList.add('text-danger');
+                    }
+                }
+            }
+
+            function selectTipo(button, autoResolve = true) {
+                buttons.forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-primary');
+
+                const tipo = button.getAttribute('data-tipo') || '';
+                const isClinica = tipo.indexOf('1.1') === 0;
+                const isRrhh = tipo.indexOf('1.2') === 0;
+                const isHs = tipo.indexOf('1.3') === 0;
+                const isReconocimiento = tipo.indexOf('1.4') === 0;
+
+                hiddenTipo.value = tipo;
+                labelTipo.value = tipo;
+                form.classList.remove('d-none');
+
+                setSectionState(sectionClinica, isClinica);
+                setSectionState(sectionRrhh, isRrhh);
+                setSectionState(sectionHs, isHs);
+                setSectionState(sectionReconocimiento, isReconocimiento);
+                setSectionState(sectionNoClinica, !isClinica && !isRrhh && !isHs && !isReconocimiento);
+
+                if (autoResolve && (asuntoInput.value || '').trim()) {
+                    resolveTareaPadre();
+                } else {
+                    setTareaPadreValue('');
+                    if (hint) hint.textContent = '';
+                }
+
+                anchorCreatedAt = new Date();
+                anchorUpdatedAt = null;
+                if (insightsPanel) {
+                    insightsPanel.classList.remove('d-none');
+                }
+                refreshInsights();
+            }
+
+            function backToMenuPrincipal() {
+                buttons.forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+
+                hiddenTipo.value = '';
+                labelTipo.value = '';
+                setTareaPadreValue('');
+                setEditMode(false);
+                if (hint) {
+                    hint.textContent = '';
+                    hint.classList.remove('text-success', 'text-danger');
+                }
+
+                setSectionState(sectionNoClinica, false);
+                setSectionState(sectionClinica, false);
+                setSectionState(sectionRrhh, false);
+                setSectionState(sectionHs, false);
+                setSectionState(sectionReconocimiento, false);
+                form.classList.add('d-none');
+                if (insightsPanel) {
+                    insightsPanel.classList.add('d-none');
+                }
+                anchorCreatedAt = null;
+                anchorUpdatedAt = null;
+
+                if (historialPanel) {
+                    historialPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            setSectionState(sectionNoClinica, false);
+            setSectionState(sectionClinica, false);
+            setSectionState(sectionRrhh, false);
+            setSectionState(sectionHs, false);
+            setSectionState(sectionReconocimiento, false);
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function () {
+                    selectTipo(this);
+                });
+            });
+
+            asuntoInput.addEventListener('change', resolveTareaPadre);
+            asuntoInput.addEventListener('blur', resolveTareaPadre);
+
+            if (refreshHistoryBtn) {
+                refreshHistoryBtn.addEventListener('click', loadHistory);
+            }
+
+            if (btnMenuPrincipal) {
+                btnMenuPrincipal.addEventListener('click', backToMenuPrincipal);
+            }
+
+            if (btnCancelarEdicion) {
+                btnCancelarEdicion.addEventListener('click', backToMenuPrincipal);
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', applyHistoryFilters);
+            }
+
+            if (typeFilter) {
+                typeFilter.addEventListener('change', applyHistoryFilters);
+            }
+
+            if (btnRefreshSolicitudes) {
+                btnRefreshSolicitudes.addEventListener('click', loadSolicitudes);
+            }
+
+            if (solicitudesBody) {
+                solicitudesBody.addEventListener('click', function (event) {
+                    const target = event.target;
+                    if (!(target instanceof HTMLElement)) {
+                        return;
+                    }
+
+                    const editButton = target.closest('.js-edit-solicitud');
+                    if (editButton instanceof HTMLElement) {
+                        const id = Number(editButton.getAttribute('data-id'));
+                        editSolicitud(id);
+                        return;
+                    }
+
+                    const deleteButton = target.closest('.js-delete-solicitud');
+                    if (deleteButton instanceof HTMLElement) {
+                        const id = Number(deleteButton.getAttribute('data-id'));
+                        deleteSolicitud(id);
+                    }
+                });
+            }
+
+            form.addEventListener('input', refreshInsights);
+            form.addEventListener('change', refreshInsights);
+
+            loadHistory();
+            loadSolicitudes();
+        })();
+    </script>
+}

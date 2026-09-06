@@ -1,0 +1,34 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsCorrectiveActionEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Editar accion correctiva" : "Nueva accion correctiva";
+    var priorities = new SelectList(ViewBag.PriorityOptions as string[] ?? Array.Empty<string>(), Model.Priority);
+    var statuses = new SelectList(ViewBag.ActionStatusOptions as string[] ?? Array.Empty<string>(), Model.Status);
+}
+
+<div class="container mt-4" style="max-width:900px;">
+    <h3>@ViewData["Title"]</h3>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="ActionEdit" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="SourceType" type="hidden" />
+            <input asp-for="SourceId" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-12"><label asp-for="Title" class="form-label fw-semibold"></label><input asp-for="Title" class="form-control" /></div>
+                <div class="col-12"><label asp-for="Description" class="form-label fw-semibold"></label><textarea asp-for="Description" class="form-control" rows="4"></textarea></div>
+                <div class="col-md-4"><label asp-for="Owner" class="form-label fw-semibold"></label><input asp-for="Owner" class="form-control" /></div>
+                <div class="col-md-3"><label asp-for="Priority" class="form-label fw-semibold"></label><select asp-for="Priority" class="form-select" asp-items="priorities"></select></div>
+                <div class="col-md-3"><label asp-for="Status" class="form-label fw-semibold"></label><select asp-for="Status" class="form-select" asp-items="statuses"></select></div>
+                <div class="col-md-2"><label asp-for="DueDate" class="form-label fw-semibold"></label><input asp-for="DueDate" type="date" class="form-control" /></div>
+                <div class="col-12"><label asp-for="ClosureNotes" class="form-label fw-semibold"></label><textarea asp-for="ClosureNotes" class="form-control" rows="3"></textarea></div>
+                <div class="col-12"><label asp-for="ApprovalNotes" class="form-label fw-semibold"></label><textarea asp-for="ApprovalNotes" class="form-control" rows="3"></textarea></div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Actions" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button></div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

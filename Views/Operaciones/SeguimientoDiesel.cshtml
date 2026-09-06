@@ -1,0 +1,667 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.SeguimientoDieselViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Seguimiento de Diesel";
+    var fechaOperativa = Model.FechaOperativa?.ToString("dd/MM/yyyy", CultureInfo.CurrentCulture) ?? "Sin fecha";
+    var mesOperativo = Model.FechaOperativa?.ToString("MM/yyyy", CultureInfo.CurrentCulture) ?? "Sin mes";
+    var maxSemana = Math.Max(1m, Model.TendenciaSemanal.Any() ? Model.TendenciaSemanal.Max(x => x.Galones) : 1m);
+    var maxMes = Math.Max(1m, Model.TendenciaMensual.Any() ? Model.TendenciaMensual.Max(x => x.Galones) : 1m);
+}
+
+<style>
+    .diesel-shell {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .diesel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.8rem;
+        margin-bottom: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .diesel-header h2 {
+        margin-bottom: 0.28rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .diesel-header p {
+        margin-bottom: 0;
+        color: #64748b;
+    }
+
+    .diesel-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+        gap: 0.55rem;
+        margin-bottom: 0.7rem;
+    }
+
+    .diesel-kpi {
+        border: 1px solid #dbe6f3;
+        border-radius: 12px;
+        background: #f8fbff;
+        padding: 0.55rem 0.65rem;
+    }
+
+    .diesel-kpi__label {
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-bottom: 0.08rem;
+    }
+
+    .diesel-kpi__value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .diesel-kpi__hint {
+        margin-top: 0.14rem;
+        font-size: 0.69rem;
+        color: #64748b;
+    }
+
+    .diesel-kpi--danger {
+        border-top: 3px solid #1d4ed8;
+        background: linear-gradient(180deg, #eaf2ff 0%, #ffffff 100%);
+    }
+
+    .diesel-kpi--ok {
+        border-top: 3px solid #2563eb;
+        background: linear-gradient(180deg, #eef5ff 0%, #ffffff 100%);
+    }
+
+    .diesel-kpi--warn {
+        border-top: 3px solid #60a5fa;
+        background: linear-gradient(180deg, #f5f9ff 0%, #ffffff 100%);
+    }
+
+    .diesel-section {
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 0.58rem;
+        margin-bottom: 0.62rem;
+    }
+
+    .diesel-section__title {
+        margin-bottom: 0.42rem;
+        font-size: 0.84rem;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .diesel-alert-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(240px, 1fr));
+        gap: 0.42rem;
+    }
+
+    .diesel-alert-item {
+        border-radius: 10px;
+        padding: 0.46rem 0.54rem;
+        border: 1px solid #dbe4f1;
+        font-size: 0.78rem;
+    }
+
+    .diesel-alert-item strong {
+        display: inline-block;
+        margin-right: 0.35rem;
+    }
+
+    .diesel-alert-item--danger {
+        border-color: #fca5a5;
+        background: #fff1f2;
+        color: #991b1b;
+    }
+
+    .diesel-alert-item--warning {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .diesel-alert-item--info {
+        border-color: #93c5fd;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .diesel-trend-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 0.55rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .diesel-trend-row {
+        display: grid;
+        grid-template-columns: 78px 1fr 62px;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.27rem;
+    }
+
+    .diesel-trend-label {
+        font-size: 0.71rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .diesel-trend-track {
+        height: 0.5rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .diesel-trend-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+    }
+
+    .diesel-trend-value {
+        text-align: right;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .diesel-table th {
+        background: #1f2937;
+        color: #f8fafc;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+    }
+
+    .diesel-table td {
+        font-size: 0.77rem;
+        vertical-align: middle;
+    }
+
+    .diesel-units-table-wrap {
+        margin-top: 0.2rem;
+        border: 1px solid #dce4f0;
+        border-radius: 10px;
+        padding: 0.18rem;
+        background: #ffffff;
+    }
+
+    .diesel-table--units {
+        margin-bottom: 0;
+    }
+
+    .diesel-table--units th,
+    .diesel-table--units td {
+        padding: 0.5rem 0.46rem;
+    }
+
+    .diesel-table--units td:nth-child(15) {
+        min-width: 180px;
+        white-space: normal;
+    }
+
+    .diesel-table--units td:nth-child(1),
+    .diesel-table--units td:nth-child(2),
+    .diesel-table--units td:nth-child(3) {
+        white-space: nowrap;
+    }
+
+    .diesel-extra-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(78px, 1fr));
+        gap: 0.24rem;
+        align-items: center;
+    }
+
+    .diesel-extra-label {
+        font-size: 0.66rem;
+        color: #64748b;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.14rem;
+    }
+
+    .diesel-extra-input {
+        font-size: 0.72rem;
+        height: 1.95rem;
+        padding: 0.18rem 0.36rem;
+    }
+
+    .diesel-extra-save {
+        grid-column: 1 / -1;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding-block: 0.16rem;
+    }
+
+    .diesel-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        font-size: 0.67rem;
+        font-weight: 800;
+        padding: 0.14rem 0.48rem;
+        border: 1px solid transparent;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
+
+    .diesel-badge--optimo {
+        color: #166534;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .diesel-badge--vigilar {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .diesel-badge--critico {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .diesel-route-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 0.55rem;
+    }
+
+    .diesel-note {
+        font-size: 0.72rem;
+        color: #64748b;
+    }
+
+    @@media (max-width: 980px) {
+        .diesel-kpi-grid {
+            grid-template-columns: repeat(2, minmax(160px, 1fr));
+        }
+
+        .diesel-alert-list,
+        .diesel-trend-grid,
+        .diesel-route-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="diesel-shell">
+    <div class="diesel-header">
+        <div>
+            <h2>Seguimiento de Diesel</h2>
+            <p>Control ejecutivo de consumo, rendimiento y alertas por unidad operativa.</p>
+        </div>
+        <div>
+            <a asp-controller="Operaciones"
+               asp-action="ExportSeguimientoDieselPdf"
+               class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-pdf me-1"></i>
+                Descargar PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-info py-2" role="alert">
+        <strong>Conversion:</strong> 1 galon = 3.78541 litros.
+        <span class="ms-2"><strong>Supuesto operativo:</strong> @Model.ObjetivoKmPorGalon.ToString("N1", CultureInfo.CurrentCulture) km/gal y @Model.DistanciaPromedioKm.ToString("N0", CultureInfo.CurrentCulture) km por evento (meta @Model.ObjetivoGalonesPorEvento.ToString("N1", CultureInfo.CurrentCulture) gal/evento).</span>
+        <span class="ms-2"><strong>Corte:</strong> @fechaOperativa | <strong>Mes:</strong> @mesOperativo</span>
+        @if (Model.IsFromUpload)
+        {
+            <span class="d-block mt-1">Fuente: <strong>@Model.SourceFileName</strong></span>
+        }
+    </div>
+
+    @if (TempData["SeguimientoDieselAjusteOk"] is string ajusteOk && !string.IsNullOrWhiteSpace(ajusteOk))
+    {
+        <div class="alert alert-success py-2" role="alert">@ajusteOk</div>
+    }
+
+    @if (TempData["SeguimientoDieselAjusteError"] is string ajusteError && !string.IsNullOrWhiteSpace(ajusteError))
+    {
+        <div class="alert alert-danger py-2" role="alert">@ajusteError</div>
+    }
+
+    <div class="diesel-kpi-grid">
+        <div class="diesel-kpi">
+            <div class="diesel-kpi__label">Consumo total (gal)</div>
+            <div class="diesel-kpi__value">@Model.TotalGalones.ToString("N2", CultureInfo.CurrentCulture)</div>
+        </div>
+        <div class="diesel-kpi">
+            <div class="diesel-kpi__label">Consumo total (L)</div>
+            <div class="diesel-kpi__value">@Model.TotalLitrosEquivalentes.ToString("N2", CultureInfo.CurrentCulture)</div>
+        </div>
+        <div class="diesel-kpi diesel-kpi--ok">
+            <div class="diesel-kpi__label">Rendimiento promedio (t/gal)</div>
+            <div class="diesel-kpi__value">@Model.RendimientoPromedioTonPorGalon.ToString("N3", CultureInfo.CurrentCulture)</div>
+            <div class="diesel-kpi__hint">Meta operativa por unidad</div>
+        </div>
+        <div class="diesel-kpi diesel-kpi--warn">
+            <div class="diesel-kpi__label">Intensidad (L/t)</div>
+            <div class="diesel-kpi__value">@Model.IntensidadLitrosPorTonelada.ToString("N3", CultureInfo.CurrentCulture)</div>
+            <div class="diesel-kpi__hint">Cruce diesel vs toneladas</div>
+        </div>
+        <div class="diesel-kpi diesel-kpi--danger">
+            <div class="diesel-kpi__label">Equipos sobreconsumo (vs meta)</div>
+            <div class="diesel-kpi__value">@Model.EquiposSobreconsumo</div>
+            <div class="diesel-kpi__hint">@Model.PorcentajeEquiposSobreconsumo.ToString("N1", CultureInfo.CurrentCulture)% del total</div>
+        </div>
+        <div class="diesel-kpi diesel-kpi--ok">
+            <div class="diesel-kpi__label">Clasificacion equipos</div>
+            <div class="diesel-kpi__value">@Model.EquiposEstadoOptimo / @Model.EquiposEstadoVigilar / @Model.EquiposEstadoCritico</div>
+            <div class="diesel-kpi__hint">Optimo / Vigilar / Critico</div>
+        </div>
+        <div class="diesel-kpi">
+            <div class="diesel-kpi__label">Consumo promedio (gal/evento)</div>
+            <div class="diesel-kpi__value">@Model.ConsumoPromedioGalonesPorEvento.ToString("N2", CultureInfo.CurrentCulture)</div>
+            <div class="diesel-kpi__hint">Meta @Model.ObjetivoGalonesPorEvento.ToString("N1", CultureInfo.CurrentCulture) gal/evento</div>
+        </div>
+        <div class="diesel-kpi diesel-kpi--ok">
+            <div class="diesel-kpi__label">Rendimiento estimado (km/gal)</div>
+            <div class="diesel-kpi__value">@Model.RendimientoPromedioKmPorGalon.ToString("N2", CultureInfo.CurrentCulture)</div>
+            <div class="diesel-kpi__hint">Objetivo @Model.ObjetivoKmPorGalon.ToString("N1", CultureInfo.CurrentCulture) km/gal</div>
+        </div>
+        <div class="diesel-kpi">
+            <div class="diesel-kpi__label">Costo referencial (USD/gal)</div>
+            <div class="diesel-kpi__value">@(Model.CostoReferenciaGalonUsd > 0 ? Model.CostoReferenciaGalonUsd.ToString("N2", CultureInfo.CurrentCulture) : "No config.")</div>
+        </div>
+        <div class="diesel-kpi">
+            <div class="diesel-kpi__label">Costo total estimado (USD)</div>
+            <div class="diesel-kpi__value">@(Model.CostoEstimadoTotalUsd > 0 ? Model.CostoEstimadoTotalUsd.ToString("N2", CultureInfo.CurrentCulture) : "-")</div>
+        </div>
+    </div>
+
+    <div class="diesel-section">
+        <div class="diesel-section__title">Alertas de consumo y riesgo</div>
+        @if (Model.Alertas.Any())
+        {
+            <div class="diesel-alert-list">
+                @foreach (var alerta in Model.Alertas)
+                {
+                    var css = alerta.Nivel?.Trim().ToLowerInvariant() switch
+                    {
+                        "danger" => "diesel-alert-item diesel-alert-item--danger",
+                        "warning" => "diesel-alert-item diesel-alert-item--warning",
+                        _ => "diesel-alert-item diesel-alert-item--info"
+                    };
+                    <div class="@css">
+                        <strong>@alerta.Unidad</strong> @alerta.Mensaje
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="diesel-note">Sin alertas activas en el periodo.</div>
+        }
+    </div>
+
+    <div class="diesel-trend-grid">
+        <div class="diesel-section mb-0">
+            <div class="diesel-section__title">Tendencia semanal (galones) + media movil</div>
+            @if (Model.TendenciaSemanal.Any())
+            {
+                @foreach (var point in Model.TendenciaSemanal)
+                {
+                    var width = Math.Round(point.Galones * 100m / maxSemana, 1, MidpointRounding.AwayFromZero);
+                    <div class="diesel-trend-row">
+                        <div class="diesel-trend-label">@point.Etiqueta</div>
+                        <div class="diesel-trend-track">
+                            <div class="diesel-trend-fill" style="width:@width.ToString("0.#", CultureInfo.InvariantCulture)%"></div>
+                        </div>
+                        <div class="diesel-trend-value">@point.Galones.ToString("N1", CultureInfo.CurrentCulture)</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="diesel-note">Sin datos semanales.</div>
+            }
+        </div>
+        <div class="diesel-section mb-0">
+            <div class="diesel-section__title">Tendencia mensual (galones) + media movil</div>
+            @if (Model.TendenciaMensual.Any())
+            {
+                @foreach (var point in Model.TendenciaMensual)
+                {
+                    var width = Math.Round(point.Galones * 100m / maxMes, 1, MidpointRounding.AwayFromZero);
+                    <div class="diesel-trend-row">
+                        <div class="diesel-trend-label">@point.Etiqueta</div>
+                        <div class="diesel-trend-track">
+                            <div class="diesel-trend-fill" style="width:@width.ToString("0.#", CultureInfo.InvariantCulture)%"></div>
+                        </div>
+                        <div class="diesel-trend-value">@point.Galones.ToString("N1", CultureInfo.CurrentCulture)</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="diesel-note">Sin datos mensuales.</div>
+            }
+        </div>
+    </div>
+
+    <div class="diesel-section">
+        <div class="diesel-section__title">Detalle por unidad (clasificacion de consumo)</div>
+        <div class="diesel-note mb-2">
+            Rendimiento por unidad calculado con distancia promedio de @Model.DistanciaPromedioKm.ToString("N0", CultureInfo.CurrentCulture) km por evento y objetivo de @Model.ObjetivoKmPorGalon.ToString("N1", CultureInfo.CurrentCulture) km/gal.
+            <span class="d-block mt-1">Puedes registrar extras por unidad (galones y km) para recalcular el detalle y los KPI principales.</span>
+        </div>
+        <div class="table-responsive diesel-units-table-wrap">
+            <table class="table table-sm table-bordered align-middle diesel-table diesel-table--units">
+                <thead>
+                    <tr>
+                        <th>Unidad</th>
+                        <th>Estado rendimiento</th>
+                        <th>Estado operativo</th>
+                        <th>Galones</th>
+                        <th>Ajustes extra</th>
+                        <th>Gal/evento</th>
+                        <th>Meta gal/evento</th>
+                        <th>Rend. km/gal</th>
+                        <th>Var. vs meta</th>
+                        <th>Litros</th>
+                        <th>Toneladas</th>
+                        <th>t/gal</th>
+                        <th>L/t</th>
+                        <th>Viajes</th>
+                        <th>Ruta principal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rows.Any())
+                    {
+                        @foreach (var item in Model.Rows)
+                        {
+                            var badgeClass = item.EstadoConsumo?.Trim().ToUpperInvariant() switch
+                            {
+                                "CRITICO" => "diesel-badge diesel-badge--critico",
+                                "VIGILAR" => "diesel-badge diesel-badge--vigilar",
+                                _ => "diesel-badge diesel-badge--optimo"
+                            };
+                            <tr>
+                                <td><strong>@item.Unidad</strong></td>
+                                <td><span class="@badgeClass">@item.EstadoConsumo</span></td>
+                                <td>@item.Estado</td>
+                                <td class="text-end">@item.GalonesDespachados.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                <td>
+                                    <form asp-controller="Operaciones"
+                                          asp-action="GuardarAjusteSeguimientoDiesel"
+                                          method="post"
+                                          class="diesel-extra-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="unidad" value="@item.Unidad" />
+                                        <div>
+                                            <div class="diesel-extra-label">Gal +</div>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   class="form-control form-control-sm diesel-extra-input text-end"
+                                                   name="galonesExtra"
+                                                   value="@item.GalonesExtra.ToString("0.##", CultureInfo.InvariantCulture)" />
+                                        </div>
+                                        <div>
+                                            <div class="diesel-extra-label">Km +</div>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   class="form-control form-control-sm diesel-extra-input text-end"
+                                                   name="kilometrosExtra"
+                                                   value="@item.KilometrosExtra.ToString("0.##", CultureInfo.InvariantCulture)" />
+                                        </div>
+                                        <button type="submit" class="btn btn-outline-primary btn-sm diesel-extra-save">Guardar</button>
+                                    </form>
+                                </td>
+                                <td class="text-end">@item.GalonesPromedioPorEvento.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.GalonesObjetivoPorEvento.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.RendimientoEstimadoKmPorGalon.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.VariacionVsMetaConsumoPorcentaje.ToString("N1", CultureInfo.CurrentCulture)%</td>
+                                <td class="text-end">@item.LitrosEquivalentes.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.ToneladasMovilizadas.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.ToneladasPorGalon.ToString("N3", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.LitrosPorTonelada.ToString("N3", CultureInfo.CurrentCulture)</td>
+                                <td class="text-end">@item.EventosOperativos</td>
+                                <td>@item.RutaPrincipal</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="15" class="text-center text-muted">No hay datos para mostrar. Carga un archivo en Seguimiento de toneladas.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="diesel-route-grid">
+        <div class="diesel-section mb-0">
+            <div class="diesel-section__title">Eficiencia por ruta (planificado vs real)</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle diesel-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ruta</th>
+                            <th>Galones</th>
+                            <th>Toneladas</th>
+                            <th>t/gal</th>
+                            <th>L/t</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ResumenPorRuta.Any())
+                        {
+                            @foreach (var route in Model.ResumenPorRuta)
+                            {
+                                <tr>
+                                    <td>@route.Ruta</td>
+                                    <td class="text-end">@route.Galones.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                    <td class="text-end">@route.Toneladas.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                    <td class="text-end">@route.ToneladasPorGalon.ToString("N3", CultureInfo.CurrentCulture)</td>
+                                    <td class="text-end">@route.LitrosPorTonelada.ToString("N3", CultureInfo.CurrentCulture)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="5" class="text-center text-muted">Sin datos de rutas.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="diesel-section mb-0">
+            <div class="diesel-section__title">Cargas atipicas (frecuencia, volumen y horario)</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle diesel-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Unidad</th>
+                            <th>Fecha/Hora</th>
+                            <th>Ruta</th>
+                            <th>Galones</th>
+                            <th>Ton.</th>
+                            <th>Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.CargasAtipicas.Any())
+                        {
+                            @foreach (var item in Model.CargasAtipicas)
+                            {
+                                <tr>
+                                    <td>@item.Unidad</td>
+                                    <td>@(item.FechaEvento?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                    <td>@item.Ruta</td>
+                                    <td class="text-end">@item.Galones.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                    <td class="text-end">@item.Toneladas.ToString("N2", CultureInfo.CurrentCulture)</td>
+                                    <td>@item.Motivo</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">Sin cargas atipicas detectadas.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="diesel-section mt-2 mb-0">
+        <div class="diesel-section__title">Bitacora de mantenimiento vs consumo (ultimos eventos)</div>
+        <div class="diesel-note mb-2">Fuente esperada: <code>@Model.MantenimientoFuente</code></div>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle diesel-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Unidad</th>
+                        <th>Tipo</th>
+                        <th>Observacion</th>
+                        <th>Galones ultimos 30 dias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.MantenimientoRegistros.Any())
+                    {
+                        @foreach (var item in Model.MantenimientoRegistros)
+                        {
+                            <tr>
+                                <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td>@item.Unidad</td>
+                                <td>@item.Tipo</td>
+                                <td>@item.Observacion</td>
+                                <td class="text-end">@item.GalonesUltimos30Dias.ToString("N2", CultureInfo.CurrentCulture)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="5" class="text-center text-muted">Sin registros de mantenimiento. Puedes crear el archivo de bitacora para habilitar este cruce.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

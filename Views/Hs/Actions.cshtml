@@ -1,0 +1,33 @@
+@model List<ITServiceDeskApp.Models.HsCorrectiveAction>
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Acciones Correctivas H&S";
+    var statusOptions = new SelectList(ViewBag.StatusOptions as string[] ?? Array.Empty<string>(), ViewBag.Status as string ?? string.Empty);
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div><h2 class="mb-1">Acciones Correctivas</h2><div class="text-muted">Plan, responsables, fechas compromiso y cierre.</div></div>
+        <a asp-action="ActionCreate" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nueva</a>
+    </div>
+    @if (TempData["TicketsMessage"] is string msg && !string.IsNullOrWhiteSpace(msg)) { <div class="alert alert-success">@msg</div> }
+    <div class="card shadow-sm mb-3"><div class="card-body"><form method="get" class="row g-2"><div class="col-md-4"><select name="status" class="form-select" asp-items="statusOptions"><option value="">Todos los estados</option></select></div><div class="col-md-2"><button class="btn btn-primary" type="submit">Filtrar</button></div></form></div></div>
+    <div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Accion</th><th>Origen</th><th>Responsable</th><th>Prioridad</th><th>Fecha</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Title</td>
+                <td>@item.SourceType</td>
+                <td>@item.Owner</td>
+                <td><span class="badge @(item.Priority == "Critica" ? "text-bg-danger" : item.Priority == "Alta" ? "text-bg-warning" : "text-bg-secondary")">@item.Priority</span></td>
+                <td>@item.DueDateUtc.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                <td><span class="badge @(item.Status == "Vencida" || item.Status == "Rechazada" ? "text-bg-danger" : item.Status == "Cerrada" || item.Status == "Aprobada" ? "text-bg-success" : item.Status == "En revision" ? "text-bg-info" : "text-bg-warning")">@item.Status</span></td>
+                <td class="text-end"><a asp-action="ActionEdit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Editar</a></td>
+            </tr>
+        }
+        </tbody>
+    </table></div></div>
+</div>

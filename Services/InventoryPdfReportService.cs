@@ -56,7 +56,7 @@ namespace ITServiceDeskApp.Services
         private static void ComposeHeader(IContainer container, DateTime generatedAt, byte[]? logo)
         {
             container.BorderBottom(2)
-                .BorderColor("#C91010")
+                .BorderColor("#11439A")
                 .PaddingBottom(8)
                 .Row(row =>
                 {
@@ -74,10 +74,10 @@ namespace ITServiceDeskApp.Services
 
                     row.RelativeItem().PaddingLeft(10).Column(column =>
                     {
-                        column.Item().Text("GRUPO TRANSAN")
+                        column.Item().Text(string.Empty)
                             .FontSize(18)
                             .SemiBold()
-                            .FontColor("#C91010");
+                            .FontColor("#11439A");
                         column.Item().Text("Service Desk - Reporte Ejecutivo de Inventario TI")
                             .FontSize(12)
                             .SemiBold()
@@ -122,7 +122,7 @@ namespace ITServiceDeskApp.Services
                             row.Spacing(8);
                             row.RelativeItem().Element(c => ComposeMetricCard(c, "Total Activos", items.Count.ToString(), "#0B1D3A"));
                             row.RelativeItem().Element(c => ComposeMetricCard(c, "Activos", activeCount.ToString(), "#0B6E4F"));
-                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Inactivos", inactiveCount.ToString(), "#C91010"));
+                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Inactivos", inactiveCount.ToString(), "#11439A"));
                             row.RelativeItem().Element(c => ComposeMetricCard(c, "Asignados", assignedCount.ToString(), "#2563EB"));
                         });
                     });
@@ -164,7 +164,7 @@ namespace ITServiceDeskApp.Services
                 .PaddingTop(5)
                 .Row(row =>
                 {
-                    row.RelativeItem().Text($"Confidencial - Grupo Transan | {generatedAt:dd/MM/yyyy HH:mm}")
+                    row.RelativeItem().Text($"Confidencial | {generatedAt:dd/MM/yyyy HH:mm}")
                         .FontSize(8)
                         .FontColor(Colors.Grey.Darken1);
 
@@ -188,7 +188,7 @@ namespace ITServiceDeskApp.Services
                 {
                     column.Item().Row(row =>
                     {
-                        row.ConstantItem(4).Height(16).Background("#C91010");
+                        row.ConstantItem(4).Height(16).Background("#11439A");
                         row.RelativeItem().PaddingLeft(8).Text(title)
                             .SemiBold()
                             .FontSize(12)
@@ -295,9 +295,9 @@ namespace ITServiceDeskApp.Services
         {
             return container
                 .BorderBottom(1)
-                .BorderColor("#C91010")
+                .BorderColor("#11439A")
                 .PaddingVertical(4)
-                .DefaultTextStyle(TextStyle.Default.SemiBold().FontColor("#C91010").FontSize(9));
+                .DefaultTextStyle(TextStyle.Default.SemiBold().FontColor("#11439A").FontSize(9));
         }
 
         private static IContainer BodyCell(IContainer container)
@@ -330,8 +330,8 @@ namespace ITServiceDeskApp.Services
         {
             var candidates = new[]
             {
-                Path.Combine(webRootPath, "images", "logo-transan-corporativo.png"),
-                Path.Combine(webRootPath, "images", "logo-transan.png")
+                Path.Combine(webRootPath, "images", "logo-trawzacons-corporativo.png"),
+                Path.Combine(webRootPath, "images", "logo-trawzacons.png")
             };
 
             foreach (var path in candidates)
@@ -357,3 +357,6 @@ namespace ITServiceDeskApp.Services
         private sealed record GroupRow(string Name, int Count);
     }
 }
+
+
+

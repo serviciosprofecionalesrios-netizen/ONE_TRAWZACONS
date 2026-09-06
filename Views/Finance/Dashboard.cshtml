@@ -1,0 +1,142 @@
+@model ITServiceDeskApp.ViewModels.Finance.FinanceDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard Financiero";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Dashboard Financiero</h2>
+            <div class="text-muted">Control de presupuesto, aprobaciones, documentos y alertas.</div>
+        </div>
+        <a asp-action="Export" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Fecha inicio</label>
+                    <input type="date" name="startDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha fin</label>
+                    <input type="date" name="endDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Aplicar</button>
+                </div>
+                <div class="col-md-3 text-md-end text-muted">
+                    TC USD: C$ @Model.UsdToCordobaRate.ToString("N4")
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Abiertas</div><div class="fs-3 fw-bold">@Model.OpenRequests</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Pendientes de aprobacion</div><div class="fs-3 fw-bold text-warning">@Model.PendingApprovals</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Facturas / Recibos</div><div class="fs-3 fw-bold">@Model.InvoicesIssued / @Model.ReceiptsIssued</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Firmas pendientes</div><div class="fs-3 fw-bold text-danger">@Model.UnsignedDocuments</div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Presupuesto</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4"><div class="text-muted">Total</div><div class="fs-4 fw-bold">C$ @Model.BudgetTotalCordoba.ToString("N2")</div></div>
+                        <div class="col-md-4"><div class="text-muted">Ejecutado</div><div class="fs-4 fw-bold text-danger">C$ @Model.BudgetSpentCordoba.ToString("N2")</div></div>
+                        <div class="col-md-4"><div class="text-muted">Disponible</div><div class="fs-4 fw-bold @(Model.BudgetAvailableCordoba < 0 ? "text-danger" : "text-success")">C$ @Model.BudgetAvailableCordoba.ToString("N2")</div></div>
+                    </div>
+                    <div class="progress mt-3" style="height: 18px;">
+                        <div class="progress-bar @(Model.BudgetUsagePercent >= 100 ? "bg-danger" : Model.BudgetUsagePercent >= 80 ? "bg-warning" : "bg-success")" style="width:@Math.Min(Model.BudgetUsagePercent, 100)%">@Model.BudgetUsagePercent.ToString("0.#")%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Alertas</div>
+                <div class="card-body">
+                    @foreach (var alert in Model.Alerts)
+                    {
+                        <div class="alert alert-@alert.Tone py-2 mb-2">@alert.Message</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Top centros de costo</div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>#CC</th><th>Area</th><th>Nombre</th><th class="text-end">Uso</th><th class="text-end">Ejecutado</th></tr></thead>
+                        <tbody>
+                        @foreach (var row in Model.TopCostCenters)
+                        {
+                            <tr>
+                                <td><span class="badge text-bg-dark">@row.CostCenterNumber</span></td>
+                                <td>@row.Area</td>
+                                <td>@row.CostCenterName</td>
+                                <td class="text-end">@row.UsagePercent.ToString("0.#")%</td>
+                                <td class="text-end">C$ @row.SpentCordoba.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Documentos recientes</div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Tipo</th><th>No.</th><th>Contraparte</th><th>Estado</th><th class="text-end">Monto</th></tr></thead>
+                        <tbody>
+                        @foreach (var doc in Model.RecentDocuments)
+                        {
+                            <tr>
+                                <td>@doc.Type</td>
+                                <td>@doc.Number</td>
+                                <td>@doc.Counterparty</td>
+                                <td><span class="badge @(doc.Status == "Aprobado" ? "text-bg-success" : doc.Status == "Rechazado" ? "text-bg-danger" : "text-bg-warning")">@doc.Status</span></td>
+                                <td class="text-end">@doc.Currency @doc.Amount.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-header fw-semibold">Auditoria reciente</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Fecha</th><th>Entidad</th><th>Accion</th><th>Usuario</th><th>Detalle</th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.RecentAudit)
+                {
+                    <tr>
+                        <td>@item.PerformedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@item.EntityName</td>
+                        <td>@item.Action</td>
+                        <td>@item.PerformedBy</td>
+                        <td>@item.Details</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

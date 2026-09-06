@@ -1,0 +1,58 @@
+@model List<ITServiceDeskApp.ViewModels.Hs.HsCalendarItemViewModel>
+
+@{
+    ViewData["Title"] = "Calendario H&S";
+    var fallback = ViewBag.CalendarFallback is bool value && value;
+    var total = Model.Count;
+    var vencidos = Model.Count(x => x.Date.Date < DateTime.Today);
+    var proximos7 = Model.Count(x => x.Date.Date >= DateTime.Today && x.Date.Date <= DateTime.Today.AddDays(7));
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Calendario H&amp;S</h2>
+            <div class="text-muted">Agenda operativa de vencimientos, inspecciones, permisos, capacitaciones y revision documental.</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Hs" asp-action="Dashboard" class="btn btn-primary"><i class="bi bi-speedometer2"></i> Dashboard H&amp;S</a>
+            <a asp-controller="Hs" asp-action="InspectionCreate" class="btn btn-outline-success"><i class="bi bi-clipboard2-check"></i> Inspeccion</a>
+            <a asp-controller="Hs" asp-action="TrainingCreate" class="btn btn-outline-info"><i class="bi bi-mortarboard"></i> Capacitacion</a>
+            <a asp-controller="Hs" asp-action="PermitCreate" class="btn btn-outline-warning"><i class="bi bi-shield-check"></i> Permiso</a>
+        </div>
+    </div>
+
+    @if (fallback)
+    {
+        <div class="alert alert-info">
+            Aun no hay eventos reales registrados. Se muestra un programa preventivo base para que el gestor H&amp;S pueda empezar a planificar.
+        </div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Actividades visibles</div><div class="fs-3 fw-bold">@total</div></div></div></div>
+        <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Vencidas</div><div class="fs-3 fw-bold text-danger">@vencidos</div></div></div></div>
+        <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Proximos 7 dias</div><div class="fs-3 fw-bold text-warning">@proximos7</div></div></div></div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Programa H&amp;S</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Fecha</th><th>Tipo</th><th>Actividad</th><th>Estado</th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.OrderBy(x => x.Date))
+                {
+                    var estado = item.Date.Date < DateTime.Today ? "Vencida" : item.Date.Date == DateTime.Today ? "Hoy" : "Programada";
+                    <tr>
+                        <td style="width:160px;">@item.Date.ToString("dd/MM/yyyy")</td>
+                        <td style="width:170px;"><span class="badge text-bg-@item.Tone">@item.Type</span></td>
+                        <td>@item.Title</td>
+                        <td style="width:160px;"><span class="badge @(estado == "Vencida" ? "text-bg-danger" : estado == "Hoy" ? "text-bg-warning" : "text-bg-success")">@estado</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

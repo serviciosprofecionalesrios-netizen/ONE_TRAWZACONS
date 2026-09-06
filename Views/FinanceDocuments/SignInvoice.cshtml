@@ -1,0 +1,216 @@
+@model ITServiceDeskApp.ViewModels.FinanceDocuments.FinanceInvoiceSignViewModel
+@{
+    Layout = null;
+    var pdfByTokenUrl = ViewBag.PdfByTokenUrl as string ?? string.Empty;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firma de Factura - @Model.InvoiceNumber</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <style>
+        body { background: #f5f7fb; }
+        .shell { max-width: 980px; margin: 1rem auto; padding: 0 0.8rem; }
+        .signature-box {
+            border: 2px dashed #8aa4d6;
+            border-radius: 10px;
+            background: #fff;
+            padding: 0.5rem;
+        }
+        .signature-canvas {
+            width: 100%;
+            height: 220px;
+            border: 1px solid #d0d7e6;
+            border-radius: 8px;
+            touch-action: none;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="mb-1">Firma electrónica de factura</h3>
+                <div class="text-muted mb-3">Factura: <strong>@Model.InvoiceNumber</strong></div>
+
+                @if (Model.AlreadySigned)
+                {
+                    <div class="alert alert-success">
+                        Esta factura ya fue firmada por <strong>@Model.SignedByName</strong>
+                        el <strong>@Model.SignedAtLocal?.ToString("dd/MM/yyyy HH:mm")</strong>.
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(pdfByTokenUrl))
+                    {
+                        <a href="@pdfByTokenUrl" class="btn btn-danger">
+                            Descargar PDF firmado
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="small text-muted">Sitio</div>
+                            <div class="fw-semibold">@Model.Site</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">Cliente / Proveedor</div>
+                            <div class="fw-semibold">@Model.CounterpartyName</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">Monto</div>
+                            <div class="fw-semibold">@Model.Currency @Model.Amount.ToString("N2")</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">Fecha</div>
+                            <div class="fw-semibold">@Model.InvoiceDate.ToString("dd/MM/yyyy")</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="small text-muted">Concepto</div>
+                            <div class="fw-semibold">@Model.Concept</div>
+                        </div>
+                    </div>
+
+                    <form asp-action="SignInvoice" method="post" id="signForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Token" />
+                        <input type="hidden" asp-for="SignatureDataUrl" id="signatureDataUrl" />
+
+                        <div class="mb-3">
+                            <label asp-for="SignerName" class="form-label fw-semibold"></label>
+                            <input asp-for="SignerName" class="form-control" placeholder="Nombre completo" />
+                            <span asp-validation-for="SignerName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Firma</label>
+                            <div class="signature-box">
+                                <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                            </div>
+                            <div class="small text-muted mt-1">
+                                Firma con dedo (móvil) o mouse/lápiz (laptop/tablet).
+                            </div>
+                            <span asp-validation-for="SignatureDataUrl" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-secondary" id="clearSignatureBtn">Limpiar firma</button>
+                            <button type="submit" class="btn btn-primary">Firmar factura</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var canvas = document.getElementById("signatureCanvas");
+            var form = document.getElementById("signForm");
+            var hiddenInput = document.getElementById("signatureDataUrl");
+            var clearBtn = document.getElementById("clearSignatureBtn");
+            if (!canvas || !form || !hiddenInput || !clearBtn) return;
+
+            var ctx = canvas.getContext("2d");
+            var drawing = false;
+            var hasStroke = false;
+            var lastX = 0;
+            var lastY = 0;
+
+            function resizeCanvas() {
+                var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                var w = canvas.clientWidth;
+                var h = canvas.clientHeight;
+                canvas.width = Math.floor(w * ratio);
+                canvas.height = Math.floor(h * ratio);
+                ctx.scale(ratio, ratio);
+                ctx.lineWidth = 2.2;
+                ctx.lineJoin = "round";
+                ctx.lineCap = "round";
+                ctx.strokeStyle = "#0b2f75";
+            }
+
+            function pointFromEvent(evt) {
+                var rect = canvas.getBoundingClientRect();
+                if (evt.touches && evt.touches.length > 0) {
+                    return { x: evt.touches[0].clientX - rect.left, y: evt.touches[0].clientY - rect.top };
+                }
+                if (evt.changedTouches && evt.changedTouches.length > 0) {
+                    return { x: evt.changedTouches[0].clientX - rect.left, y: evt.changedTouches[0].clientY - rect.top };
+                }
+                return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+            }
+
+            function startDraw(evt) {
+                evt.preventDefault();
+                drawing = true;
+                var p = pointFromEvent(evt);
+                lastX = p.x;
+                lastY = p.y;
+            }
+
+            function draw(evt) {
+                if (!drawing) return;
+                evt.preventDefault();
+                var p = pointFromEvent(evt);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+                lastX = p.x;
+                lastY = p.y;
+                hasStroke = true;
+            }
+
+            function endDraw(evt) {
+                if (!drawing) return;
+                evt.preventDefault();
+                drawing = false;
+            }
+
+            function clearSignature() {
+                var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.scale(ratio, ratio);
+                ctx.lineWidth = 2.2;
+                ctx.lineJoin = "round";
+                ctx.lineCap = "round";
+                ctx.strokeStyle = "#0b2f75";
+                hasStroke = false;
+                hiddenInput.value = "";
+            }
+
+            canvas.addEventListener("mousedown", startDraw);
+            canvas.addEventListener("mousemove", draw);
+            window.addEventListener("mouseup", endDraw);
+
+            canvas.addEventListener("touchstart", startDraw, { passive: false });
+            canvas.addEventListener("touchmove", draw, { passive: false });
+            canvas.addEventListener("touchend", endDraw, { passive: false });
+
+            clearBtn.addEventListener("click", clearSignature);
+            window.addEventListener("resize", function () { clearSignature(); resizeCanvas(); });
+
+            form.addEventListener("submit", function (evt) {
+                if (!hasStroke) {
+                    evt.preventDefault();
+                    alert("Debes capturar la firma antes de guardar.");
+                    return;
+                }
+                hiddenInput.value = canvas.toDataURL("image/png");
+            });
+
+            resizeCanvas();
+            clearSignature();
+        })();
+    </script>
+</body>
+</html>
+

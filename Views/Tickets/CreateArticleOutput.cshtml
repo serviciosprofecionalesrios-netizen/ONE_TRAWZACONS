@@ -1,0 +1,453 @@
+@model ITServiceDeskApp.ViewModels.Tickets.ArticleOutputCreateViewModel
+@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Salida de articulos";
+    var warehouseOptions = ViewBag.DispatchWarehouseOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var receivedByOptions = ViewBag.ReceivedByOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var statusOptions = ViewBag.ArticleOutputStatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var partsCatalogJson = ViewBag.ArticleSparePartsCatalogJson as string ?? "[]";
+    var selectedSparePartsJson = ViewBag.SelectedSparePartsJson as string ?? "[]";
+}
+
+<style>
+    .ao-shell{max-width:980px;margin:0 auto;border:1px solid #d7dce3;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.09);overflow:hidden}
+    .ao-head{border-bottom:1px solid #e3e8ef;padding:1rem 1.4rem;display:flex;justify-content:space-between;align-items:center}
+    .ao-title{margin:0;font-size:1.5rem;font-weight:800;color:#0f172a}
+    .ao-body{padding:1.2rem 1.4rem 1rem}
+    .ao-foot{border-top:1px solid #e3e8ef;padding:1rem 1.4rem;display:flex;justify-content:flex-end;gap:.6rem;flex-wrap:wrap}
+    .ao-label{font-weight:700;color:#334155;margin-bottom:.4rem;font-size:.95rem}
+    .ao-label .req{color:#dc2626}
+    .ao-box{border:1px solid #dbe3ee;border-radius:12px;padding:.95rem;background:#f8fbff}
+    .ao-box h4{margin:0 0 .75rem;font-size:1rem;font-weight:800;color:#0f172a}
+    .ao-note{color:#64748b;font-size:.82rem}
+    .ao-signature{min-height:120px}
+    .ao-photo-box{border:1px dashed #b8c7dd;border-radius:10px;padding:.75rem;background:#fff}
+    .ao-total-chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid #c7d6eb;border-radius:999px;padding:.2rem .6rem;font-size:.82rem;background:#fff}
+</style>
+
+<div class="ao-shell mt-3">
+    <div class="ao-head">
+        <h3 class="ao-title">Salidas Form</h3>
+        <a asp-controller="InventoryHub" asp-action="Index" class="btn-close" title="Cerrar"></a>
+    </div>
+
+    <form asp-action="CreateArticleOutput" method="post" enctype="multipart/form-data" id="articleOutputForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SparePartsJson" id="SparePartsJson" />
+
+        <div class="ao-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="alert alert-info">
+                Registra la salida de articulos desde inventario. El ticket se guarda en <strong>Inventario</strong> y descuenta stock automaticamente.
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="DispatchDateTime" class="ao-label">FECHA/HORA <span class="req">*</span></label>
+                    <input asp-for="DispatchDateTime" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" class="form-control" />
+                    <span asp-validation-for="DispatchDateTime" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="RequisitionNumber" class="ao-label">N° REQUISA <span class="req">*</span></label>
+                    <input asp-for="RequisitionNumber" class="form-control" maxlength="80" />
+                    <span asp-validation-for="RequisitionNumber" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="TargetEquipment" class="ao-label">EQUIPO DESTINO <span class="req">*</span></label>
+                    <input asp-for="TargetEquipment" class="form-control" maxlength="120" placeholder="Ej: CAMION 201 / GENERADOR G-03" />
+                    <span asp-validation-for="TargetEquipment" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <div class="ao-box">
+                        <h4>Articulos despachados</h4>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label mb-1" for="partSearch">Buscar articulo</label>
+                                <input id="partSearch" type="text" class="form-control" placeholder="Codigo o nombre..." />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-1" for="sparePartSelect">Articulo</label>
+                                <select id="sparePartSelect" class="form-select">
+                                    <option value="">Seleccionar articulo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label mb-1" for="sparePartQty">Cantidad</label>
+                                <input id="sparePartQty" type="number" min="1" step="1" class="form-control" value="1" />
+                            </div>
+                            <div class="col-md-2 d-grid">
+                                <button type="button" id="addSparePartBtn" class="btn btn-outline-primary">Agregar</button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <a asp-controller="MaintenanceInventory" asp-action="Create" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-plus-circle"></i> Crear articulo nuevo
+                            </a>
+                        </div>
+
+                        @if (ViewData.ModelState.TryGetValue("SparePartsJson", out var sparePartErrors) && sparePartErrors.Errors.Any())
+                        {
+                            foreach (var err in sparePartErrors.Errors)
+                            {
+                                <div class="text-danger small mt-2">@err.ErrorMessage</div>
+                            }
+                        }
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm table-bordered mb-2">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Articulo</th>
+                                        <th class="text-end">Stock</th>
+                                        <th class="text-end">Cant.</th>
+                                        <th class="text-end">Total C$</th>
+                                        <th class="text-end">Total $</th>
+                                        <th style="width:90px;">Accion</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sparePartsTableBody">
+                                    <tr id="sparePartsEmptyRow">
+                                        <td colspan="6" class="text-center text-muted">Sin articulos agregados.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="ao-total-chip"><strong>Lineas:</strong> <span id="lineCountLabel">0</span></span>
+                            <span class="ao-total-chip"><strong>Total C$:</strong> <span id="totalCordobaLabel">0.00</span></span>
+                            <span class="ao-total-chip"><strong>Total $:</strong> <span id="totalUsdLabel">0.00</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="SignatureName" class="ao-label">Firma</label>
+                    <textarea asp-for="SignatureName" class="form-control ao-signature" rows="4" placeholder="Nombre/firma de recibido"></textarea>
+                    <span asp-validation-for="SignatureName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="ao-label">FOTO</label>
+                    <div class="ao-photo-box">
+                        <input type="file" name="outputPhotoFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                        <div class="ao-note mt-2">Formatos permitidos: JPG, PNG o WEBP (max. 10MB).</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DispatchWarehouse" class="ao-label">ALMACEN DESPACHO <span class="req">*</span></label>
+                    <select asp-for="DispatchWarehouse" class="form-select" asp-items="warehouseOptions" id="DispatchWarehouse">
+                        <option value="">Seleccionar almacen</option>
+                    </select>
+                    <span asp-validation-for="DispatchWarehouse" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ReceivedBy" class="ao-label">RECIBI <span class="req">*</span></label>
+                    <select asp-for="ReceivedBy" class="form-select" asp-items="receivedByOptions">
+                        <option value="">Seleccionar usuario</option>
+                    </select>
+                    <span asp-validation-for="ReceivedBy" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DispatchStatus" class="ao-label">ESTADO <span class="req">*</span></label>
+                    <select asp-for="DispatchStatus" class="form-select" asp-items="statusOptions">
+                        <option value="">Seleccionar estado</option>
+                    </select>
+                    <span asp-validation-for="DispatchStatus" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="UserEmail" class="ao-label">Usuario</label>
+                    <input asp-for="UserEmail" class="form-control" readonly />
+                    <span asp-validation-for="UserEmail" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="AdditionalNotes" class="ao-label">Notas</label>
+                    <textarea asp-for="AdditionalNotes" class="form-control" rows="3" maxlength="1200"></textarea>
+                    <span asp-validation-for="AdditionalNotes" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ao-foot">
+            <a asp-controller="InventoryHub" asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const warehouseSelect = document.getElementById("DispatchWarehouse");
+            const partSearchInput = document.getElementById("partSearch");
+            const partSelect = document.getElementById("sparePartSelect");
+            const partQtyInput = document.getElementById("sparePartQty");
+            const addPartBtn = document.getElementById("addSparePartBtn");
+            const tableBody = document.getElementById("sparePartsTableBody");
+            const emptyRow = document.getElementById("sparePartsEmptyRow");
+            const lineCountLabel = document.getElementById("lineCountLabel");
+            const totalCordobaLabel = document.getElementById("totalCordobaLabel");
+            const totalUsdLabel = document.getElementById("totalUsdLabel");
+            const sparePartsJsonInput = document.getElementById("SparePartsJson");
+
+            const catalogRaw = @Html.Raw(partsCatalogJson);
+            const selectedRaw = @Html.Raw(selectedSparePartsJson);
+
+            function pickValue(item, camel, pascal) {
+                if (!item || typeof item !== "object") return undefined;
+                if (Object.prototype.hasOwnProperty.call(item, camel)) return item[camel];
+                if (Object.prototype.hasOwnProperty.call(item, pascal)) return item[pascal];
+                return undefined;
+            }
+
+            function parseNumberFlexible(raw) {
+                if (raw === null || raw === undefined || raw === "") {
+                    return 0;
+                }
+
+                if (typeof raw === "number") {
+                    return Number.isFinite(raw) ? raw : 0;
+                }
+
+                let text = String(raw).trim();
+                if (!text) {
+                    return 0;
+                }
+
+                text = text
+                    .replace(/C\\$|US\\$|\\$/gi, "")
+                    .replace(/\\s+/g, "");
+
+                const lastComma = text.lastIndexOf(",");
+                const lastDot = text.lastIndexOf(".");
+                if (lastComma > -1 && lastDot > -1) {
+                    if (lastComma > lastDot) {
+                        text = text.replace(/\\./g, "").replace(",", ".");
+                    } else {
+                        text = text.replace(/,/g, "");
+                    }
+                } else if (lastComma > -1) {
+                    text = text.replace(",", ".");
+                }
+
+                const parsed = Number(text);
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            const catalog = (Array.isArray(catalogRaw) ? catalogRaw : [])
+                .map(function (item) {
+                    const id = Number(pickValue(item, "id", "Id") || 0);
+                    const label = String(pickValue(item, "label", "Label") || "");
+                    const site = String(pickValue(item, "site", "Site") || "");
+                    const unitOfMeasure = String(pickValue(item, "unitOfMeasure", "UnitOfMeasure") || "Unidad");
+                    const stock = Number(pickValue(item, "stock", "Stock") || 0);
+                    const unitCostCordoba = parseNumberFlexible(pickValue(item, "unitCostCordoba", "UnitCostCordoba"));
+                    const unitCostUsd = parseNumberFlexible(pickValue(item, "unitCostUsd", "UnitCostUsd"));
+
+                    return { id, label, site, unitOfMeasure, stock, unitCostCordoba, unitCostUsd };
+                })
+                .filter(function (item) {
+                    return item.id > 0 && item.label.length > 0;
+                });
+
+            let selected = Array.isArray(selectedRaw)
+                ? selectedRaw
+                    .filter(x => x && Number(x.partId || x.PartId) > 0 && Number(x.quantity || x.Quantity) > 0)
+                    .map(x => ({
+                        partId: Number(x.partId || x.PartId),
+                        quantity: Number(x.quantity || x.Quantity)
+                    }))
+                : [];
+
+            function money(value) {
+                const amount = Number(value || 0);
+                return amount.toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            function selectedWarehouse() {
+                return (warehouseSelect && warehouseSelect.value ? warehouseSelect.value : "").trim().toLowerCase();
+            }
+
+            function searchTerm() {
+                return (partSearchInput && partSearchInput.value ? partSearchInput.value : "").trim().toLowerCase();
+            }
+
+            function findPartById(partId) {
+                return catalog.find(x => Number(x.id) === Number(partId));
+            }
+
+            function buildAvailableParts() {
+                const warehouse = selectedWarehouse();
+                const term = searchTerm();
+                return catalog.filter(x => {
+                    const stock = Number(x.stock || 0);
+                    const site = (x.site || "").toString().trim().toLowerCase();
+                    const label = (x.label || "").toString().trim().toLowerCase();
+                    if (stock <= 0) return false;
+                    if (warehouse && site !== warehouse) return false;
+                    if (term && !label.includes(term)) return false;
+                    return true;
+                });
+            }
+
+            function refreshPartOptions() {
+                const parts = buildAvailableParts();
+                const current = partSelect.value;
+                partSelect.innerHTML = "";
+
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = parts.length > 0
+                    ? "Seleccionar articulo"
+                    : "No hay articulos para el filtro actual";
+                partSelect.appendChild(placeholder);
+                partSelect.disabled = parts.length === 0;
+
+                parts.forEach(function (item) {
+                    const option = document.createElement("option");
+                    option.value = String(item.id);
+                    option.textContent = item.label + " | Stock " + item.stock + " " + (item.unitOfMeasure || "Unidad");
+                    partSelect.appendChild(option);
+                });
+
+                if (current && parts.some(x => String(x.id) === current)) {
+                    partSelect.value = current;
+                }
+            }
+
+            function writeHiddenJson() {
+                sparePartsJsonInput.value = JSON.stringify(selected.map(function (x) {
+                    return { partId: x.partId, quantity: x.quantity };
+                }));
+            }
+
+            function renderRows() {
+                tableBody.querySelectorAll("tr[data-row='1']").forEach(function (row) {
+                    row.remove();
+                });
+
+                if (!selected.length) {
+                    emptyRow.style.display = "";
+                } else {
+                    emptyRow.style.display = "none";
+                }
+
+                let totalCordoba = 0;
+                let totalUsd = 0;
+
+                selected.forEach(function (entry) {
+                    const part = findPartById(entry.partId);
+                    if (!part) return;
+
+                    const unitCordoba = Number(part.unitCostCordoba || 0);
+                    const unitUsd = Number(part.unitCostUsd || 0);
+                    const rowCordoba = unitCordoba * entry.quantity;
+                    const rowUsd = unitUsd * entry.quantity;
+
+                    totalCordoba += rowCordoba;
+                    totalUsd += rowUsd;
+
+                    const row = document.createElement("tr");
+                    row.setAttribute("data-row", "1");
+                    row.innerHTML = [
+                        "<td>" + part.label + "</td>",
+                        "<td class='text-end'>" + Number(part.stock || 0) + "</td>",
+                        "<td class='text-end'>" + entry.quantity + "</td>",
+                        "<td class='text-end'>C$ " + money(rowCordoba) + "</td>",
+                        "<td class='text-end'>$ " + money(rowUsd) + "</td>",
+                        "<td><button type='button' class='btn btn-sm btn-outline-danger' data-remove-id='" + entry.partId + "'>Quitar</button></td>"
+                    ].join("");
+                    tableBody.appendChild(row);
+                });
+
+                lineCountLabel.textContent = String(selected.length);
+                totalCordobaLabel.textContent = money(totalCordoba);
+                totalUsdLabel.textContent = money(totalUsd);
+                writeHiddenJson();
+            }
+
+            function normalizeSelectionByWarehouse() {
+                const warehouse = selectedWarehouse();
+                if (!warehouse) {
+                    return;
+                }
+
+                selected = selected.filter(function (entry) {
+                    const part = findPartById(entry.partId);
+                    if (!part) return false;
+                    return (part.site || "").toString().trim().toLowerCase() === warehouse;
+                });
+            }
+
+            addPartBtn.addEventListener("click", function () {
+                const partId = Number(partSelect.value || 0);
+                const quantity = Number(partQtyInput.value || 0);
+
+                if (!partId || quantity <= 0) {
+                    alert("Selecciona un articulo y una cantidad valida.");
+                    return;
+                }
+
+                const part = findPartById(partId);
+                if (!part) {
+                    return;
+                }
+
+                const existing = selected.find(x => x.partId === partId);
+                const nextQuantity = (existing ? existing.quantity : 0) + quantity;
+                const stock = Number(part.stock || 0);
+                if (nextQuantity > stock) {
+                    alert("La cantidad supera el stock disponible del articulo seleccionado.");
+                    return;
+                }
+
+                if (existing) {
+                    existing.quantity = nextQuantity;
+                } else {
+                    selected.push({ partId: partId, quantity: quantity });
+                }
+
+                partQtyInput.value = "1";
+                renderRows();
+            });
+
+            tableBody.addEventListener("click", function (evt) {
+                const button = evt.target.closest("button[data-remove-id]");
+                if (!button) return;
+
+                const partId = Number(button.getAttribute("data-remove-id") || 0);
+                selected = selected.filter(x => x.partId !== partId);
+                renderRows();
+            });
+
+            if (warehouseSelect) {
+                warehouseSelect.addEventListener("change", function () {
+                    normalizeSelectionByWarehouse();
+                    refreshPartOptions();
+                    renderRows();
+                });
+            }
+
+            if (partSearchInput) {
+                partSearchInput.addEventListener("input", function () {
+                    refreshPartOptions();
+                });
+            }
+
+            normalizeSelectionByWarehouse();
+            refreshPartOptions();
+            renderRows();
+        });
+    </script>
+}

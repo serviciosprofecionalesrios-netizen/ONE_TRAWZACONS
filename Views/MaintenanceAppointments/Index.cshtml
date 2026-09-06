@@ -1,0 +1,343 @@
+@model ITServiceDeskApp.ViewModels.MaintenanceAppointments.MaintenanceAppointmentsIndexViewModel
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Citas de Mantenimiento";
+}
+
+<style>
+    .maint-table-card {
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .maint-table-wrap {
+        max-height: 68vh;
+    }
+
+    .maint-table {
+        min-width: 1280px;
+        margin-bottom: 0;
+    }
+
+    .maint-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #14253d;
+        color: #f3f7ff;
+        border-bottom: 0;
+        font-weight: 700;
+        font-size: .82rem;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        padding-top: .8rem;
+        padding-bottom: .8rem;
+    }
+
+    .maint-table tbody td {
+        padding-top: .85rem;
+        padding-bottom: .85rem;
+        border-color: #ebeff5;
+        vertical-align: middle;
+    }
+
+    .maint-table tbody tr:hover {
+        background: #f6f9ff;
+    }
+
+    .maint-table tbody tr.is-overdue {
+        background: #fdf1f3;
+    }
+
+    .appt-code {
+        font-weight: 800;
+        color: #0f1f35;
+        letter-spacing: .01em;
+        line-height: 1.15;
+    }
+
+    .date-main {
+        font-weight: 600;
+        color: #172b48;
+        line-height: 1.2;
+    }
+
+    .date-sub {
+        font-size: .78rem;
+        color: #6a7a92;
+    }
+
+    .order-badge {
+        background: #eef3fb;
+        color: #1e3a66;
+        border: 1px solid #d7e2f3;
+        border-radius: 999px;
+        padding: .24rem .52rem;
+        font-size: .74rem;
+        font-weight: 700;
+    }
+
+    .status-pill {
+        border-radius: 999px;
+        padding: .24rem .56rem;
+        font-size: .74rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .status-programada {
+        background: #eef3f8;
+        color: #3a4d67;
+    }
+
+    .status-confirmada {
+        background: #e7f2ff;
+        color: #1b4f8a;
+    }
+
+    .status-ejecucion {
+        background: #fff4df;
+        color: #7a5200;
+    }
+
+    .status-completada {
+        background: #e8f8ef;
+        color: #1f7a4a;
+    }
+
+    .status-reprogramada {
+        background: #f4ecff;
+        color: #5a3d88;
+    }
+
+    .status-cancelada {
+        background: #fdecee;
+        color: #9d2f3b;
+    }
+
+    .checklist-cell {
+        min-width: 130px;
+    }
+
+    .checklist-label {
+        font-size: .78rem;
+        font-weight: 700;
+        color: #455a78;
+    }
+
+    .checklist-bar {
+        height: 7px;
+        border-radius: 999px;
+        background: #e5ebf4;
+    }
+
+    .checklist-bar .progress-bar {
+        border-radius: 999px;
+        background: linear-gradient(90deg, #1f9d62 0%, #31c276 100%);
+    }
+
+    .action-stack {
+        min-width: 92px;
+    }
+
+    .action-stack .btn {
+        width: 100%;
+        font-weight: 600;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Citas de Mantenimiento</h2>
+            <p class="text-muted mb-0">Agenda operativa con trazabilidad, checklist y recordatorios automáticos.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Calendar" asp-action="Index" asp-route-scope="maintenance" class="btn btn-outline-primary">
+                <i class="bi bi-calendar3-week"></i> Calendario
+            </a>
+            <a asp-action="Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nueva cita
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Total</div><div class="h4 mb-0">@Model.TotalCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Hoy</div><div class="h4 mb-0 text-info">@Model.TodayCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Vencidas</div><div class="h4 mb-0 text-danger">@Model.OverdueCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Sin técnico</div><div class="h4 mb-0 text-warning">@Model.UnassignedCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Recordatorio 24h</div><div class="h4 mb-0">@Model.Reminder24hPendingCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Recordatorio 2h</div><div class="h4 mb-0 text-danger">@Model.Reminder2hPendingCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Completadas</div><div class="h4 mb-0 text-success">@Model.CompletedCount</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Cumplimiento en tiempo</div><div class="h4 mb-0">@Model.OnTimeRate.ToString("0.#")%</div></div></div></div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Estado</label>
+                    <select class="form-select" name="status">
+                        <option value="">Todos</option>
+                        @foreach (var option in Model.StatusFilterOptions)
+                        {
+                            if (string.Equals(option.Value, Model.SelectedStatus, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@option.Value" selected>@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Tecnico</label>
+                    <select class="form-select" name="technician">
+                        @foreach (var option in Model.TechnicianFilterOptions)
+                        {
+                            if (string.Equals(option.Value, Model.SelectedTechnician, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@option.Value" selected>@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sitio</label>
+                    <select class="form-select" name="site">
+                        @foreach (var option in Model.SiteFilterOptions)
+                        {
+                            if (string.Equals(option.Value, Model.SelectedSite, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@option.Value" selected>@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Desde</label>
+                    <input type="date" class="form-control" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Hasta</label>
+                    <input type="date" class="form-control" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm maint-table-card">
+        <div class="table-responsive maint-table-wrap">
+            <table class="table maint-table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Cita</th>
+                        <th>Fecha programada</th>
+                        <th>Sitio</th>
+                        <th>Tenencia</th>
+                        <th>Tipo</th>
+                        <th>Activo / Area</th>
+                        <th>Orden</th>
+                        <th>Categoria tecnico</th>
+                        <th>Tecnico</th>
+                        <th>Semáforo</th>
+                        <th>Estado</th>
+                        <th>Checklist</th>
+                        <th>Recordatorios</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Rows.Any())
+                    {
+                        <tr>
+                            <td colspan="14" class="text-center text-muted py-4">No hay citas registradas con los filtros aplicados.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.Rows)
+                        {
+                            var normalizedStatus = (row.Appointment.Status ?? string.Empty).Trim();
+                            var normalizedStatusKey = normalizedStatus.ToLowerInvariant();
+                            var statusClass = normalizedStatusKey switch
+                            {
+                                "programada" => "status-programada",
+                                "confirmada" => "status-confirmada",
+                                "en ejecucion" => "status-ejecucion",
+                                "completada" => "status-completada",
+                                "reprogramada" => "status-reprogramada",
+                                "cancelada" => "status-cancelada",
+                                _ => "status-programada"
+                            };
+
+                            <tr class="@(row.IsOverdue ? "is-overdue" : string.Empty)">
+                                <td><div class="appt-code">@row.Appointment.AppointmentNumber</div></td>
+                                <td>
+                                    <div class="date-main">@row.Appointment.ScheduledFor.ToString("yyyy-MM-dd")</div>
+                                    <div class="date-sub">@row.Appointment.ScheduledFor.ToString("HH:mm")</div>
+                                </td>
+                                <td><span class="order-badge">@row.Appointment.Site</span></td>
+                                <td>@row.Appointment.Tenencia</td>
+                                <td>@row.Appointment.MaintenanceType</td>
+                                <td>@row.Appointment.AssetOrArea</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(row.Metadata.MaintenanceOrderNumber))
+                                    {
+                                        <span class="order-badge">@row.Metadata.MaintenanceOrderNumber</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin enlace</span>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(row.Appointment.TechnicianCategory) ? "-" : row.Appointment.TechnicianCategory)</td>
+                                <td>
+                                    @if (row.HasAssignedTechnician) { @row.Appointment.AssignedTechnician } else { <span class="text-danger">Sin asignar</span> }
+                                </td>
+                                <td><span class="badge bg-@row.ProximityClass">@row.ProximityLabel</span></td>
+                                <td><span class="status-pill @statusClass">@row.Appointment.Status</span></td>
+                                <td class="checklist-cell">
+                                    <div class="checklist-label">@row.ChecklistProgressPercent%</div>
+                                    <div class="progress checklist-bar">
+                                        <div class="progress-bar" role="progressbar" style="width:@row.ChecklistProgressPercent%"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (row.Reminder2hPending) { <span class="badge bg-danger">2h</span> }
+                                    else if (row.Reminder24hPending) { <span class="badge bg-warning text-dark">24h</span> }
+                                    else { <span class="text-muted small">OK</span> }
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1 action-stack">
+                                    <a asp-action="Edit" asp-route-id="@row.Appointment.Id" class="btn btn-sm btn-outline-primary">Editar</a>
+                                    <a asp-action="Details" asp-route-id="@row.Appointment.Id" class="btn btn-sm btn-outline-info">Ver</a>
+                                    <a asp-action="DownloadPdf" asp-route-id="@row.Appointment.Id" class="btn btn-sm btn-outline-danger">PDF</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

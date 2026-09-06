@@ -6,7 +6,9 @@
     var startDateValue = Model.StartDate.ToString("yyyy-MM-dd");
     var endDateValue = Model.EndDate.ToString("yyyy-MM-dd");
 
-    var selectedTechnician = string.IsNullOrWhiteSpace(Model.SelectedTechnician) ? "all" : Model.SelectedTechnician;
+    var selectedTechnician = Model.IsFinanceArea
+        ? "all"
+        : (string.IsNullOrWhiteSpace(Model.SelectedTechnician) ? "all" : Model.SelectedTechnician);
     var selectedArea = string.IsNullOrWhiteSpace(Model.SelectedArea) ? "all" : Model.SelectedArea;
     var selectedSite = string.IsNullOrWhiteSpace(Model.SelectedSite) ? "all" : Model.SelectedSite;
 
@@ -177,6 +179,36 @@
         vertical-align: middle;
     }
 
+    .insight-card {
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        background: #fff;
+        padding: 1rem;
+        min-height: 120px;
+    }
+
+    .insight-title {
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.45rem;
+    }
+
+    .insight-value {
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: #0b1d3a;
+        line-height: 1;
+    }
+
+    .severity-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
     @@media print {
         nav,
         .reports-actions,
@@ -210,7 +242,7 @@
                asp-route-startDate="@startDateValue"
                asp-route-endDate="@endDateValue"
                asp-route-technician="@selectedTechnician"
-               asp-route-area="@selectedArea"
+               asp-route-areaFilter="@selectedArea"
                asp-route-site="@selectedSite"
                asp-route-tab="@activeTab">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Exportar Excel
@@ -221,11 +253,25 @@
                asp-route-startDate="@startDateValue"
                asp-route-endDate="@endDateValue"
                asp-route-technician="@selectedTechnician"
-               asp-route-area="@selectedArea"
+               asp-route-areaFilter="@selectedArea"
                asp-route-site="@selectedSite"
                asp-route-tab="@activeTab">
                 <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
             </a>
+
+            @if (Model.IsFinanceArea)
+            {
+                <a class="btn btn-outline-primary btn-sm"
+                   asp-action="ExportFinanceErp"
+                   asp-route-startDate="@startDateValue"
+                   asp-route-endDate="@endDateValue"
+                   asp-route-technician="@selectedTechnician"
+                   asp-route-areaFilter="@selectedArea"
+                   asp-route-site="@selectedSite"
+                   asp-route-tab="@activeTab">
+                    <i class="bi bi-box-arrow-up-right"></i> Exportar ERP
+                </a>
+            }
         </div>
     </div>
 
@@ -247,39 +293,53 @@
                 <input id="endDate" name="endDate" type="date" class="form-control" value="@endDateValue" />
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
-                <label for="technician" class="form-label">Tecnico</label>
-                <select id="technician" name="technician" class="form-select">
-                    @foreach (var option in Model.TechnicianOptions)
-                    {
-                        if (option.Value == selectedTechnician)
+            @if (!Model.IsFinanceArea)
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label for="technician" class="form-label">Tecnico</label>
+                    <select id="technician" name="technician" class="form-select">
+                        @foreach (var option in Model.TechnicianOptions)
                         {
-                            <option value="@option.Value" selected="selected">@option.Label</option>
+                            if (option.Value == selectedTechnician)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
                         }
-                        else
-                        {
-                            <option value="@option.Value">@option.Label</option>
-                        }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" name="technician" value="all" />
+            }
 
-            <div class="col-12 col-md-6 col-xl-2">
-                <label for="area" class="form-label">Area</label>
-                <select id="area" name="area" class="form-select">
-                    @foreach (var option in Model.AreaOptions)
-                    {
-                        if (option.Value == selectedArea)
+            @if (Model.IsFinanceArea)
+            {
+                <input type="hidden" id="areaFilter" name="areaFilter" value="Finanzas" />
+            }
+            else
+            {
+                <div class="col-12 col-md-6 col-xl-2">
+                    <label for="areaFilter" class="form-label">Area</label>
+                    <select id="areaFilter" name="areaFilter" class="form-select">
+                        @foreach (var option in Model.AreaOptions)
                         {
-                            <option value="@option.Value" selected="selected">@option.Label</option>
+                            if (option.Value == selectedArea)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
                         }
-                        else
-                        {
-                            <option value="@option.Value">@option.Label</option>
-                        }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
+            }
 
             <div class="col-12 col-md-6 col-xl-2">
                 <label for="site" class="form-label">Sitio</label>
@@ -312,27 +372,30 @@
                    asp-route-startDate="@startDateValue"
                    asp-route-endDate="@endDateValue"
                    asp-route-technician="@selectedTechnician"
-                   asp-route-area="@selectedArea"
+                   asp-route-areaFilter="@selectedArea"
                    asp-route-site="@selectedSite"
                    asp-route-tab="summary">Resumen General</a>
             </div>
-            <div class="col-12 col-md-3">
-                <a class="tab-link @(activeTab == "technician" ? "active" : "")"
-                   asp-action="Index"
-                   asp-route-startDate="@startDateValue"
-                   asp-route-endDate="@endDateValue"
-                   asp-route-technician="@selectedTechnician"
-                   asp-route-area="@selectedArea"
-                   asp-route-site="@selectedSite"
-                   asp-route-tab="technician">Por Tecnico</a>
-            </div>
+            @if (!Model.IsFinanceArea)
+            {
+                <div class="col-12 col-md-3">
+                    <a class="tab-link @(activeTab == "technician" ? "active" : "")"
+                       asp-action="Index"
+                       asp-route-startDate="@startDateValue"
+                       asp-route-endDate="@endDateValue"
+                       asp-route-technician="@selectedTechnician"
+                       asp-route-areaFilter="@selectedArea"
+                       asp-route-site="@selectedSite"
+                       asp-route-tab="technician">Por Tecnico</a>
+                </div>
+            }
             <div class="col-12 col-md-3">
                 <a class="tab-link @(activeTab == "area" ? "active" : "")"
                    asp-action="Index"
                    asp-route-startDate="@startDateValue"
                    asp-route-endDate="@endDateValue"
                    asp-route-technician="@selectedTechnician"
-                   asp-route-area="@selectedArea"
+                   asp-route-areaFilter="@selectedArea"
                    asp-route-site="@selectedSite"
                    asp-route-tab="area">Por Area</a>
             </div>
@@ -342,10 +405,23 @@
                    asp-route-startDate="@startDateValue"
                    asp-route-endDate="@endDateValue"
                    asp-route-technician="@selectedTechnician"
-                   asp-route-area="@selectedArea"
+                   asp-route-areaFilter="@selectedArea"
                    asp-route-site="@selectedSite"
                    asp-route-tab="site">Por Sitio</a>
             </div>
+            @if (Model.IsFinanceArea)
+            {
+                <div class="col-12 col-md-3">
+                    <a class="tab-link @(activeTab == "finance" ? "active" : "")"
+                       asp-action="Index"
+                       asp-route-startDate="@startDateValue"
+                       asp-route-endDate="@endDateValue"
+                       asp-route-technician="@selectedTechnician"
+                       asp-route-areaFilter="@selectedArea"
+                       asp-route-site="@selectedSite"
+                       asp-route-tab="finance">Finanzas</a>
+                </div>
+            }
         </div>
     </div>
 
@@ -402,19 +478,25 @@
     </div>
 
     <div class="row g-3 mb-3">
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
             <div class="summary-box">
                 <div class="summary-label"><i class="bi bi-stopwatch"></i> Tiempo Promedio de Resolucion</div>
                 <div class="summary-value">@Model.AverageResolutionHours.ToString("0.0") hrs</div>
             </div>
         </div>
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
+            <div class="summary-box">
+                <div class="summary-label"><i class="bi bi-lightning-charge"></i> Primera Respuesta Promedio</div>
+                <div class="summary-value">@Model.AverageFirstResponseHours.ToString("0.0") hrs</div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-3">
             <div class="summary-box">
                 <div class="summary-label"><i class="bi bi-emoji-smile"></i> Satisfaccion del Usuario</div>
                 <div class="summary-value">@Model.SatisfactionPercent%</div>
             </div>
         </div>
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
             <div class="summary-box">
                 <div class="summary-label"><i class="bi bi-shield-check"></i> Cumplimiento SLA</div>
                 <div class="summary-value">@Model.SlaCompliancePercent%</div>
@@ -422,51 +504,237 @@
         </div>
     </div>
 
+    @if (Model.IsFinanceArea)
+    {
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-lg-4">
+                <div class="summary-box">
+                    <div class="summary-label"><i class="bi bi-cash-stack"></i> Monto solicitado (C$)</div>
+                    <div class="summary-value">@Model.FinanceTotalRequestedCordoba.ToString("N2")</div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div class="summary-box">
+                    <div class="summary-label"><i class="bi bi-calculator"></i> Promedio por solicitud (C$)</div>
+                    <div class="summary-value">@Model.FinanceAverageRequestedCordoba.ToString("N2")</div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div class="summary-box">
+                    <div class="summary-label"><i class="bi bi-exclamation-octagon"></i> Riesgo de sobregiro</div>
+                    <div class="summary-value">@Model.FinanceRequestsWithBudgetRisk</div>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (Model.TotalTickets == 0)
     {
         <div class="alert alert-info reports-card">No hay tickets para los filtros seleccionados.</div>
     }
     else if (activeTab == "summary")
     {
-        <div class="reports-card p-3">
-            <h5 class="mb-3">Distribucion por Tipo de Incidencia</h5>
-
-            @foreach (var item in Model.IncidentTypeDistribution)
-            {
-                var width = item.Percentage <= 0 ? 2 : item.Percentage;
-
-                <div class="distribution-row">
-                    <div class="distribution-head">
-                        <span>@item.Label</span>
-                        <strong>@item.Count</strong>
-                    </div>
-                    <div class="distribution-track">
-                        <div class="distribution-fill" style="width:@width%"></div>
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-xl-4">
+                <div class="insight-card">
+                    <div class="insight-title">Comparativo del Periodo</div>
+                    <div class="insight-value">@Model.CurrentPeriodTickets</div>
+                    <div class="text-muted small">Periodo actual</div>
+                    <div class="mt-2 small">
+                        Periodo anterior: <strong>@Model.PreviousPeriodTickets</strong><br />
+                        Backlog delta: <strong class="@(Model.BacklogDelta > 0 ? "text-danger" : "text-success")">@Model.BacklogDelta.ToString("+0;-0;0")</strong>
                     </div>
                 </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="insight-card">
+                    <div class="insight-title">Comparativo Anual</div>
+                    <div class="insight-value">@Model.CurrentYearTickets</div>
+                    <div class="text-muted small">Año actual (YTD)</div>
+                    <div class="mt-2 small">
+                        Año anterior: <strong>@Model.PreviousYearTickets</strong><br />
+                        Backlog activo: <strong>@Model.ActiveBacklog</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="insight-card">
+                    <div class="insight-title">Riesgo SLA</div>
+                    <div class="small d-flex flex-column gap-2 mt-2">
+                        <span class="badge text-bg-danger">@Model.OverdueTickets vencidos</span>
+                        <span class="badge text-bg-warning">@Model.NearDueTickets por vencer</span>
+                        <span class="badge text-bg-secondary">@Model.UnassignedTickets sin asignar</span>
+                        <span class="badge text-bg-dark">@Model.CriticalTickets criticos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-xl-7">
+                <div class="reports-card p-3 h-100">
+                    <h5 class="mb-3">Top Causas de Incidencia</h5>
+
+                    @foreach (var item in Model.IncidentTypeDistribution)
+                    {
+                        var width = item.Percentage <= 0 ? 2 : item.Percentage;
+
+                        <div class="distribution-row">
+                            <div class="distribution-head">
+                                <span>@item.Label</span>
+                                <strong>@item.Count</strong>
+                            </div>
+                            <div class="distribution-track">
+                                <div class="distribution-fill" style="width:@width%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-5">
+                <div class="reports-card p-3 h-100">
+                    <h5 class="mb-3">Costos del Periodo</h5>
+                    <div class="small text-muted mb-2">Costo componente + costo operativo estimado por horas de resolucion</div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between"><span>Componentes (C$)</span><strong>@Model.TotalComponentCostCordoba.ToString("N2")</strong></div>
+                        <div class="d-flex justify-content-between"><span>Componentes (USD)</span><strong>@Model.TotalComponentCostUsd.ToString("N2")</strong></div>
+                        <div class="d-flex justify-content-between"><span>Mano de obra estimada (C$)</span><strong>@Model.EstimatedLaborCostCordoba.ToString("N2")</strong></div>
+                        <hr class="my-1" />
+                        <div class="d-flex justify-content-between"><span>Total estimado (C$)</span><strong>@Model.EstimatedTotalCostCordoba.ToString("N2")</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="reports-card p-3 mb-3">
+            @if (Model.IsFinanceArea)
+            {
+                <h5 class="mb-3">Productividad por Solicitante</h5>
+                <div class="table-responsive">
+                    <table class="table table-lite align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Solicitante</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Pendientes</th>
+                                <th class="text-end">En evaluación</th>
+                                <th class="text-end">Listas cierre</th>
+                                <th class="text-end">Cerradas</th>
+                                <th class="text-end">Riesgo</th>
+                                <th class="text-end">Monto (C$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.FinanceRequesterPerformance)
+                            {
+                                <tr>
+                                    <td>@row.Requester</td>
+                                    <td class="text-end fw-semibold">@row.TotalRequests</td>
+                                    <td class="text-end">@row.PendingRequests</td>
+                                    <td class="text-end">@row.InReviewRequests</td>
+                                    <td class="text-end">@row.CloseReadyRequests</td>
+                                    <td class="text-end">@row.ClosedRequests</td>
+                                    <td class="text-end">@row.BudgetRiskRequests</td>
+                                    <td class="text-end">@row.RequestedAmountCordoba.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
+            else
+            {
+                <h5 class="mb-3">Productividad por Tecnico</h5>
+                <div class="table-responsive">
+                    <table class="table table-lite align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tecnico</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Resueltos</th>
+                                <th class="text-end">Vencidos</th>
+                                <th class="text-end">Reaperturas</th>
+                                <th class="text-end">MTTR (h)</th>
+                                <th class="text-end">SLA %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.TechnicianPerformance)
+                            {
+                                <tr>
+                                    <td>@row.Technician</td>
+                                    <td class="text-end fw-semibold">@row.TotalTickets</td>
+                                    <td class="text-end">@row.ResolvedTickets</td>
+                                    <td class="text-end">@row.OverdueTickets</td>
+                                    <td class="text-end">@row.ReopenedTickets</td>
+                                    <td class="text-end">@row.AverageResolutionHours.ToString("0.0")</td>
+                                    <td class="text-end">@row.SlaCompliancePercent.ToString("0.0")%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="reports-card p-3">
+            <h5 class="mb-3">Alertas Ejecutivas</h5>
+            <div class="d-flex flex-column gap-2">
+                @foreach (var alert in Model.Alerts)
+                {
+                    var bootstrapClass = alert.Severity switch
+                    {
+                        "danger" => "alert-danger",
+                        "warning" => "alert-warning",
+                        "success" => "alert-success",
+                        _ => "alert-info"
+                    };
+                    var severityLabel = alert.Severity switch
+                    {
+                        "danger" => "Critica",
+                        "warning" => "Atencion",
+                        "success" => "Estable",
+                        _ => "Info"
+                    };
+                    <div class="alert @bootstrapClass py-2 mb-0">
+                        <span class="severity-chip @(alert.Severity == "danger" ? "text-bg-danger" : alert.Severity == "warning" ? "text-bg-warning" : alert.Severity == "success" ? "text-bg-success" : "text-bg-info") me-2">@severityLabel</span>
+                        @alert.Message
+                    </div>
+                }
+            </div>
         </div>
     }
     else if (activeTab == "technician")
     {
         <div class="reports-card p-3">
-            <h5 class="mb-3">Tickets por Tecnico</h5>
+            <h5 class="mb-3">Desempeno por Tecnico</h5>
             <div class="table-responsive">
                 <table class="table table-lite align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Tecnico</th>
-                            <th class="text-end">Tickets</th>
-                            <th class="text-end">Porcentaje</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Resueltos</th>
+                            <th class="text-end">Vencidos</th>
+                            <th class="text-end">Reaperturas</th>
+                            <th class="text-end">MTTR (h)</th>
+                            <th class="text-end">SLA %</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var row in Model.TicketsByTechnician)
+                        @foreach (var row in Model.TechnicianPerformance)
                         {
                             <tr>
-                                <td>@row.Label</td>
-                                <td class="text-end fw-semibold">@row.Count</td>
-                                <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                                <td>@row.Technician</td>
+                                <td class="text-end fw-semibold">@row.TotalTickets</td>
+                                <td class="text-end">@row.ResolvedTickets</td>
+                                <td class="text-end">@row.OverdueTickets</td>
+                                <td class="text-end">@row.ReopenedTickets</td>
+                                <td class="text-end">@row.AverageResolutionHours.ToString("0.0")</td>
+                                <td class="text-end">@row.SlaCompliancePercent.ToString("0.0")%</td>
                             </tr>
                         }
                     </tbody>
@@ -528,6 +796,118 @@
             </div>
         </div>
     }
+    else if (activeTab == "finance" && Model.IsFinanceArea)
+    {
+        <div class="row g-3">
+            <div class="col-12 col-xl-6">
+                <div class="reports-card p-3 h-100">
+                    <h5 class="mb-3">Solicitudes por Solicitante</h5>
+                    <div class="table-responsive">
+                        <table class="table table-lite align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Solicitante</th>
+                                    <th class="text-end">Solicitudes</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.FinanceByRequester)
+                                {
+                                    <tr>
+                                        <td>@row.Label</td>
+                                        <td class="text-end fw-semibold">@row.Count</td>
+                                        <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-6">
+                <div class="reports-card p-3 h-100">
+                    <h5 class="mb-3">Solicitudes por Proveedor</h5>
+                    <div class="table-responsive">
+                        <table class="table table-lite align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Proveedor</th>
+                                    <th class="text-end">Solicitudes</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.FinanceByVendor)
+                                {
+                                    <tr>
+                                        <td>@row.Label</td>
+                                        <td class="text-end fw-semibold">@row.Count</td>
+                                        <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-6">
+                <div class="reports-card p-3 h-100">
+                    <h5 class="mb-3">Solicitudes por Centro de Costo</h5>
+                    <div class="table-responsive">
+                        <table class="table table-lite align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Centro de costo</th>
+                                    <th class="text-end">Solicitudes</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.FinanceByCostCenter)
+                                {
+                                    <tr>
+                                        <td>@row.Label</td>
+                                        <td class="text-end fw-semibold">@row.Count</td>
+                                        <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-6">
+                <div class="reports-card p-3 h-100">
+                    <h5 class="mb-3">Solicitudes por Estado</h5>
+                    <div class="table-responsive">
+                        <table class="table table-lite align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Estado</th>
+                                    <th class="text-end">Solicitudes</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.FinanceByStatus)
+                                {
+                                    <tr>
+                                        <td>@row.Label</td>
+                                        <td class="text-end fw-semibold">@row.Count</td>
+                                        <td class="text-end">@row.Percentage.ToString("0.0")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
 </div>
 
@@ -539,4 +919,5 @@
         });
     </script>
 }
+
 

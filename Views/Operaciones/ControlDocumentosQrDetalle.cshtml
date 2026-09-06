@@ -1,0 +1,398 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.ControlDocumentosQrViewModel
+@{
+    ViewData["Title"] = "Registro QR de conductor";
+    var caps = Model.Capacitaciones ?? Array.Empty<ITServiceDeskApp.ViewModels.Operaciones.ControlDocumentosCapacitacionEstadoViewModel>();
+    var totalVencidas = caps.Count(c => string.Equals(c.EstadoFiltro, "vencida", StringComparison.OrdinalIgnoreCase));
+    var totalSinFecha = caps.Count(c => string.Equals(c.EstadoFiltro, "sinfecha", StringComparison.OrdinalIgnoreCase));
+    var totalPorVencer = caps.Count(c => string.Equals(c.EstadoFiltro, "porvencer", StringComparison.OrdinalIgnoreCase));
+    var totalVigentes = caps.Count(c => string.Equals(c.EstadoFiltro, "vigente", StringComparison.OrdinalIgnoreCase));
+    var diasMinimosPorVencer = caps
+        .Where(c => string.Equals(c.EstadoFiltro, "porvencer", StringComparison.OrdinalIgnoreCase) && c.DiasRestantes.HasValue)
+        .Select(c => c.DiasRestantes!.Value)
+        .DefaultIfEmpty()
+        .Min();
+    var hayCapacitacionVencida = totalVencidas > 0 || totalSinFecha > 0;
+    var hayCapacitacionPorVencer = totalPorVencer > 0;
+    var estadoOperacionClase = "verde";
+    var estadoOperacionTitulo = "Puede Operar";
+    var estadoOperacionDetalle = "Todas las capacitaciones estan vigentes.";
+    var estadoOperacionSemaforo = "OK";
+    var estadoOperacionEtiqueta = "ESTADO NORMAL";
+
+    if (hayCapacitacionVencida)
+    {
+        estadoOperacionClase = "rojo";
+        estadoOperacionTitulo = "No Puede Operar";
+        estadoOperacionDetalle = $"Tiene {totalVencidas} vencida(s) y {totalSinFecha} sin fecha registrada.";
+        estadoOperacionSemaforo = "ALTO";
+        estadoOperacionEtiqueta = "RIESGO CRITICO";
+    }
+    else if (hayCapacitacionPorVencer)
+    {
+        estadoOperacionClase = "amarillo";
+        estadoOperacionTitulo = "Puede Operar";
+        estadoOperacionDetalle = diasMinimosPorVencer > 0
+            ? $"Le quedan {diasMinimosPorVencer} dia(s) para laborar antes del proximo vencimiento."
+            : "Tiene capacitaciones por vencer en 30 dias o menos.";
+        estadoOperacionSemaforo = "ALERTA";
+        estadoOperacionEtiqueta = "REVISION NECESARIA";
+    }
+}
+
+<style>
+    .qr-detail-shell {
+        max-width: 1080px;
+        margin: 1rem auto;
+        border: 1px solid #dbe4f1;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+        overflow: hidden;
+    }
+
+    .qr-detail-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+        align-items: center;
+        padding: 0.9rem 1rem;
+        background: #0f172a;
+        color: #fff;
+    }
+
+    .qr-detail-head h3 {
+        margin: 0;
+        font-size: 1.12rem;
+        font-weight: 800;
+    }
+
+    .qr-detail-head p {
+        margin: 0.12rem 0 0;
+        opacity: 0.9;
+    }
+
+    .qr-detail-head-actions {
+        margin-top: 0.45rem;
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .qr-detail-head img {
+        width: 88px;
+        height: 88px;
+        border: 4px solid #fff;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .qr-detail-table {
+        margin-bottom: 0;
+    }
+
+    .qr-operacion-banner {
+        margin: 0.75rem 1rem 0.2rem;
+        border-radius: 14px;
+        border: 1px solid #d1d5db;
+        padding: 0.95rem 1rem;
+        display: grid;
+        grid-template-columns: minmax(320px, 1fr) auto;
+        gap: 0.8rem 1rem;
+        align-items: center;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .qr-operacion-banner--verde {
+        border-color: #86efac;
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .qr-operacion-banner--amarillo {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .qr-operacion-banner--rojo {
+        border-color: #fca5a5;
+        background: #fff1f2;
+        color: #991b1b;
+    }
+
+    .qr-operacion-banner__title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1.08;
+    }
+
+    .qr-operacion-banner__detail {
+        font-size: 0.96rem;
+        margin-top: 0.22rem;
+    }
+
+    .qr-operacion-main {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .qr-operacion-signal {
+        width: 72px;
+        height: 72px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        border: 3px solid transparent;
+        flex: 0 0 auto;
+    }
+
+    .qr-operacion-signal--verde {
+        background: #dcfce7;
+        border-color: #22c55e;
+        color: #166534;
+    }
+
+    .qr-operacion-signal--amarillo {
+        background: #fef3c7;
+        border-color: #f59e0b;
+        color: #92400e;
+    }
+
+    .qr-operacion-signal--rojo {
+        background: #fee2e2;
+        border-color: #ef4444;
+        color: #991b1b;
+    }
+
+    .qr-operacion-flag {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.73rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border-radius: 999px;
+        padding: 0.2rem 0.62rem;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(15, 23, 42, 0.15);
+        margin-bottom: 0.2rem;
+    }
+
+    .qr-operacion-banner__kpi {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #334155;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        justify-content: flex-end;
+    }
+
+    .qr-operacion-chip {
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        padding: 0.18rem 0.55rem;
+        white-space: nowrap;
+    }
+
+    .qr-detail-table th {
+        background: #f1f5f9;
+        color: #1f2937;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .qr-detail-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-weight: 700;
+        font-size: 0.79rem;
+        border-radius: 999px;
+        padding: 0.15rem 0.5rem;
+        border: 1px solid transparent;
+    }
+
+    .qr-detail-state--verde {
+        color: #166534;
+        border-color: #86efac;
+        background: #f0fdf4;
+    }
+
+    .qr-detail-state--amarillo {
+        color: #92400e;
+        border-color: #fcd34d;
+        background: #fffbeb;
+    }
+
+    .qr-detail-state--rojo {
+        color: #991b1b;
+        border-color: #fca5a5;
+        background: #fff1f2;
+    }
+
+    .qr-detail-footer {
+        padding: 0.65rem 1rem 0.9rem;
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    .qr-scan-box {
+        margin: 0.55rem 1rem 0.25rem;
+        border: 1px solid #dbe4f1;
+        border-radius: 10px;
+        background: #f8fbff;
+        overflow: hidden;
+    }
+
+    .qr-scan-box__head {
+        padding: 0.5rem 0.7rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #1f2937;
+        border-bottom: 1px solid #e6edf7;
+    }
+
+    .qr-scan-box__body {
+        max-height: 180px;
+        overflow: auto;
+    }
+
+    .qr-scan-table {
+        margin-bottom: 0;
+    }
+
+    .qr-scan-table th {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #334155;
+        background: #eef4ff;
+        white-space: nowrap;
+    }
+
+    .qr-scan-table td {
+        font-size: 0.75rem;
+        color: #1f2937;
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 900px) {
+        .qr-operacion-banner {
+            grid-template-columns: 1fr;
+            padding: 0.88rem 0.9rem;
+        }
+
+        .qr-operacion-banner__kpi {
+            justify-content: flex-start;
+        }
+    }
+</style>
+
+<div class="qr-detail-shell">
+    <div class="qr-detail-head">
+        <div>
+            <h3>Registro de capacitaciones - @Model.Conductor</h3>
+            <p>Consulta viva via QR | Codigo: @Model.ConductorKey | @Model.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</p>
+            <div class="qr-detail-head-actions">
+                <a class="btn btn-sm btn-light" href="@Model.QrPdfUrl" target="_blank" rel="noopener">PDF</a>
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="window.print()">Imprimir</button>
+            </div>
+        </div>
+        <img src="@Model.QrImageUrl" alt="QR @Model.Conductor" />
+    </div>
+
+    <div class="qr-operacion-banner qr-operacion-banner--@estadoOperacionClase">
+        <div class="qr-operacion-main">
+            <div class="qr-operacion-signal qr-operacion-signal--@estadoOperacionClase">
+                @estadoOperacionSemaforo
+            </div>
+            <div>
+                <div class="qr-operacion-flag">@estadoOperacionEtiqueta</div>
+                <div class="qr-operacion-banner__title">@estadoOperacionTitulo</div>
+                <div class="qr-operacion-banner__detail">@estadoOperacionDetalle</div>
+            </div>
+        </div>
+        <div class="qr-operacion-banner__kpi">
+            <span class="qr-operacion-chip">Vigentes: @totalVigentes</span>
+            <span class="qr-operacion-chip">Por vencer: @totalPorVencer</span>
+            <span class="qr-operacion-chip">Vencidas: @totalVencidas</span>
+            <span class="qr-operacion-chip">Sin fecha: @totalSinFecha</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm align-middle qr-detail-table">
+            <thead>
+                <tr>
+                    <th>Capacitacion</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Alerta</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cap in caps)
+                {
+                    var estadoClase = (cap.EstadoSemaforo ?? "rojo").ToLowerInvariant();
+                    var etiqueta = string.IsNullOrWhiteSpace(cap.EtiquetaSemaforo) ? "Sin fecha" : cap.EtiquetaSemaforo;
+                    var fecha = string.IsNullOrWhiteSpace(cap.Fecha) ? "-" : cap.Fecha;
+                    <tr>
+                        <td><strong>@cap.NombreCapacitacion</strong></td>
+                        <td>@fecha</td>
+                        <td>
+                            <span class="qr-detail-state qr-detail-state--@estadoClase">@etiqueta</span>
+                        </td>
+                        <td>@cap.MensajeAlerta</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="qr-scan-box">
+        <div class="qr-scan-box__head">Bitacora de escaneos QR (ultimos @Model.EscaneosRecientes.Count)</div>
+        @if (Model.EscaneosRecientes.Any())
+        {
+            <div class="qr-scan-box__body">
+                <table class="table table-sm align-middle qr-scan-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>IP</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var scan in Model.EscaneosRecientes)
+                        {
+                            <tr>
+                                <td>@scan.FechaEscaneo.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                <td>@scan.Usuario</td>
+                                <td>@scan.IpAddress</td>
+                                <td>@scan.UserAgent</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="p-2 small text-muted">Aun no hay escaneos registrados.</div>
+        }
+    </div>
+
+    <div class="qr-detail-footer">
+        Este enlace siempre muestra la informacion actualizada del conductor; el QR no cambia.
+    </div>
+</div>

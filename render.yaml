@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: trawzacons-service-desk
+    runtime: docker
+    plan: 0.5c-512mb
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "10000"
+      - key: Database__Provider
+        value: Postgres
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: trawzacons-db
+          property: connectionString
+      - key: Storage__DataProtectionKeysPath
+        value: /app/storage/keys
+      - key: PERSISTENT_STORAGE_PATH
+        value: /app/storage
+      - key: BootstrapAdmin__Email
+        value: admin@trawzacons.com
+      - key: BootstrapAdmin__Password
+        sync: false
+      - key: EmailNotifications__Enabled
+        value: "false"
+      - key: WhatsAppNotifications__Enabled
+        value: "false"
+    disk:
+      name: trawzacons-storage
+      mountPath: /app/storage
+      sizeGB: 1
+
+databases:
+  - name: trawzacons-db
+    databaseName: trawzacons
+    user: trawzacons_app
+    plan: 0.1c-256mb
+    region: virginia
+    postgresMajorVersion: "18"
+    diskSizeGB: 1
+    ipAllowList: []

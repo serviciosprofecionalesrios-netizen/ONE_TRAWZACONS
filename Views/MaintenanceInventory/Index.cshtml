@@ -1,0 +1,646 @@
+@model IEnumerable<ITServiceDeskApp.Models.MaintenanceInventoryPart>
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Globalization
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Inventario de Repuestos";
+
+    var rows = Model ?? Enumerable.Empty<MaintenanceInventoryPart>();
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var systemTypeOptions = ViewBag.SystemTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var stockStatusOptions = ViewBag.StockStatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+
+    var canManage =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
+
+    string search = ViewBag.Search as string ?? string.Empty;
+    bool includeInactive = ViewBag.IncludeInactive is bool b && b;
+    int lowStockCount = ViewBag.LowStockCount is int ls ? ls : 0;
+    string configuredGoogleSheetUrl = ViewBag.GoogleSheetUrl as string ?? string.Empty;
+    int totalPartes = ViewBag.TotalPartes is int t1 ? t1 : rows.Count();
+    int totalStock = ViewBag.TotalStock is int t2 ? t2 : rows.Sum(x => x.QuantityOnHand);
+    int totalTransito = ViewBag.TotalTransito is int t3 ? t3 : rows.Sum(x => x.QuantityInTransit);
+    int totalAgotados = ViewBag.TotalAgotados is int t4 ? t4 : rows.Count(x => x.QuantityOnHand <= 0);
+    int totalBajoStock = ViewBag.TotalBajoStock is int t5 ? t5 : rows.Count(x => x.QuantityOnHand > 0 && x.QuantityOnHand <= x.MinimumStock);
+    int totalProyectado = ViewBag.TotalProyectado is int t6 ? t6 : rows.Sum(x => x.QuantityOnHand + x.QuantityInTransit);
+    decimal valorStockCordoba = ViewBag.ValorInventarioCordoba is decimal c1 ? c1 : rows.Sum(x => (x.UnitCostCordoba ?? 0m) * x.QuantityOnHand);
+    decimal valorStockUsd = ViewBag.ValorInventarioUsd is decimal c2 ? c2 : rows.Sum(x => (x.UnitCostUsd ?? 0m) * x.QuantityOnHand);
+    decimal valorTransitoCordoba = ViewBag.ValorTransitoCordoba is decimal c3 ? c3 : rows.Sum(x => (x.UnitCostCordoba ?? 0m) * x.QuantityInTransit);
+    decimal valorTransitoUsd = ViewBag.ValorTransitoUsd is decimal c4 ? c4 : rows.Sum(x => (x.UnitCostUsd ?? 0m) * x.QuantityInTransit);
+
+    var ni = new CultureInfo("es-NI");
+    string C(decimal value) => $"C$ {value.ToString("N2", ni)}";
+    string D(decimal value) => $"$ {value.ToString("N2", ni)}";
+
+    int conPrecioCordoba = rows.Count(x => (x.UnitCostCordoba ?? 0m) > 0m);
+    int conPrecioUsd = rows.Count(x => (x.UnitCostUsd ?? 0m) > 0m);
+    decimal coberturaCordoba = totalPartes == 0 ? 0m : decimal.Round((decimal)conPrecioCordoba * 100m / totalPartes, 1, MidpointRounding.AwayFromZero);
+    decimal coberturaUsd = totalPartes == 0 ? 0m : decimal.Round((decimal)conPrecioUsd * 100m / totalPartes, 1, MidpointRounding.AwayFromZero);
+
+    const int coberturaBaseDias = 30;
+    decimal CoberturaDias(MaintenanceInventoryPart row)
+    {
+        if (row.QuantityIssued <= 0)
+        {
+            return decimal.MaxValue;
+        }
+
+        if (row.QuantityOnHand <= 0)
+        {
+            return 0m;
+        }
+
+        return decimal.Round((decimal)row.QuantityOnHand * coberturaBaseDias / row.QuantityIssued, 1, MidpointRounding.AwayFromZero);
+    }
+
+    string RiesgoQuiebre(MaintenanceInventoryPart row)
+    {
+        if (row.QuantityOnHand <= 0)
+        {
+            return "Critico";
+        }
+
+        var cobertura = CoberturaDias(row);
+        if (cobertura == decimal.MaxValue)
+        {
+            return "Bajo";
+        }
+
+        if (cobertura <= 7m)
+        {
+            return "Alto";
+        }
+
+        if (cobertura <= 15m)
+        {
+            return "Medio";
+        }
+
+        return "Bajo";
+    }
+
+    int riesgoCritico = rows.Count(x => RiesgoQuiebre(x) == "Critico");
+    int riesgoAlto = rows.Count(x => RiesgoQuiebre(x) == "Alto");
+}
+
+<style>
+    .inv-hero {
+        border-radius: 14px;
+        background: linear-gradient(135deg, #0f274a 0%, #1a4b78 62%, #2a618f 100%);
+        color: #fff;
+        border: 0;
+    }
+
+    .inv-hero .subtitle {
+        color: rgba(255, 255, 255, 0.82);
+    }
+
+    .inv-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 999px;
+        padding: .26rem .65rem;
+        font-size: .79rem;
+        color: #fff;
+    }
+
+    .inv-kpi {
+        border-radius: 12px;
+        border: 1px solid #dce4ee;
+    }
+
+    .inv-kpi .label {
+        font-size: .79rem;
+        color: #6a7280;
+        letter-spacing: .02em;
+    }
+
+    .inv-kpi .value {
+        font-weight: 800;
+        font-size: 1.8rem;
+        line-height: 1.1;
+        color: #0f274a;
+    }
+
+    .inv-kpi .meta {
+        font-size: .82rem;
+        color: #6a7280;
+    }
+
+    .inv-table-wrap {
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .inv-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .inv-table thead th {
+        background: #112742;
+        color: #fff;
+        text-transform: uppercase;
+        font-size: .64rem;
+        letter-spacing: .05em;
+        border: 0;
+        padding: .5rem .3rem;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        white-space: nowrap;
+    }
+
+    .inv-table tbody td {
+        vertical-align: middle;
+        border-color: #ebeff5;
+        font-size: .82rem;
+        padding: .45rem .3rem;
+        line-height: 1.15;
+        word-break: break-word;
+    }
+
+    .inv-table tbody tr.row-stockout {
+        background: #fff2f3;
+    }
+
+    .inv-table tbody tr.row-low {
+        background: #fff9e9;
+    }
+
+    .inv-table tbody tr.row-inactive {
+        background: #f3f6fa;
+    }
+
+    .inv-price {
+        font-weight: 700;
+        color: #10385d;
+        font-size: .93rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .inv-price-muted {
+        color: #8a95a7;
+        font-size: .72rem;
+    }
+
+    .inv-state {
+        border-radius: 999px;
+        padding: .12rem .42rem;
+        font-size: .67rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .inv-state-ok {
+        background: #e6f7ee;
+        color: #0f7a45;
+    }
+
+    .inv-state-low {
+        background: #fff3cd;
+        color: #8b6a00;
+    }
+
+    .inv-state-out {
+        background: #fde7ea;
+        color: #b42337;
+    }
+
+    .inv-table td small {
+        font-size: .72rem;
+    }
+
+    .inv-table td .btn {
+        font-size: .67rem;
+        padding: .12rem .36rem;
+        line-height: 1.1;
+    }
+
+    .inv-table td:last-child .btn {
+        margin-bottom: .22rem;
+    }
+
+    .inv-table td:last-child form {
+        display: inline-block;
+    }
+
+    .inv-action-group {
+        display: inline-flex;
+        gap: .24rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
+    }
+
+    .inv-action-btn {
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: .4rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        font-size: .76rem;
+        text-decoration: none;
+        transition: all .16s ease;
+        box-shadow: 0 1px 2px rgba(16, 39, 74, 0.08);
+    }
+
+    .inv-action-btn.view {
+        background: #eef7ff;
+        border-color: #b9d9ff;
+        color: #0d6dd6;
+    }
+
+    .inv-action-btn.edit {
+        background: #edf7ff;
+        border-color: #b7d5ff;
+        color: #1f6ad8;
+    }
+
+    .inv-action-btn.off {
+        background: #fff1f2;
+        border-color: #ffd0d5;
+        color: #d93047;
+    }
+
+    .inv-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(16, 39, 74, 0.18);
+    }
+
+    @@media (max-width: 1500px) {
+        .inv-table thead th {
+            font-size: .6rem;
+            letter-spacing: .03em;
+            padding: .42rem .22rem;
+        }
+
+        .inv-table tbody td {
+            font-size: .76rem;
+            padding: .38rem .22rem;
+        }
+
+        .inv-price {
+            font-size: .82rem;
+        }
+
+        .inv-price-muted {
+            font-size: .67rem;
+        }
+
+        .inv-state {
+            font-size: .62rem;
+        }
+    }
+</style>
+
+@if (TempData["SyncSuccess"] is string syncSuccess && !string.IsNullOrWhiteSpace(syncSuccess))
+{
+    <div class="container mt-4">
+        <div class="alert alert-success mb-0">@syncSuccess</div>
+    </div>
+}
+
+@if (TempData["SyncError"] is string syncError && !string.IsNullOrWhiteSpace(syncError))
+{
+    <div class="container mt-4">
+        <div class="alert alert-danger mb-0">@syncError</div>
+    </div>
+}
+
+<div class="container mt-4">
+    <div class="card inv-hero shadow-sm mb-3">
+        <div class="card-body py-3 py-md-4 d-flex flex-wrap justify-content-between align-items-end gap-3">
+            <div>
+                <h2 class="fw-bold mb-1">Inventario de Repuestos - Mantenimiento</h2>
+                <div class="subtitle">Vista ejecutiva para stock, riesgo de quiebre y valor económico del inventario.</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="inv-chip"><i class="bi bi-currency-dollar"></i> Valor Stock: @C(valorStockCordoba)</span>
+                <span class="inv-chip"><i class="bi bi-truck"></i> En Tránsito: @totalTransito</span>
+                <span class="inv-chip"><i class="bi bi-exclamation-triangle"></i> Riesgo Alto/Crítico: @(riesgoAlto + riesgoCritico)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="Index" class="btn btn-dark">
+                <i class="bi bi-grid-1x2"></i> Resumen
+            </a>
+            <a asp-action="Detalle" class="btn btn-outline-dark">
+                <i class="bi bi-table"></i> Tabla detalle
+            </a>
+            <a asp-action="Transito" class="btn btn-outline-dark">
+                <i class="bi bi-truck"></i> Articulos en transito
+            </a>
+        </div>
+        @if (canManage)
+        {
+            <div class="d-flex gap-2">
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Nuevo Repuesto
+                </a>
+            </div>
+        }
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">SKUs activos</div>
+                    <div class="value">@totalPartes</div>
+                    <div class="meta">Registros visibles con filtros actuales.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Unidades en stock</div>
+                    <div class="value">@totalStock</div>
+                    <div class="meta">Físico disponible en bodega.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Unidades en tránsito</div>
+                    <div class="value text-primary">@totalTransito</div>
+                    <div class="meta">Pendientes de ingresar.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Stock proyectado</div>
+                    <div class="value">@totalProyectado</div>
+                    <div class="meta">Stock + tránsito.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Valor stock</div>
+                    <div class="fw-bold fs-5">@C(valorStockCordoba)</div>
+                    <div class="meta">@D(valorStockUsd)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Valor en tránsito</div>
+                    <div class="fw-bold fs-5">@C(valorTransitoCordoba)</div>
+                    <div class="meta">@D(valorTransitoUsd)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Bajo stock / Agotados</div>
+                    <div class="fw-bold fs-5 text-warning">@totalBajoStock <span class="text-muted fw-normal">/</span> <span class="text-danger">@totalAgotados</span></div>
+                    <div class="meta">Alertas activas de reposición.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card inv-kpi shadow-sm h-100">
+                <div class="card-body">
+                    <div class="label">Cobertura de precios</div>
+                    <div class="fw-bold fs-6">C$: @coberturaCordoba.ToString("N1", ni)% | $: @coberturaUsd.ToString("N1", ni)%</div>
+                    <div class="meta">SKUs con precio cargado.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (lowStockCount > 0)
+    {
+        <div class="alert alert-warning">
+            <strong>@lowStockCount</strong> repuesto(s) estan en nivel bajo o agotado.
+        </div>
+    }
+
+    @if (riesgoCritico > 0 || riesgoAlto > 0)
+    {
+        <div class="alert alert-danger d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                Riesgo de quiebre: <strong>@riesgoCritico crítico(s)</strong> y <strong>@riesgoAlto alto(s)</strong>.
+            </div>
+            <a asp-action="Detalle" class="btn btn-sm btn-outline-dark">Ver cobertura por repuesto</a>
+        </div>
+    }
+
+    @if (canManage)
+    {
+        <form method="post" asp-action="SyncFromGoogleSheet" class="card shadow-sm mb-4">
+            @Html.AntiForgeryToken()
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-9">
+                        <label class="form-label fw-semibold">Google Sheet (Inventario de repuestos)</label>
+                        <input type="url"
+                               class="form-control"
+                               name="sheetUrl"
+                               value="@configuredGoogleSheetUrl"
+                               placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" />
+                        <small class="text-muted">Pega la URL del Sheet y sincroniza para actualizar inventario.</small>
+                    </div>
+                    <div class="col-md-3 d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-arrow-repeat"></i> Sincronizar desde Sheet
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    }
+
+    <form method="get" asp-action="Index" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Buscar</label>
+                    <input type="text" class="form-control" name="search" value="@search" placeholder="Codigo, repuesto, marca, no. parte..." />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Categoria</label>
+                    <select class="form-select" name="category" asp-items="categoryOptions">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sistema</label>
+                    <select class="form-select" name="systemType" asp-items="systemTypeOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Estado stock</label>
+                    <select class="form-select" name="stockStatus" asp-items="stockStatusOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sitio</label>
+                    <select class="form-select" name="site" asp-items="siteOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" id="includeInactive" @(includeInactive ? "checked" : "")>
+                        <label class="form-check-label" for="includeInactive">Inact.</label>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">Filtrar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow inv-table-wrap">
+        <div class="card-body p-0">
+            @if (!rows.Any())
+            {
+                <div class="p-4">
+                    <div class="alert alert-info mb-0">No hay repuestos registrados.</div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 inv-table">
+                        <colgroup>
+                            <col style="width:9%">
+                            <col style="width:16%">
+                            <col style="width:7%">
+                            <col style="width:8%">
+                            <col style="width:6%">
+                            <col style="width:6%">
+                            <col style="width:6%">
+                            <col style="width:8%">
+                            <col style="width:7%">
+                            <col style="width:10%">
+                            <col style="width:7%">
+                            <col style="width:8%">
+                            <col style="width:6%">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Repuesto</th>
+                                <th>Categoria</th>
+                                <th>Sitio</th>
+                                <th>Stock</th>
+                                <th>Salidas</th>
+                                <th>Transito</th>
+                                <th>Unit C$</th>
+                                <th>Unit $</th>
+                                <th>Valor C$</th>
+                                <th>Estado</th>
+                                <th>Proveedor</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in rows)
+                            {
+                                var rowClass = !row.IsActive
+                                    ? "row-inactive"
+                                    : row.QuantityOnHand <= 0
+                                        ? "row-stockout"
+                                        : row.QuantityOnHand <= row.MinimumStock
+                                            ? "row-low"
+                                            : string.Empty;
+                                var unitC = row.UnitCostCordoba ?? 0m;
+                                var unitD = row.UnitCostUsd ?? 0m;
+                                var totalC = unitC * row.QuantityOnHand;
+                                var stateCss = row.StockStatus.Equals("Agotado", StringComparison.OrdinalIgnoreCase)
+                                    ? "inv-state inv-state-out"
+                                    : row.StockStatus.Equals("Bajo stock", StringComparison.OrdinalIgnoreCase)
+                                        ? "inv-state inv-state-low"
+                                        : "inv-state inv-state-ok";
+
+                                <tr class="@rowClass">
+                                    <td>
+                                        <span class="fw-semibold">@(string.IsNullOrWhiteSpace(row.ItemCode) ? "-" : row.ItemCode)</span>
+                                        @if (!row.IsActive)
+                                        {
+                                            <span class="badge bg-secondary ms-1">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@row.PartName</div>
+                                        <small class="text-muted">@(string.IsNullOrWhiteSpace(row.ManufacturerPartNumber) ? "-" : row.ManufacturerPartNumber)</small>
+                                    </td>
+                                    <td>@row.Category</td>
+                                    <td>@row.Site</td>
+                                    <td>
+                                        <div class="fw-bold">@row.QuantityOnHand</div>
+                                        <small class="text-muted">Min: @row.MinimumStock</small>
+                                    </td>
+                                    <td>@row.QuantityIssued</td>
+                                    <td>@row.QuantityInTransit</td>
+                                    <td><span class="inv-price">@(unitC > 0m ? C(unitC) : "N/D")</span></td>
+                                    <td><span class="inv-price">@(unitD > 0m ? D(unitD) : "N/D")</span></td>
+                                    <td>
+                                        <div class="inv-price">@(totalC > 0m ? C(totalC) : "N/D")</div>
+                                        <div class="inv-price-muted">@(unitC > 0m ? "Stock x Unit C$" : "Sin precio C$")</div>
+                                    </td>
+                                    <td><span class="@stateCss">@row.StockStatus</span></td>
+                                    <td>@(string.IsNullOrWhiteSpace(row.Supplier) ? "-" : row.Supplier)</td>
+                                    <td class="text-center">
+                                        <div class="inv-action-group">
+                                            <a asp-action="Details" asp-route-id="@row.Id" class="inv-action-btn view" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            @if (canManage)
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@row.Id" class="inv-action-btn edit" title="Editar">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+
+                                                @if (row.IsActive)
+                                                {
+                                                    <form asp-action="Delete" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@row.Id" />
+                                                        <button type="submit" class="inv-action-btn off" title="Desactivar">
+                                                            <i class="bi bi-power"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

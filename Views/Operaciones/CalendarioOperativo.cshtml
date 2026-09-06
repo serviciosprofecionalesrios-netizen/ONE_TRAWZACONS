@@ -1,0 +1,541 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.CalendarioOperativoViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Calendario Operativo";
+    var dayHeaders = new[] { "LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM" };
+    var fechaCorte = Model.FechaUltimaData?.ToString("dd/MM/yyyy", CultureInfo.CurrentCulture) ?? "Sin fecha";
+    var toneladasPeriodoLabel = Model.HasDateRangeFilter ? "Toneladas del periodo" : "Toneladas del mes";
+}
+
+<style>
+    .ops-calendar-page {
+        --ok-bg: #e7f9ee;
+        --ok-text: #0f8f45;
+        --warn-bg: #fff6df;
+        --warn-text: #b77908;
+        --danger-bg: #ffe9e9;
+        --danger-text: #c81f1f;
+        --none-bg: #eef2f7;
+        --none-text: #64748b;
+    }
+
+    .ops-shell {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .ops-summary-card {
+        border: 1px solid #e7edf5;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .ops-summary-title {
+        color: #5f6f85;
+        font-size: 0.95rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .ops-summary-value {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #13213a;
+        line-height: 1;
+    }
+
+    .ops-filter-box {
+        border: 1px solid #e7edf5;
+        border-radius: 14px;
+        background: #f8fbff;
+        padding: 0.75rem;
+    }
+
+    .ops-toolbar {
+        border: 1px solid #e8ebef;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .ops-nav-btn {
+        width: 46px;
+        height: 46px;
+        border: 1px solid #d6dde8;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #10223f;
+        text-decoration: none;
+        background-color: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .ops-nav-btn:hover {
+        color: #ffffff;
+        background-color: #0f6e9c;
+        border-color: #0f6e9c;
+        transform: translateY(-1px);
+    }
+
+    .ops-month-title {
+        font-weight: 800;
+        color: #10223f;
+        margin: 0;
+    }
+
+    .ops-calendar-wrap {
+        overflow-x: auto;
+        border: 1px solid #e6ebf2;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .ops-calendar-grid {
+        min-width: 980px;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .ops-cell-head {
+        background-color: #f8fafc;
+        color: #5b6b82;
+        text-align: center;
+        font-weight: 700;
+        padding: 0.9rem 0.5rem;
+        border-bottom: 1px solid #e6ebf2;
+        border-right: 1px solid #edf2f7;
+        letter-spacing: 0.04em;
+    }
+
+    .ops-cell-head:last-child {
+        border-right: 0;
+    }
+
+    .ops-day {
+        min-height: 166px;
+        border-right: 1px solid #edf2f7;
+        border-bottom: 1px solid #edf2f7;
+        padding: 0.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.42rem;
+        background-color: #ffffff;
+    }
+
+    .ops-day:nth-child(7n) {
+        border-right: 0;
+    }
+
+    .ops-day--outside {
+        background-color: #fafbfc;
+        opacity: 0.72;
+    }
+
+    .ops-day--today {
+        background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+    }
+
+    .ops-day-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .ops-day-number {
+        font-weight: 700;
+        color: #1c2f4e;
+    }
+
+    .ops-day-ton {
+        border-radius: 999px;
+        background: #eef2f7;
+        color: #607188;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.1rem 0.45rem;
+    }
+
+    .ops-day-conflict {
+        border-radius: 999px;
+        background: #fee2e2;
+        color: #b91c1c;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.1rem 0.4rem;
+    }
+
+    .ops-day-main {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #10223f;
+    }
+
+    .ops-day-sub {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .ops-site-breakdown {
+        display: grid;
+        gap: 0.25rem;
+    }
+
+    .ops-site-row {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 0.2rem 0.35rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.74rem;
+        line-height: 1.2;
+    }
+
+    .ops-site-row__name {
+        color: #475569;
+        font-weight: 700;
+    }
+
+    .ops-site-row__value {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .ops-day-semaforo {
+        margin-top: auto;
+        border-radius: 10px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        width: fit-content;
+    }
+
+    .ops-day-semaforo--ok {
+        background: var(--ok-bg);
+        color: var(--ok-text);
+    }
+
+    .ops-day-semaforo--warn {
+        background: var(--warn-bg);
+        color: var(--warn-text);
+    }
+
+    .ops-day-semaforo--danger {
+        background: var(--danger-bg);
+        color: var(--danger-text);
+    }
+
+    .ops-day-semaforo--none {
+        background: var(--none-bg);
+        color: var(--none-text);
+    }
+
+    .ops-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.1rem;
+        color: #42536d;
+        font-weight: 500;
+    }
+
+    .ops-legend-dot {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.45rem;
+        vertical-align: middle;
+    }
+</style>
+
+<div class="ops-calendar-page">
+    <div class="ops-shell">
+        <h2 class="fw-bold mb-2">Calendario operativo</h2>
+        <p class="text-muted mb-3">Historico diario de toneladas descargadas desde tu archivo de seguimiento.</p>
+
+        @if (Model.IsFromUpload)
+        {
+            <div class="alert alert-success" role="alert">
+                Fuente: <strong>@Model.SourceFileName</strong>
+                <span class="ms-2">Corte de datos: <strong>@fechaCorte</strong></span>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning" role="alert">
+                Aun no hay carga de Excel en Seguimiento de toneladas. Carga el archivo para ver el historico diario.
+            </div>
+        }
+
+        <div class="ops-filter-box mb-3">
+            <form method="get" asp-action="CalendarioOperativo" asp-controller="Operaciones" class="row g-2 align-items-end">
+                <input type="hidden" name="year" value="@Model.Year" />
+                <input type="hidden" name="month" value="@Model.Month" />
+
+                <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                    <label class="form-label fw-semibold mb-1">Sitio</label>
+                    <select class="form-select form-select-sm" name="sitio">
+                        @foreach (var sitio in Model.SitiosDisponibles)
+                        {
+                            <option value="@sitio" selected="@(Model.SelectedSitio == sitio ? "selected" : null)">@sitio</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                    <label class="form-label fw-semibold mb-1">Turno</label>
+                    <select class="form-select form-select-sm" name="turno">
+                        @foreach (var turno in Model.TurnosDisponibles)
+                        {
+                            <option value="@turno" selected="@(Model.SelectedTurno == turno ? "selected" : null)">@turno</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                    <label class="form-label fw-semibold mb-1">Estado</label>
+                    <select class="form-select form-select-sm" name="estado">
+                        @foreach (var estado in Model.EstadosDisponibles)
+                        {
+                            <option value="@estado" selected="@(Model.SelectedEstado == estado ? "selected" : null)">@estado</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                    <label class="form-label fw-semibold mb-1">Desde</label>
+                    <input type="date"
+                           class="form-control form-control-sm"
+                           name="fechaDesde"
+                           value="@(Model.FechaDesdeFiltro?.ToString("yyyy-MM-dd") ?? string.Empty)"
+                           max="@(Model.FechaHastaFiltro?.ToString("yyyy-MM-dd") ?? string.Empty)" />
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                    <label class="form-label fw-semibold mb-1">Hasta</label>
+                    <input type="date"
+                           class="form-control form-control-sm"
+                           name="fechaHasta"
+                           value="@(Model.FechaHastaFiltro?.ToString("yyyy-MM-dd") ?? string.Empty)"
+                           min="@(Model.FechaDesdeFiltro?.ToString("yyyy-MM-dd") ?? string.Empty)" />
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-6 col-6">
+                    <label class="form-label fw-semibold mb-1">Equipo</label>
+                    <input type="text" class="form-control form-control-sm" name="equipo" value="@Model.SearchEquipo" placeholder="Buscar equipo" />
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-6 col-6">
+                    <label class="form-label fw-semibold mb-1">Conductor</label>
+                    <input type="text" class="form-control form-control-sm" name="conductor" value="@Model.SearchConductor" placeholder="Buscar conductor" />
+                </div>
+
+                <div class="col-xl-12 d-flex gap-2 align-items-center justify-content-end">
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="soloConflictos" value="true" id="soloConflictos" @(Model.SoloConflictos ? "checked" : null) />
+                        <label class="form-check-label fw-semibold" for="soloConflictos">Solo conflictos</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm mt-3">
+                        <i class="bi bi-funnel me-1"></i>Filtrar
+                    </button>
+                    <a class="btn btn-outline-secondary btn-sm mt-3"
+                       asp-action="CalendarioOperativo"
+                       asp-controller="Operaciones"
+                       asp-route-year="@Model.Year"
+                       asp-route-month="@Model.Month">
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Meta diaria</div>
+                    <div class="ops-summary-value">@Model.MetaDiaria.ToString("N0", CultureInfo.CurrentCulture)</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">@toneladasPeriodoLabel</div>
+                    <div class="ops-summary-value">@Model.ToneladasMes.ToString("N1", CultureInfo.CurrentCulture)</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Promedio diario</div>
+                    <div class="ops-summary-value">@Model.PromedioDiario.ToString("N1", CultureInfo.CurrentCulture)</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Dias con descarga</div>
+                    <div class="ops-summary-value">@Model.DiasConDescarga</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Dias meta cumplida</div>
+                    <div class="ops-summary-value">@Model.DiasMetaCumplida</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Equipos descargados</div>
+                    <div class="ops-summary-value">@Model.EquiposDescargadosMes</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Eventos filtrados</div>
+                    <div class="ops-summary-value">@Model.TotalEventosFiltrados</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Dias con conflictos</div>
+                    <div class="ops-summary-value">@Model.DiasConConflictos</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="ops-summary-card p-3">
+                    <div class="ops-summary-title">Conflictos detectados</div>
+                    <div class="ops-summary-value">@Model.TotalConflictos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ops-toolbar p-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    @if (!Model.HasDateRangeFilter)
+                    {
+                        <a class="ops-nav-btn"
+                           asp-controller="Operaciones"
+                           asp-action="CalendarioOperativo"
+                           asp-route-year="@Model.PreviousYear"
+                           asp-route-month="@Model.PreviousMonth"
+                           asp-route-sitio="@Model.SelectedSitio"
+                           asp-route-turno="@Model.SelectedTurno"
+                           asp-route-estado="@Model.SelectedEstado"
+                           asp-route-equipo="@Model.SearchEquipo"
+                           asp-route-conductor="@Model.SearchConductor"
+                           asp-route-soloConflictos="@Model.SoloConflictos"
+                           aria-label="Mes anterior">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <h3 class="ops-month-title">@Model.CurrentMonthLabel</h3>
+                        <a class="ops-nav-btn"
+                           asp-controller="Operaciones"
+                           asp-action="CalendarioOperativo"
+                           asp-route-year="@Model.NextYear"
+                           asp-route-month="@Model.NextMonth"
+                           asp-route-sitio="@Model.SelectedSitio"
+                           asp-route-turno="@Model.SelectedTurno"
+                           asp-route-estado="@Model.SelectedEstado"
+                           asp-route-equipo="@Model.SearchEquipo"
+                           asp-route-conductor="@Model.SearchConductor"
+                           asp-route-soloConflictos="@Model.SoloConflictos"
+                           aria-label="Mes siguiente">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-info">Rango activo</span>
+                        <h3 class="ops-month-title">@Model.CurrentMonthLabel</h3>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           asp-controller="Operaciones"
+                           asp-action="CalendarioOperativo"
+                           asp-route-year="@Model.Year"
+                           asp-route-month="@Model.Month"
+                           asp-route-sitio="@Model.SelectedSitio"
+                           asp-route-turno="@Model.SelectedTurno"
+                           asp-route-estado="@Model.SelectedEstado"
+                           asp-route-equipo="@Model.SearchEquipo"
+                           asp-route-conductor="@Model.SearchConductor"
+                           asp-route-soloConflictos="@Model.SoloConflictos">
+                            Ver por mes
+                        </a>
+                    }
+                </div>
+                <div class="ops-legend">
+                    <span><span class="ops-legend-dot" style="background:#22c55e;"></span>Meta cumplida</span>
+                    <span><span class="ops-legend-dot" style="background:#f59e0b;"></span>Cerca de meta</span>
+                    <span><span class="ops-legend-dot" style="background:#ef4444;"></span>Bajo meta</span>
+                    <span><span class="ops-legend-dot" style="background:#94a3b8;"></span>Sin descarga</span>
+                    <span><span class="ops-legend-dot" style="background:#dc2626;"></span>Conflicto detectado</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ops-calendar-wrap">
+            <div class="ops-calendar-grid">
+                @foreach (var day in dayHeaders)
+                {
+                    <div class="ops-cell-head">@day</div>
+                }
+
+                @foreach (var day in Model.Days)
+                {
+                    <div class="ops-day @(day.IsCurrentMonth ? string.Empty : "ops-day--outside") @(day.IsToday ? "ops-day--today" : string.Empty)">
+                        <div class="ops-day-top">
+                            <span class="ops-day-number">@day.Date.Day</span>
+                            @if (day.HasConflicto)
+                            {
+                                <span class="ops-day-conflict">Conflicto</span>
+                            }
+                            else if (day.ToneladasDescargadas > 0)
+                            {
+                                <span class="ops-day-ton">@day.ToneladasDescargadas.ToString("N1", CultureInfo.CurrentCulture)</span>
+                            }
+                        </div>
+
+                        @if (day.ToneladasDescargadas > 0)
+                        {
+                            <div class="ops-day-main">@day.ToneladasDescargadas.ToString("N1", CultureInfo.CurrentCulture) Tn</div>
+                            <div class="ops-site-breakdown">
+                                <div class="ops-site-row">
+                                    <span class="ops-site-row__name">TRITON</span>
+                                    <span class="ops-site-row__value">@day.ToneladasTriton.ToString("N1", CultureInfo.CurrentCulture) Tn</span>
+                                </div>
+                                <div class="ops-site-row">
+                                    <span class="ops-site-row__name">PAVON ASM</span>
+                                    <span class="ops-site-row__value">@day.ToneladasPavonAsm.ToString("N1", CultureInfo.CurrentCulture) Tn</span>
+                                </div>
+                                @if (day.ToneladasOtros > 0m)
+                                {
+                                    <div class="ops-site-row">
+                                        <span class="ops-site-row__name">OTROS</span>
+                                        <span class="ops-site-row__value">@day.ToneladasOtros.ToString("N1", CultureInfo.CurrentCulture) Tn</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="ops-day-sub">Sin descarga registrada</div>
+                        }
+
+                        <span class="ops-day-semaforo ops-day-semaforo--@day.SemaforoEstado">
+                            <i class="bi @day.SemaforoIcon"></i>
+                            @day.SemaforoLabel
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

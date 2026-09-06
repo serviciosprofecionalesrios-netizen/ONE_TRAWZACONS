@@ -1,0 +1,693 @@
+@{
+    ViewData["Title"] = "Croquis del camion";
+}
+
+<style>
+    .truck-sketch-page {
+        max-width: 1420px;
+        margin: 0 auto;
+        padding: 1.25rem 0 2.5rem;
+    }
+
+    .truck-sketch-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .truck-sketch-title {
+        margin: 0;
+        color: #102a43;
+        font-weight: 800;
+    }
+
+    .truck-sketch-subtitle {
+        margin: .25rem 0 0;
+        color: #52606d;
+    }
+
+    .inspection-card {
+        background: #ffffff;
+        border: 1px solid #d9e2ec;
+        border-radius: .5rem;
+        box-shadow: 0 14px 28px rgba(16, 42, 67, .08);
+    }
+
+    .inspection-meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .inspection-meta label {
+        color: #334e68;
+        font-size: .78rem;
+        font-weight: 700;
+        margin-bottom: .25rem;
+        text-transform: uppercase;
+    }
+
+    .inspection-meta .form-control {
+        min-height: 42px;
+    }
+
+    .inspection-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 390px;
+        gap: 1rem;
+    }
+
+    .truck-sketch-shell {
+        padding: 1rem;
+        overflow: auto;
+    }
+
+    .truck-map {
+        position: relative;
+        min-width: 680px;
+    }
+
+    .truck-sketch-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        user-select: none;
+    }
+
+    .truck-hotspot {
+        position: absolute;
+        width: 3rem;
+        height: 3rem;
+        transform: translate(-50%, -50%);
+        border: 3px solid #0b74de;
+        border-radius: 50%;
+        background: rgba(11, 116, 222, .22);
+        box-shadow: 0 0 0 6px rgba(11, 116, 222, .12);
+        color: #073b73;
+        font-weight: 800;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .truck-hotspot:hover,
+    .truck-hotspot:focus {
+        background: rgba(25, 135, 84, .24);
+        border-color: #198754;
+        outline: 0;
+    }
+
+    .truck-hotspot.is-active {
+        background: rgba(255, 193, 7, .38);
+        border-color: #b7791f;
+        box-shadow: 0 0 0 7px rgba(255, 193, 7, .2);
+    }
+
+    .truck-hotspot.has-bad {
+        background: rgba(220, 53, 69, .24);
+        border-color: #dc3545;
+        color: #842029;
+    }
+
+    .truck-hotspot.is-ok:not(.has-bad) {
+        background: rgba(25, 135, 84, .24);
+        border-color: #198754;
+        color: #0f5132;
+    }
+
+    .zone-picker {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: .5rem;
+        padding: .75rem;
+        margin-top: .75rem;
+        background: #f8fafc;
+        border: 1px solid #d9e2ec;
+        border-radius: .5rem;
+    }
+
+    .zone-picker button {
+        min-height: 38px;
+        border: 1px solid #cbd5e1;
+        border-radius: .45rem;
+        background: #fff;
+        color: #243b53;
+        font-size: .85rem;
+        font-weight: 800;
+    }
+
+    .zone-picker button.is-active {
+        background: #fff3cd;
+        border-color: #b7791f;
+        color: #664d03;
+    }
+
+    .inspection-panel {
+        padding: 1rem;
+        min-height: 640px;
+    }
+
+    .selected-zone-title {
+        color: #102a43;
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .selected-zone-note {
+        color: #627d98;
+        font-size: .9rem;
+        margin: .25rem 0 1rem;
+    }
+
+    .component-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 134px;
+        gap: .5rem;
+        align-items: start;
+        border-top: 1px solid #edf2f7;
+        padding: .75rem 0;
+    }
+
+    .component-name {
+        color: #243b53;
+        font-weight: 700;
+    }
+
+    .component-note {
+        grid-column: 1 / -1;
+    }
+
+    .status-toggle {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border: 1px solid #cbd5e1;
+        border-radius: .45rem;
+        overflow: hidden;
+    }
+
+    .status-toggle input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .status-toggle label {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid #cbd5e1;
+        color: #334e68;
+        cursor: pointer;
+        font-size: .82rem;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .status-toggle label:last-child {
+        border-right: 0;
+    }
+
+    .status-toggle input:checked + label[data-status="Bueno"] {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .status-toggle input:checked + label[data-status="Revisar"] {
+        background: #fff3cd;
+        color: #664d03;
+    }
+
+    .status-toggle input:checked + label[data-status="Malo"] {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .status-toggle input:checked + label[data-status="Debe cambiar"] {
+        background: #cff4fc;
+        color: #055160;
+    }
+
+    .inspection-summary {
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .summary-table {
+        margin-bottom: 0;
+    }
+
+    .summary-table th {
+        color: #334e68;
+        font-size: .78rem;
+        text-transform: uppercase;
+    }
+
+    @@media (max-width: 1100px) {
+        .inspection-workspace {
+            grid-template-columns: 1fr;
+        }
+
+        .inspection-panel {
+            min-height: auto;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .truck-sketch-header,
+        .inspection-meta {
+            grid-template-columns: 1fr;
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .inspection-meta {
+            display: grid;
+        }
+    }
+
+    @@media print {
+        .navbar,
+        .btn,
+        .truck-hotspot,
+        .truck-sketch-subtitle {
+            display: none !important;
+        }
+
+        .truck-sketch-page {
+            max-width: none;
+            padding: 0;
+        }
+
+        .inspection-workspace {
+            display: block;
+        }
+
+        .inspection-card {
+            box-shadow: none;
+            border-color: #333;
+        }
+
+        .inspection-panel {
+            min-height: auto;
+        }
+    }
+</style>
+
+<div class="truck-sketch-page">
+    @Html.AntiForgeryToken()
+    <div class="truck-sketch-header">
+        <div>
+            <h1 class="truck-sketch-title">Croquis del camion</h1>
+            <p class="truck-sketch-subtitle">Seleccione llantas y ejes para validar componentes por unidad.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-success" id="saveInspectionBtn">
+                <i class="bi bi-save"></i> Guardar
+            </button>
+            <button type="button" class="btn btn-outline-primary" id="printInspectionBtn">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <button type="button" class="btn btn-outline-danger" id="clearInspectionBtn">
+                <i class="bi bi-trash3"></i> Limpiar
+            </button>
+            <a class="btn btn-outline-secondary"
+               asp-controller="Tickets"
+               asp-action="Index"
+               asp-route-department="Mantenimiento">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="inspection-card inspection-meta">
+        <div>
+            <label for="equipmentCode">Codigo de equipo</label>
+            <input id="equipmentCode" class="form-control" autocomplete="off" placeholder="Ej. EQ-001" />
+        </div>
+        <div>
+            <label for="driverName">Nombre del conductor</label>
+            <input id="driverName" class="form-control" autocomplete="off" placeholder="Conductor" />
+        </div>
+        <div>
+            <label for="mechanicName">Nombre del mecanico</label>
+            <input id="mechanicName" class="form-control" autocomplete="off" placeholder="Mecanico" />
+        </div>
+        <div>
+            <label for="inspectionDate">Fecha de inspeccion</label>
+            <input id="inspectionDate" class="form-control" type="date" />
+        </div>
+    </div>
+
+    <div class="inspection-workspace">
+        <div class="inspection-card truck-sketch-shell">
+            <div class="truck-map" id="truckMap">
+                <img class="truck-sketch-image"
+                     src="@Url.Content("~/img/vehicle-inspection/croquis-camion-volquete-3d.png")"
+                     alt="Croquis del camion volquete para mantenimiento" />
+
+                <button type="button" class="truck-hotspot" style="left:16.7%;top:64.7%" data-zone="delantera-izq" title="EJE DELANTERO">1</button>
+                <button type="button" class="truck-hotspot" style="left:40.3%;top:64.1%" data-zone="eje-tractor-1" title="EJE DEL DIFERENCIAL DEL BLOQUEO">2</button>
+                <button type="button" class="truck-hotspot" style="left:44.8%;top:64.3%" data-zone="eje-tractor-2" title="EJE TRASERO">3</button>
+                <button type="button" class="truck-hotspot" style="left:72.4%;top:64.8%" data-zone="eje-gondola-1" title="Eje 1 (Delantero)">4</button>
+                <button type="button" class="truck-hotspot" style="left:78.0%;top:64.8%" data-zone="eje-gondola-2" title="Eje 2 (Central)">5</button>
+                <button type="button" class="truck-hotspot" style="left:83.5%;top:64.8%" data-zone="eje-gondola-3" title="Eje 3 (Trasero)">6</button>
+                <button type="button" class="truck-hotspot" style="left:13.2%;top:38.5%" data-zone="motor" title="Motor">M</button>
+                <button type="button" class="truck-hotspot" style="left:29.5%;top:42.5%" data-zone="cabina" title="Cabina">C</button>
+                <button type="button" class="truck-hotspot" style="left:51.5%;top:50.0%" data-zone="chasis" title="Chasis">CH</button>
+                <button type="button" class="truck-hotspot" style="left:63.5%;top:44.5%" data-zone="hidraulico" title="Hidráulico">H</button>
+                <button type="button" class="truck-hotspot" style="left:70.0%;top:33.5%" data-zone="tolva" title="Tolva">T</button>
+                <button type="button" class="truck-hotspot" style="left:92.0%;top:46.0%" data-zone="parte_trasera" title="Parte trasera">P</button>
+                <button type="button" class="truck-hotspot" style="left:54.0%;top:78.0%" data-zone="lado_derecho" title="Lado Derecho (Acompañante)">D</button>
+            </div>
+            <div class="zone-picker" id="zonePicker"></div>
+        </div>
+
+        <aside class="inspection-card inspection-panel">
+            <h2 class="selected-zone-title" id="selectedZoneTitle">Seleccione una zona</h2>
+            <p class="selected-zone-note" id="selectedZoneNote">Toque un punto del croquis o una zona de la lista para cargar sus componentes.</p>
+            <div id="componentList"></div>
+        </aside>
+    </div>
+
+    <div class="inspection-card inspection-summary">
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+            <h2 class="selected-zone-title">Resumen de inspeccion</h2>
+            <span class="badge text-bg-light" id="inspectionTotals">0 buenos, 0 revisar, 0 malos, 0 deben cambiar</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm summary-table">
+                <thead>
+                    <tr>
+                        <th>Zona</th>
+                        <th>Componente</th>
+                        <th>Estado</th>
+                        <th>Observacion</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryBody">
+                    <tr>
+                        <td colspan="4" class="text-muted">Sin registros todavia.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="alert d-none mt-3 mb-0" id="saveInspectionMessage"></div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const storageKey = "maintenanceTruckSketchInspection.v2";
+        const zones = [
+            { id: "delantera-izq", label: "EJE DELANTERO", note: "Chofer | 1 - 2.", components: ["Llanta Ext / Llanta Int", "Fricciones / bandas", "Retenes", "Eje", "Esparragos y tuercas", "Rin / aro", "Presion y estado de llanta", "Rodos / balineras", "Bujes y suspension", "Patentes / identificacion"] },
+            { id: "eje-tractor-1", label: "EJE DEL DIFERENCIAL DEL BLOQUEO", note: "3 - 4 | 5 - 6.", components: ["Llanta Ext / Llanta Int", "Fricciones / bandas", "Retenes", "Eje", "Esparragos y tuercas", "Rin / aro", "Presion y estado de llanta", "Rodos / balineras", "Bujes y suspension", "Patentes / identificacion"] },
+            { id: "eje-tractor-2", label: "EJE TRASERO", note: "7 - 8 | 9 - 10.", components: ["Llanta Ext / Llanta Int", "Fricciones / bandas", "Retenes", "Eje", "Esparragos y tuercas", "Rin / aro", "Presion y estado de llanta", "Rodos / balineras", "Bujes y suspension", "Patentes / identificacion"] },
+            { id: "eje-gondola-1", label: "Eje 1 (Delantero)", note: "Lado Izquierdo (Chofer) | Lado Derecho (Acompañante).", components: ["Llanta Ext / Llanta Int", "Fricciones / bandas", "Retenes", "Eje", "Esparragos y tuercas", "Rin / aro", "Presion y estado de llanta", "Rodos / balineras", "Bujes y suspension", "Patentes / identificacion"] },
+            { id: "eje-gondola-2", label: "Eje 2 (Central)", note: "Lado Izquierdo (Chofer) | Lado Derecho (Acompañante).", components: ["Llanta Ext / Llanta Int", "Fricciones / bandas", "Retenes", "Eje", "Esparragos y tuercas", "Rin / aro", "Presion y estado de llanta", "Rodos / balineras", "Bujes y suspension", "Patentes / identificacion"] },
+            { id: "eje-gondola-3", label: "Eje 3 (Trasero)", note: "Lado Izquierdo (Chofer) | Lado Derecho (Acompañante).", components: ["Llanta Ext / Llanta Int", "Fricciones / bandas", "Retenes", "Eje", "Esparragos y tuercas", "Rin / aro", "Presion y estado de llanta", "Rodos / balineras", "Bujes y suspension", "Patentes / identificacion"] },
+            { id: "cabina", label: "Cabina", note: "Cabina, seguridad y controles del operador.", components: ["Puertas", "Retrovisores", "Parabrisas", "Luces de cabina", "Asientos", "Tablero", "Cinturon de seguridad"] },
+            { id: "motor", label: "Motor", note: "Sistema de motor y enfriamiento.", components: ["Aceite de motor", "Filtro de aceite", "Filtro de aire", "Radiador", "Mangueras", "Correas", "Bateria"] },
+            { id: "lado_izquierdo", label: "Lado Izquierdo (Chofer)", note: "El lado izquierdo corresponde a la orientación del chofer.", components: ["Luces laterales", "Escalones", "Tanque de combustible", "Guardafangos", "Suspension", "Lineas de aire"] },
+            { id: "lado_derecho", label: "Lado Derecho (Acompañante)", note: "Lado derecho según orientación del acompañante.", components: ["Luces laterales", "Escalones", "Tanque de combustible", "Guardafangos", "Suspension", "Lineas electricas"] },
+            { id: "chasis", label: "Chasis", note: "Estructura, soportes y transmision.", components: ["Quinta rueda", "Bastidor", "Soportes", "Crucetas", "Cardan", "Conexiones de remolque"] },
+            { id: "hidraulico", label: "Hidráulico", note: "Sistema hidráulico de levante y control.", components: ["Cilindro hidraulico", "Bomba hidraulica", "Mangueras hidraulicas", "Valvulas", "Deposito de aceite", "Pines y bujes"] },
+            { id: "tolva", label: "Tolva", note: "Caja, compuerta y soldaduras.", components: ["Piso de tolva", "Paredes laterales", "Compuerta", "Bisagras", "Seguro de compuerta", "Soldaduras"] },
+            { id: "parte_trasera", label: "Parte trasera", note: "Luces, bumper y cierre trasero.", components: ["Luces traseras", "Bumper", "Guardafangos traseros", "Reflectivos", "Placa", "Compuerta trasera"] }
+        ];
+        const statuses = ["Bueno", "Revisar", "Malo", "Debe cambiar"];
+        const defaultState = {
+            meta: {
+                equipmentCode: "",
+                driverName: "",
+                mechanicName: "",
+                inspectionDate: new Date().toISOString().slice(0, 10)
+            },
+            inspections: {}
+        };
+
+        let state = loadState();
+        let selectedZoneId = zones[0].id;
+
+        const componentList = document.getElementById("componentList");
+        const selectedZoneTitle = document.getElementById("selectedZoneTitle");
+        const selectedZoneNote = document.getElementById("selectedZoneNote");
+        const summaryBody = document.getElementById("summaryBody");
+        const inspectionTotals = document.getElementById("inspectionTotals");
+        const zonePicker = document.getElementById("zonePicker");
+        const saveInspectionBtn = document.getElementById("saveInspectionBtn");
+        const saveInspectionMessage = document.getElementById("saveInspectionMessage");
+        const metaInputs = ["equipmentCode", "driverName", "mechanicName", "inspectionDate"]
+            .map(id => document.getElementById(id));
+
+        function loadState() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey));
+                return {
+                    meta: { ...defaultState.meta, ...(saved?.meta || {}) },
+                    inspections: saved?.inspections || {}
+                };
+            } catch {
+                return structuredClone(defaultState);
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(storageKey, JSON.stringify(state));
+        }
+
+        function ensureZone(zoneId) {
+            const zone = zones.find(x => x.id === zoneId);
+            state.inspections[zoneId] ??= {};
+            (zone?.components || []).forEach(component => {
+                state.inspections[zoneId][component] ??= { status: "", note: "" };
+            });
+            return state.inspections[zoneId];
+        }
+
+        function renderZone(zoneId) {
+            selectedZoneId = zoneId;
+            const zone = zones.find(x => x.id === zoneId);
+            const zoneState = ensureZone(zoneId);
+
+            selectedZoneTitle.textContent = zone.label;
+            selectedZoneNote.textContent = zone.note;
+            componentList.innerHTML = "";
+
+            zone.components.forEach((component, index) => {
+                const row = document.createElement("div");
+                row.className = "component-row";
+                row.innerHTML = `
+                    <div class="component-name">${index + 1}. ${component}</div>
+                    <div class="status-toggle" role="radiogroup" aria-label="${component}">
+                        ${statuses.map(status => {
+                            const id = `${zoneId}-${index}-${status}`;
+                            const checked = zoneState[component].status === status ? "checked" : "";
+                            return `<input type="radio" id="${id}" name="${zoneId}-${index}" value="${status}" ${checked}>
+                                    <label for="${id}" data-status="${status}" title="${status}">${status === "Debe cambiar" ? "DC" : status[0]}</label>`;
+                        }).join("")}
+                    </div>
+                    <textarea class="form-control form-control-sm component-note" rows="2" placeholder="Observaciones">${zoneState[component].note || ""}</textarea>
+                `;
+
+                row.querySelectorAll("input[type='radio']").forEach(input => {
+                    input.addEventListener("change", () => {
+                        zoneState[component].status = input.value;
+                        saveState();
+                        renderSummary();
+                        updateHotspots();
+                    });
+                });
+
+                row.querySelector("textarea").addEventListener("input", event => {
+                    zoneState[component].note = event.target.value;
+                    saveState();
+                    renderSummary();
+                });
+
+                componentList.appendChild(row);
+            });
+
+            document.querySelectorAll(".truck-hotspot").forEach(button => {
+                button.classList.toggle("is-active", button.dataset.zone === zoneId);
+            });
+
+            document.querySelectorAll("#zonePicker button").forEach(button => {
+                button.classList.toggle("is-active", button.dataset.zone === zoneId);
+            });
+        }
+
+        function renderSummary() {
+            const rows = [];
+            const totals = { Bueno: 0, Revisar: 0, Malo: 0, "Debe cambiar": 0 };
+
+            zones.forEach(zone => {
+                const zoneState = state.inspections[zone.id] || {};
+                zone.components.forEach(component => {
+                    const item = zoneState[component];
+                    if (!item?.status && !item?.note) return;
+                    if (item.status) totals[item.status] += 1;
+                    rows.push({ zone: zone.label, component, status: item.status || "Pendiente", note: item.note || "" });
+                });
+            });
+
+            inspectionTotals.textContent = `${totals.Bueno} buenos, ${totals.Revisar} revisar, ${totals.Malo} malos, ${totals["Debe cambiar"]} deben cambiar`;
+
+            if (!rows.length) {
+                summaryBody.innerHTML = `<tr><td colspan="4" class="text-muted">Sin registros todavia.</td></tr>`;
+                return;
+            }
+
+            summaryBody.innerHTML = rows.map(row => `
+                <tr>
+                    <td>${row.zone}</td>
+                    <td>${row.component}</td>
+                    <td><span class="badge ${badgeClass(row.status)}">${row.status}</span></td>
+                    <td>${escapeHtml(row.note)}</td>
+                </tr>
+            `).join("");
+        }
+
+        function collectRows() {
+            const rows = [];
+            zones.forEach(zone => {
+                const zoneState = state.inspections[zone.id] || {};
+                zone.components.forEach(component => {
+                    const item = zoneState[component];
+                    if (!item?.status && !item?.note) return;
+                    rows.push({
+                        zone: zone.label,
+                        component,
+                        status: item.status || "Pendiente",
+                        note: item.note || ""
+                    });
+                });
+            });
+            return rows;
+        }
+
+        function showSaveMessage(kind, text) {
+            if (!saveInspectionMessage) return;
+            saveInspectionMessage.className = `alert alert-${kind} mt-3 mb-0`;
+            saveInspectionMessage.textContent = text;
+        }
+
+        async function saveInspection() {
+            const equipmentCode = state.meta.equipmentCode?.trim();
+            if (!equipmentCode) {
+                showSaveMessage("warning", "Indica el codigo del camion o equipo antes de guardar.");
+                document.getElementById("equipmentCode")?.focus();
+                return;
+            }
+
+            const rows = collectRows();
+            if (rows.length === 0) {
+                showSaveMessage("warning", "Marca al menos un componente antes de guardar la inspeccion.");
+                return;
+            }
+
+            const token = document.querySelector("input[name='__RequestVerificationToken']")?.value || "";
+            saveInspectionBtn.disabled = true;
+            showSaveMessage("info", "Guardando inspeccion...");
+
+            try {
+                const response = await fetch("@Url.Action("SaveCroquisCamion", "MaintenanceReports")", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": token
+                    },
+                    body: JSON.stringify({
+                        equipmentCode,
+                        driverName: state.meta.driverName || "",
+                        mechanicName: state.meta.mechanicName || "",
+                        inspectionDate: state.meta.inspectionDate || "",
+                        rows
+                    })
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    showSaveMessage("danger", payload.message || "No se pudo guardar la inspeccion.");
+                    return;
+                }
+
+                showSaveMessage("success", payload.message || "Inspeccion guardada.");
+            } catch {
+                showSaveMessage("danger", "No se pudo guardar la inspeccion. Revisa la conexion e intenta de nuevo.");
+            } finally {
+                saveInspectionBtn.disabled = false;
+            }
+        }
+
+        function badgeClass(status) {
+            if (status === "Bueno") return "text-bg-success";
+            if (status === "Malo") return "text-bg-danger";
+            if (status === "Revisar") return "text-bg-warning";
+            if (status === "Debe cambiar") return "text-bg-info";
+            return "text-bg-secondary";
+        }
+
+        function updateHotspots() {
+            document.querySelectorAll(".truck-hotspot").forEach(button => {
+                const zoneState = state.inspections[button.dataset.zone] || {};
+                const statuses = Object.values(zoneState).map(x => x.status).filter(Boolean);
+                button.classList.toggle("has-bad", statuses.includes("Malo") || statuses.includes("Debe cambiar"));
+                button.classList.toggle("is-ok", statuses.length > 0 && statuses.every(x => x === "Bueno"));
+            });
+        }
+
+        function renderZonePicker() {
+            zonePicker.innerHTML = zones.map(zone => `<button type="button" data-zone="${zone.id}">${zone.label}</button>`).join("");
+            zonePicker.querySelectorAll("button").forEach(button => {
+                button.addEventListener("click", () => renderZone(button.dataset.zone));
+            });
+        }
+
+        function escapeHtml(value) {
+            return value.replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "\"": "&quot;",
+                "'": "&#39;"
+            }[char]));
+        }
+
+        metaInputs.forEach(input => {
+            input.value = state.meta[input.id] || "";
+            input.addEventListener("input", () => {
+                state.meta[input.id] = input.value;
+                saveState();
+            });
+        });
+
+        document.querySelectorAll(".truck-hotspot").forEach(button => {
+            button.addEventListener("click", () => renderZone(button.dataset.zone));
+        });
+
+        saveInspectionBtn.addEventListener("click", saveInspection);
+        document.getElementById("printInspectionBtn").addEventListener("click", () => window.print());
+        document.getElementById("clearInspectionBtn").addEventListener("click", () => {
+            if (!confirm("Desea limpiar la inspeccion actual?")) return;
+            state = structuredClone(defaultState);
+            metaInputs.forEach(input => input.value = state.meta[input.id] || "");
+            saveState();
+            renderZone(selectedZoneId);
+            renderSummary();
+            updateHotspots();
+        });
+
+        renderZonePicker();
+        renderZone(selectedZoneId);
+        renderSummary();
+        updateHotspots();
+    })();
+</script>

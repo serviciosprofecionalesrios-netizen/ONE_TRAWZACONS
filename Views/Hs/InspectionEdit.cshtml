@@ -1,0 +1,32 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsInspectionEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Nueva inspeccion H&S";
+    var sites = new SelectList(ViewBag.SiteOptions as string[] ?? Array.Empty<string>(), Model.Site);
+}
+
+<div class="container mt-4" style="max-width:920px;">
+    <h3>@ViewData["Title"]</h3>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="InspectionEdit" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-4"><label asp-for="InspectionDate" class="form-label fw-semibold"></label><input asp-for="InspectionDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Site" class="form-label fw-semibold"></label><select asp-for="Site" class="form-select" asp-items="sites"><option value="">Seleccionar</option></select></div>
+                <div class="col-md-4"><label asp-for="Area" class="form-label fw-semibold"></label><input asp-for="Area" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Inspector" class="form-label fw-semibold"></label><input asp-for="Inspector" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Category" class="form-label fw-semibold"></label><input asp-for="Category" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Status" class="form-label fw-semibold"></label><select asp-for="Status" class="form-select"><option>Completada</option><option>En revision</option><option>Requiere accion</option></select></div>
+                <div class="col-md-4"><label asp-for="ScorePercent" class="form-label fw-semibold"></label><input asp-for="ScorePercent" type="number" step="0.01" min="0" max="100" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="FindingsCount" class="form-label fw-semibold"></label><input asp-for="FindingsCount" type="number" min="0" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="CriticalFindingsCount" class="form-label fw-semibold"></label><input asp-for="CriticalFindingsCount" type="number" min="0" class="form-control" /></div>
+                <div class="col-12"><label asp-for="Notes" class="form-label fw-semibold"></label><textarea asp-for="Notes" class="form-control" rows="4"></textarea></div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Inspections" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button></div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

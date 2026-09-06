@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Eliminar";
+    var returnDepartment = ViewBag.ReturnDepartment as string;
 }
 
 <div class="container mt-4">
@@ -21,8 +22,9 @@
             <form asp-action="Delete" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
+                <input type="hidden" name="department" value="@returnDepartment" />
                 <button type="submit" class="btn btn-danger">Eliminar</button>
-                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                <a asp-action="Index" asp-route-department="@returnDepartment" class="btn btn-secondary">Cancelar</a>
             </form>
         </div>
     </div>

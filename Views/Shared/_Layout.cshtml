@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] - Grupo Transan Service Desk</title>
+    <title>@ViewData["Title"] - ONE-TRAWZACONS</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -12,6 +12,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --brand-blue-900: #0b2f75;
+            --brand-blue-800: #11439a;
+            --brand-blue-700: #1b55b8;
+            --brand-contrast: #f2b84b;
+            --brand-contrast-soft: #ffe7b5;
+            --brand-cyan: #5fd0e5;
+            --brand-menu-shadow: rgba(7, 22, 61, 0.45);
+            --menu-chip-bg: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            --menu-chip-border: rgba(255,255,255,0.24);
+            --menu-chip-shadow: 0 8px 14px rgba(4, 15, 43, 0.25);
+        }
+
         body {
             background-color: #f4f6f9;
             font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -20,14 +33,14 @@
         
 
         .navbar {
-            background: linear-gradient(90deg, #c40000, #8b0000);
-            border-bottom: 4px solid #000000;
+            background: linear-gradient(100deg, var(--brand-blue-900), var(--brand-blue-700));
+            border-bottom: 3px solid var(--brand-contrast);
         }
 
         .navbar .container-fluid {
             display: flex;
             align-items: center;
-            gap: 0.85rem;
+            gap: 0.65rem;
             flex-wrap: nowrap;
         }
 
@@ -37,7 +50,7 @@
         .navbar-brand {
             display: inline-flex;
             align-items: center;
-            gap: 0.82rem;
+            gap: 0.68rem;
             font-weight: 600;
             color: #ffffff !important;
             letter-spacing: 0.45px;
@@ -47,18 +60,18 @@
 
         .brand-logo-shell {
             position: relative;
-            width: 76px;
-            height: 76px;
-            border-radius: 22px;
+            width: 210px;
+            height: 62px;
+            border-radius: 14px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             background: #ffffff;
-            border: 2px solid rgba(255,255,255,0.9);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.28), inset 0 0 0 2px rgba(0,0,0,0.06);
+            border: 1px solid rgba(255,255,255,0.82);
+            box-shadow: 0 10px 18px rgba(0,0,0,0.22), inset 0 0 0 1px rgba(0,0,0,0.05);
             overflow: hidden;
             transition: transform 0.25s ease, box-shadow 0.25s ease;
-            padding: 4px;
+            padding: 5px 8px;
         }
 
         .brand-logo-shell::after {
@@ -75,17 +88,17 @@
         .brand-logo {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            border-radius: 17px;
+            object-fit: contain;
+            border-radius: 10px;
             transition: transform 0.26s ease;
             filter: contrast(1.03) saturate(1.02);
         }
 
         .brand-title {
             font-family: 'Playfair Display', Georgia, serif;
-            font-size: 1.55rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            line-height: 1;
+            line-height: 1.05;
             color: #fff;
             letter-spacing: 0.015em;
             text-shadow: 0 2px 10px rgba(0,0,0,0.26);
@@ -118,86 +131,415 @@
         }
         .main-menu {
             display: flex;
-            align-items: stretch;
-            gap: 0.2rem;
+            align-items: center;
+            gap: 0.48rem;
             margin-right: auto;
             min-width: 0;
             flex-wrap: nowrap;
         }
 
         .main-menu .nav-item {
-            display: flex;
+            position: relative;
             min-width: 0;
         }
 
         .menu-link {
             position: relative;
-            min-width: 92px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            display: inline-flex;
             align-items: center;
-            text-align: center;
-            gap: 0.2rem;
-            line-height: 1.1;
-            padding: 7px 8px;
-            border-radius: 10px;
+            gap: 0.38rem;
+            padding: 0.45rem 0.86rem;
+            border: 1px solid var(--menu-chip-border);
+            border-radius: 999px;
+            background: var(--menu-chip-bg);
+            color: #ffffff !important;
+            font-weight: 700;
+            line-height: 1.15;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: var(--menu-chip-shadow), inset 0 1px 0 rgba(255,255,255,0.22);
+            transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            transition: transform 0.22s ease, background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
-            flex: 0 0 auto;
         }
 
         .menu-link::before {
             content: "";
             position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0) 90%);
-            transform: translateX(-150%);
-            transition: transform 0.45s ease;
-            pointer-events: none;
+            inset: 2px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0));
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
         .menu-link .menu-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            transition: transform 0.22s ease, filter 0.22s ease;
+            display: none;
         }
 
         .menu-link .menu-text {
             font-weight: 700;
+            font-size: 0.98rem;
             letter-spacing: 0.01em;
-            font-size: 0.9rem;
-            white-space: nowrap;
         }
 
-        .menu-link:hover {
-            background-color: rgba(0, 0, 0, 0.26);
-            border-color: rgba(255, 255, 255, 0.22);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+        .menu-link .menu-plus {
+            color: #b6f4ff;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            border: 1px solid rgba(182, 244, 255, 0.5);
+            background: rgba(95, 208, 229, 0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.92rem;
+            line-height: 1;
+            margin-left: 0.08rem;
+            transform: translateY(-1px);
+            transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
 
-        .menu-link:hover::before {
-            transform: translateX(150%);
+        .menu-link .menu-plus-toggle {
+            cursor: pointer;
+            pointer-events: auto;
         }
 
-        .menu-link:hover .menu-icon {
-            transform: translateY(-2px) scale(1.12);
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+        .menu-link:hover,
+        .menu-link:focus {
+            color: #ffffff !important;
+            border-color: rgba(95, 208, 229, 0.62);
+            background: linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(95,208,229,0.12) 100%);
+            box-shadow: 0 12px 20px rgba(4, 15, 43, 0.32), inset 0 1px 0 rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        .menu-link:hover::before,
+        .menu-link:focus::before,
+        .menu-link.active::before {
+            opacity: 1;
         }
 
         .menu-link.active {
-            background: rgba(0, 0, 0, 0.35);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+            color: #ffffff !important;
+            font-weight: 800;
+            border-color: rgba(255, 231, 181, 0.75);
+            background: linear-gradient(140deg, rgba(242,184,75,0.3) 0%, rgba(255,255,255,0.2) 100%);
+            box-shadow: 0 12px 24px rgba(4, 15, 43, 0.35), inset 0 1px 0 rgba(255,255,255,0.38);
         }
 
-        .menu-link.active .menu-icon {
-            animation: menuPulse 1.8s ease-in-out infinite;
+        .menu-link:hover .menu-plus,
+        .menu-link:focus .menu-plus {
+            transform: translateY(-1px) scale(1.05);
+            border-color: rgba(255, 231, 181, 0.85);
+            background: rgba(242, 184, 75, 0.24);
+            color: #fff3cf;
+        }
+
+        .menu-link.active .menu-plus {
+            border-color: rgba(255, 231, 181, 0.9);
+            background: rgba(255, 231, 181, 0.3);
+            color: #fff7de;
+        }
+
+        .area-dropdown > .dropdown-toggle::after {
+            display: none;
+        }
+
+        .area-dropdown {
+            position: relative;
+        }
+
+        .area-dropdown::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            height: 18px;
+            display: block;
+            pointer-events: auto;
+        }
+
+        .area-menu {
+            min-width: 280px;
+            border: 1px solid rgba(189, 223, 255, 0.35);
+            border-radius: 14px;
+            padding: 0.8rem 0;
+            margin-top: 0.32rem !important;
+            background: linear-gradient(180deg, #0f3c93 0%, #0a2c67 100%);
+            box-shadow: 0 20px 32px var(--brand-menu-shadow);
+            z-index: 1300;
+        }
+
+        .area-menu .dropdown-item {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1.04rem;
+            padding: 0.62rem 1.15rem;
+            white-space: normal;
+            transition: background-color 0.18s ease, padding-left 0.18s ease;
+        }
+
+        .area-menu .dropdown-item:hover,
+        .area-menu .dropdown-item:focus {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            padding-left: 1.35rem;
+        }
+
+        .area-menu .dropdown-divider {
+            border-color: rgba(255, 255, 255, 0.22);
+            margin: 0.48rem 1.1rem;
+        }
+
+        .operations-menu {
+            min-width: 360px;
+            padding-top: 0.55rem;
+            padding-bottom: 0.7rem;
+            max-height: min(78vh, 700px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.35) rgba(0, 0, 0, 0.15);
+        }
+
+        .operations-menu.maintenance-menu {
+            min-width: 390px;
+            max-height: min(78vh, 700px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.35) rgba(0, 0, 0, 0.15);
+        }
+
+        .operations-menu .menu-group-label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--brand-contrast);
+            opacity: 0.95;
+            padding: 0.35rem 1.15rem 0.22rem;
+        }
+
+        .operations-menu .operations-search {
+            padding: 0.2rem 1rem 0.55rem;
+        }
+
+        .operations-menu .operations-search .input-group-text {
+            border-radius: 12px 0 0 12px;
+            border: 1px solid rgba(255,255,255,0.32);
+            border-right: none;
+            background: rgba(255,255,255,0.14);
+            color: #ffffff;
+        }
+
+        .operations-menu .operations-search .form-control {
+            border-radius: 0 12px 12px 0;
+            border: 1px solid rgba(255,255,255,0.32);
+            border-left: none;
+            background: rgba(255,255,255,0.14);
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.89rem;
+        }
+
+        .operations-menu .operations-search .form-control::placeholder {
+            color: rgba(255,255,255,0.78);
+        }
+
+        .operations-menu .operations-search .form-control:focus {
+            box-shadow: 0 0 0 0.15rem rgba(255,255,255,0.18);
+        }
+
+        .operations-menu .dropdown-item.op-menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border-left: 3px solid transparent;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .operations-menu .dropdown-item.op-menu-item:hover,
+        .operations-menu .dropdown-item.op-menu-item:focus {
+            padding-left: 1rem;
+            border-left-color: var(--brand-contrast);
+        }
+
+        .operations-menu .dropdown-item.op-menu-item.is-active {
+            background: linear-gradient(90deg, rgba(255,255,255,0.23) 0%, rgba(255,255,255,0.14) 100%);
+            border-left-color: var(--brand-contrast-soft);
+            color: #fff9e8;
+            box-shadow: inset 0 0 0 1px rgba(255, 241, 197, 0.22);
+        }
+
+        .operations-menu .op-item-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.52rem;
+            min-width: 0;
+        }
+
+        .operations-menu .op-item-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.36rem;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .operations-menu .op-item-main i {
+            font-size: 1rem;
+            color: var(--brand-cyan);
+            opacity: 0.95;
+        }
+
+        .operations-menu .op-item-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            border-radius: 999px;
+            padding: 0.18rem 0.48rem;
+            border: 1px solid rgba(255,255,255,0.32);
+            background: rgba(255,255,255,0.1);
+            color: var(--brand-contrast-soft);
+            white-space: nowrap;
+        }
+
+        .operations-menu .op-item-badge.badge-alert {
+            background: rgba(255, 193, 7, 0.24);
+            border-color: rgba(255, 225, 130, 0.48);
+            color: #ffe8a6;
+        }
+
+        .operations-menu .op-item-badge.badge-danger {
+            background: rgba(248, 113, 113, 0.24);
+            border-color: rgba(252, 165, 165, 0.5);
+            color: #ffd0d0;
+        }
+
+        .operations-menu .op-item-badge.badge-success {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: rgba(134, 239, 172, 0.45);
+            color: #d1fae5;
+        }
+
+        .operations-menu .operations-no-results {
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.88rem;
+            padding: 0.45rem 1rem 0.2rem;
+        }
+
+        #mantenimientoAreaMenu .menu-group-label.mnt-label-quick {
+            color: #fef08a;
+        }
+
+        #mantenimientoAreaMenu .menu-group-label.mnt-label-monitor {
+            color: #86efac;
+        }
+
+        #mantenimientoAreaMenu .menu-group-label.mnt-label-manage {
+            color: #6ee7f9;
+        }
+
+        #mantenimientoAreaMenu .menu-group-label.mnt-label-analysis {
+            color: #fdba74;
+        }
+
+        #mantenimientoAreaMenu .js-mnt-item[data-mnt-group="accesos"] .op-item-main i {
+            color: #fef08a;
+        }
+
+        #mantenimientoAreaMenu .js-mnt-item[data-mnt-group="monitoreo"] .op-item-main i {
+            color: #86efac;
+        }
+
+        #mantenimientoAreaMenu .js-mnt-item[data-mnt-group="gestion"] .op-item-main i {
+            color: #6ee7f9;
+        }
+
+        #mantenimientoAreaMenu .js-mnt-item[data-mnt-group="analisis"] .op-item-main i {
+            color: #fdba74;
+        }
+
+        #mantenimientoAreaMenu .mnt-submenu-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #mantenimientoAreaMenu .mnt-submenu-toggle .submenu-caret {
+            font-size: 0.88rem;
+            transition: transform 0.2s ease;
+            opacity: 0.92;
+        }
+
+        #mantenimientoAreaMenu .mnt-submenu-toggle.is-open .submenu-caret {
+            transform: rotate(180deg);
+        }
+
+        #mantenimientoAreaMenu [data-mnt-subitem] .op-menu-item {
+            padding-left: 2.1rem;
+        }
+
+        #mantenimientoAreaMenu .mnt-quick-tip {
+            font-size: 0.76rem;
+            color: rgba(255, 244, 220, 0.82);
+            padding: 0 1rem 0.45rem;
+        }
+
+        #mantenimientoAreaMenu .mnt-favorites-host {
+            padding: 0.1rem 1rem 0.4rem;
+        }
+
+        #mantenimientoAreaMenu .mnt-favorites-empty {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.68);
+            border: 1px dashed rgba(255,255,255,0.25);
+            border-radius: 10px;
+            padding: 0.38rem 0.55rem;
+        }
+
+        #mantenimientoAreaMenu .mnt-favorites-list {
+            display: grid;
+            gap: 0.34rem;
+        }
+
+        #mantenimientoAreaMenu .mnt-favorite-link {
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.09);
+            padding: 0.45rem 0.72rem;
+        }
+
+        #mantenimientoAreaMenu .mnt-fav-toggle {
+            border: 1px solid rgba(255,255,255,0.35);
+            background: rgba(0,0,0,0.2);
+            color: rgba(255,255,255,0.78);
+            border-radius: 999px;
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+
+        #mantenimientoAreaMenu .mnt-fav-toggle:hover {
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.58);
+        }
+
+        #mantenimientoAreaMenu .mnt-fav-toggle.mnt-fav-on {
+            color: #facc15;
+            border-color: rgba(250, 204, 21, 0.72);
+            background: rgba(250, 204, 21, 0.2);
         }
 
         @@keyframes menuPulse {
@@ -299,7 +641,7 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #ffffff;
-            background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(0,0,0,0.26));
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(11,47,117,0.42));
             border-radius: 11px;
             font-weight: 700;
             letter-spacing: 0.01em;
@@ -330,7 +672,7 @@
         }
 
         .logout-btn:hover {
-            background-color: rgba(0,0,0,0.38);
+            background-color: rgba(11,47,117,0.52);
             color: #ffffff;
             border-color: rgba(255,255,255,0.5);
             box-shadow: 0 10px 20px rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.28);
@@ -637,18 +979,30 @@
 
             .main-menu {
                 flex: 1 1 auto;
-                overflow-x: auto;
-                padding-bottom: 2px;
-                scrollbar-width: thin;
+                overflow: visible;
+                flex-wrap: wrap;
+                row-gap: 0.45rem;
+                padding-bottom: 0;
             }
 
-            .main-menu::-webkit-scrollbar {
-                height: 6px;
+            .area-dropdown .dropdown-menu {
+                display: block;
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+                transform: translateY(8px);
+                transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.24s;
             }
 
-            .main-menu::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.26);
-                border-radius: 999px;
+            .area-dropdown:hover .dropdown-menu,
+            .area-dropdown.is-hover-open .dropdown-menu,
+            .area-dropdown:focus-within .dropdown-menu,
+            .area-dropdown .dropdown-menu.show {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+                transform: translateY(0);
+                transition-delay: 0s;
             }
 
             .main-menu .nav-item,
@@ -660,8 +1014,8 @@
 
         @@media (max-width: 1480px) {
             .menu-link {
-                min-width: 100px;
-                padding: 7px 9px;
+                min-width: 0;
+                padding: 0.4rem 0.72rem;
             }
 
             .menu-link .menu-text {
@@ -669,12 +1023,12 @@
             }
 
             .brand-title {
-                font-size: 1.55rem;
+                font-size: 1.15rem;
             }
 
             .brand-logo-shell {
-                width: 70px;
-                height: 70px;
+                width: 185px;
+                height: 56px;
             }
 
             .user-chip {
@@ -691,8 +1045,8 @@
 
         @@media (max-width: 1260px) {
             .menu-link {
-                min-width: 94px;
-                padding: 7px 8px;
+                min-width: 0;
+                padding: 0.38rem 0.62rem;
             }
 
             .menu-link .menu-text {
@@ -700,12 +1054,12 @@
             }
 
             .brand-title {
-                font-size: 1.4rem;
+                display: none;
             }
 
             .brand-logo-shell {
-                width: 64px;
-                height: 64px;
+                width: 160px;
+                height: 50px;
             }
 
             .user-chip {
@@ -725,13 +1079,13 @@
             }
 
             .brand-logo-shell {
-                width: 60px;
-                height: 60px;
-                border-radius: 16px;
+                width: 148px;
+                height: 46px;
+                border-radius: 12px;
             }
 
             .brand-title {
-                font-size: 1.45rem;
+                display: none;
             }
 
             .main-menu {
@@ -748,17 +1102,31 @@
             }
 
             .menu-link {
-                min-width: 0;
-                flex-direction: row;
+                width: 100%;
                 justify-content: flex-start;
-                text-align: left;
-                gap: 0.6rem;
-                padding: 10px 12px;
+                padding: 0.52rem 0.75rem;
+                gap: 0.55rem;
+                border-radius: 12px;
             }
 
-            .menu-link .menu-icon {
-                width: 18px;
-                font-size: 1rem;
+            .menu-link .menu-plus {
+                margin-left: auto;
+            }
+
+            .area-menu {
+                width: 100%;
+                min-width: 0;
+                margin-top: 0.3rem !important;
+                padding: 0.45rem 0;
+            }
+
+            .operations-menu {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .operations-menu.maintenance-menu {
+                max-height: 70vh;
             }
 
             .account-strip {
@@ -803,6 +1171,9 @@
     </style>
 </head>
 @{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+
     var canSeeUsersMenu =
         User.Identity?.IsAuthenticated == true && (
             User.IsInRole("Administrator") ||
@@ -815,6 +1186,244 @@
             User.IsInRole("Administrator") ||
             User.IsInRole("Technician") ||
             User.IsInRole("GerenciaGeneral"));
+
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isFinanceRequester = isAuthenticated;
+    var isFinanceApprover =
+        isAuthenticated &&
+        (User.IsInRole("Administrator") ||
+         User.IsInRole("CoordinadorIT") ||
+         User.IsInRole("GerenciaGeneral"));
+    var isFinanceAdmin =
+        isAuthenticated &&
+        (User.IsInRole("Administrator") ||
+         User.IsInRole("CoordinadorIT") ||
+         User.IsInRole("GerenciaGeneral"));
+
+    var queryDepartment = Context.Request.Query["department"].ToString();
+    var queryArea = Context.Request.Query["area"].ToString();
+    var queryAreaFilter = Context.Request.Query["areaFilter"].ToString();
+    var queryQuick = Context.Request.Query["quick"].ToString();
+    var queryScope = Context.Request.Query["scope"].ToString();
+    var queryIncidentType = Context.Request.Query["incidentType"].ToString();
+    var queryMaintenanceView = Context.Request.Query["maintenanceView"].ToString();
+    var queryRequestType = Context.Request.Query["requestType"].ToString();
+    var queryOcStage = Context.Request.Query["ocStage"].ToString();
+    var querySourceOcTicketId = Context.Request.Query["sourceOcTicketId"].ToString();
+    var isOcCreateFinanceContext =
+        currentController == "Tickets" &&
+        currentAction == "CreateFinance" &&
+        (
+            string.Equals(queryRequestType, "Orden de compra", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(queryRequestType, "Solicitud de OC", StringComparison.OrdinalIgnoreCase) ||
+            !string.IsNullOrWhiteSpace(queryOcStage) ||
+            !string.IsNullOrWhiteSpace(querySourceOcTicketId)
+        );
+    var isMaintenanceTicketsContext =
+        currentController == "Tickets" &&
+        string.Equals(queryDepartment, "Mantenimiento", StringComparison.OrdinalIgnoreCase);
+
+    var isUsuariosMenuActive =
+        currentController == "Users" ||
+        currentController == "Credentials";
+
+    var hsControlDocumentosActive =
+        currentController == "Operaciones" &&
+        currentAction == "ControlDocumentos";
+
+    var isOperacionesMenuActive =
+        currentController == "Operaciones" &&
+        !hsControlDocumentosActive;
+
+    var isMantenimientoMenuActive =
+        isMaintenanceTicketsContext ||
+        (currentController == "Tickets" && currentAction == "MaintenanceBoard") ||
+        (currentController == "Tickets" && currentAction == "CreateMaintenance") ||
+        currentController == "MaintenanceAppointments" ||
+        currentController == "MaintenanceReports" ||
+        currentController == "MaintenanceTechnicians" ||
+        currentController == "MaintenanceInventory" ||
+        ((currentController == "Calendar" || currentController == "Reports") &&
+         string.Equals(queryScope, "maintenance", StringComparison.OrdinalIgnoreCase));
+
+    var isInventarioMenuActive =
+        currentController == "InventoryHub" ||
+        currentController == "Inventory" ||
+        currentController == "MaintenanceInventory" ||
+        (currentController == "Tickets" &&
+         (
+            isOcCreateFinanceContext ||
+            (currentAction == "Index" && string.Equals(queryDepartment, "Inventario", StringComparison.OrdinalIgnoreCase)) ||
+            currentAction == "CreateArticleOutput"
+         ));
+
+    var isFinanceMenuActive =
+        currentController == "Finance" ||
+        (currentController == "Tickets" &&
+         (
+             (currentAction == "CreateFinance" && !isOcCreateFinanceContext) ||
+             currentAction == "FinanceAccounting"
+         )) ||
+        (currentController == "Tickets" &&
+         string.Equals(queryDepartment, "Finanzas", StringComparison.OrdinalIgnoreCase)) ||
+        currentController == "FinanceDocuments" ||
+        currentController == "FinanceCostCenters" ||
+        (currentController == "Reports" &&
+         (string.Equals(queryDepartment, "Finanzas", StringComparison.OrdinalIgnoreCase) ||
+          string.Equals(queryArea, "Finanzas", StringComparison.OrdinalIgnoreCase) ||
+          string.Equals(queryAreaFilter, "Finanzas", StringComparison.OrdinalIgnoreCase)));
+
+    var isHsMenuActive = currentController == "Hs" || hsControlDocumentosActive;
+
+    var usersListActive = currentController == "Users" && currentAction == "Index";
+    var credentialsListActive = currentController == "Credentials" && currentAction == "Index";
+
+    var opDashboardActive = currentController == "Operaciones" && currentAction == "Dashboard";
+    var opCalendarioActive = currentController == "Operaciones" && currentAction == "CalendarioOperativo";
+    var opToneladasActive = currentController == "Operaciones" && currentAction == "SeguimientoToneladas";
+    var opDieselActive = currentController == "Operaciones" && currentAction == "SeguimientoDiesel";
+    var opReportesActive = currentController == "Operaciones" && currentAction == "Reportes";
+
+    var mntDashboardActive =
+        currentController == "Tickets" &&
+        currentAction == "Index" &&
+        isMaintenanceTicketsContext &&
+        !string.Equals(queryMaintenanceView, "detail", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(queryMaintenanceView, "detalle", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(queryMaintenanceView, "board", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(queryMaintenanceView, "pizarra", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(queryQuick, "today", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(queryQuick, "overdue", StringComparison.OrdinalIgnoreCase);
+
+    var mntDetalleOrdenesActive =
+        currentController == "Tickets" &&
+        currentAction == "Index" &&
+        isMaintenanceTicketsContext &&
+        (string.Equals(queryMaintenanceView, "detail", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(queryMaintenanceView, "detalle", StringComparison.OrdinalIgnoreCase));
+
+    var mntPizarraOperativaActive =
+        (currentController == "Tickets" && currentAction == "MaintenanceBoard") ||
+        (currentController == "Tickets" &&
+         currentAction == "Index" &&
+         isMaintenanceTicketsContext &&
+         (string.Equals(queryMaintenanceView, "board", StringComparison.OrdinalIgnoreCase) ||
+          string.Equals(queryMaintenanceView, "pizarra", StringComparison.OrdinalIgnoreCase) ||
+          string.Equals(queryMaintenanceView, "airport", StringComparison.OrdinalIgnoreCase)));
+
+    var mntCitasActive =
+        currentController == "MaintenanceAppointments";
+    var mntCitasNuevaActive =
+        currentController == "MaintenanceAppointments" &&
+        currentAction == "Create";
+    var mntCitasListaActive =
+        currentController == "MaintenanceAppointments" &&
+        (currentAction == "Index" || currentAction == "Details");
+
+    var mntVencidasActive =
+        currentController == "Tickets" &&
+        currentAction == "Index" &&
+        isMaintenanceTicketsContext &&
+        string.Equals(queryQuick, "overdue", StringComparison.OrdinalIgnoreCase);
+
+    var mntSinAsignarActive =
+        currentController == "Tickets" &&
+        currentAction == "Index" &&
+        isMaintenanceTicketsContext &&
+        string.Equals(queryQuick, "unassigned", StringComparison.OrdinalIgnoreCase);
+
+    var mntSeguimientoActive = currentController == "Tickets" && currentAction == "Index" && isMaintenanceTicketsContext;
+    var mntNuevaOrdenActive = currentController == "Tickets" && currentAction == "CreateMaintenance";
+    var mntInventarioActive = currentController == "MaintenanceInventory";
+    var mntInventarioNuevoActive =
+        currentController == "MaintenanceInventory" &&
+        currentAction == "Create";
+    var mntInventarioListaActive =
+        currentController == "MaintenanceInventory" &&
+        currentAction == "Index";
+    var mntInventarioDetalleActive =
+        currentController == "MaintenanceInventory" &&
+        currentAction == "Detalle";
+    var mntInventarioTransitoActive =
+        currentController == "MaintenanceInventory" &&
+        currentAction == "Transito";
+    var mntTecnicosActive = currentController == "MaintenanceTechnicians";
+    var mntTecnicosNuevoActive =
+        currentController == "MaintenanceTechnicians" &&
+        currentAction == "Create";
+    var mntTecnicosListaActive =
+        currentController == "MaintenanceTechnicians" &&
+        currentAction == "Index";
+    var mntCalendarioActive =
+        currentController == "Calendar" &&
+        currentAction == "Index" &&
+        string.Equals(queryScope, "maintenance", StringComparison.OrdinalIgnoreCase);
+    var mntReporteriaActive =
+        currentController == "MaintenanceReports" &&
+        currentAction == "Index";
+    var mntCroquisCamionActive =
+        currentController == "MaintenanceReports" &&
+        currentAction == "CroquisCamion";
+    var mntCitasSubmenuActive = mntCitasNuevaActive || mntCitasListaActive;
+    var mntInventarioSubmenuActive = mntInventarioNuevoActive || mntInventarioListaActive || mntInventarioDetalleActive || mntInventarioTransitoActive;
+    var mntTecnicosSubmenuActive = mntTecnicosNuevoActive || mntTecnicosListaActive;
+
+    var invHubActive = currentController == "InventoryHub" && currentAction == "Index";
+    var invTiListActive = currentController == "Inventory" && currentAction == "Index";
+    var invTiNewActive = currentController == "Inventory" && currentAction == "Create";
+    var invSpareListActive = currentController == "MaintenanceInventory" && (currentAction == "Index" || currentAction == "Detalle" || currentAction == "Transito");
+    var invSpareNewActive = currentController == "MaintenanceInventory" && currentAction == "Create";
+    var invPurchaseOrderActive = isOcCreateFinanceContext;
+    var invPurchaseRequestsActive =
+        currentController == "Tickets" &&
+        currentAction == "Index" &&
+        string.Equals(queryDepartment, "Inventario", StringComparison.OrdinalIgnoreCase);
+    var invArticleOutputActive =
+        currentController == "Tickets" &&
+        currentAction == "CreateArticleOutput";
+
+    var financeDashboardActive =
+        currentController == "Finance" &&
+        currentAction == "Dashboard";
+    var financeCreateActive =
+        currentController == "Tickets" &&
+        currentAction == "CreateFinance" &&
+        !isOcCreateFinanceContext;
+    var financePendingActive =
+        currentController == "Tickets" &&
+        currentAction == "Index" &&
+        string.Equals(queryDepartment, "Finanzas", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(queryQuick, "finance_pending_approval", StringComparison.OrdinalIgnoreCase);
+    var financeCostCentersActive = currentController == "FinanceCostCenters";
+    var financeInvoiceFormActive =
+        currentController == "FinanceDocuments" &&
+        (currentAction == "InvoiceCreate" || currentAction == "InvoiceDetails");
+    var financeReceiptFormActive =
+        currentController == "FinanceDocuments" &&
+        (currentAction == "ReceiptCreate" || currentAction == "ReceiptDetails");
+    var financeReportsActive =
+        currentController == "Reports" &&
+        (
+            string.Equals(queryAreaFilter, "Finanzas", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(queryArea, "Finanzas", StringComparison.OrdinalIgnoreCase)
+        );
+    var financeCounterpartiesActive =
+        currentController == "Finance" &&
+        (currentAction == "Counterparties" || currentAction == "CounterpartyCreate" || currentAction == "CounterpartyEdit");
+    var financeSettingsActive =
+        currentController == "Finance" &&
+        currentAction == "Settings";
+
+    var hsDashboardActive = currentController == "Hs" && currentAction == "Dashboard";
+    var hsIncidentsActive = currentController == "Hs" && (currentAction == "Incidents" || currentAction == "IncidentCreate" || currentAction == "IncidentEdit" || currentAction == "IncidentDetails");
+    var hsInspectionsActive = currentController == "Hs" && (currentAction == "Inspections" || currentAction == "InspectionCreate");
+    var hsActionsActive = currentController == "Hs" && (currentAction == "Actions" || currentAction == "ActionCreate" || currentAction == "ActionEdit");
+    var hsTrainingsActive = currentController == "Hs" && (currentAction == "Trainings" || currentAction == "TrainingCreate");
+    var hsPermitsActive = currentController == "Hs" && (currentAction == "Permits" || currentAction == "PermitCreate");
+    var hsCalendarActive = currentController == "Hs" && currentAction == "Calendar";
+    var hsDocumentsActive = currentController == "Hs" && (currentAction == "Documents" || currentAction == "DocumentCreate");
+
+    var todayIso = DateTime.Now.ToString("yyyy-MM-dd");
 }
 <body>
 
@@ -827,11 +1436,11 @@
 
                 <span class="brand-logo-shell">
                     <img class="brand-logo"
-                         src="@Url.Content("~/images/logo-transan.png")"
-                         alt="Grupo Transan Logo" />
+                         src="@Url.Content("~/images/logo-trawzacons.png")"
+                         alt="Grupo Trawzacons Logo" />
                 </span>
 
-                <span class="brand-title">Service Desk</span>
+                <span class="brand-title">ONE-TRAWZACONS</span>
             </a>
 
             <button class="navbar-toggler"
@@ -844,65 +1453,705 @@
             <div class="collapse navbar-collapse" id="navbarNav">
 
                 <ul class="navbar-nav ms-2 main-menu">
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active fw-bold" : "")"
-                           asp-controller="Dashboard"
-                           asp-action="Index">
-                            <span class="menu-icon"><i class="bi bi-speedometer2"></i></span><span class="menu-text">Dashboard</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" ? "active fw-bold" : "")"
-                           asp-controller="Tickets"
-                           asp-action="Index">
-                            <span class="menu-icon"><i class="bi bi-ticket-perforated"></i></span><span class="menu-text">Incidencias</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Calendar" ? "active fw-bold" : "")"
-                           href="/Calendar">
-                            <span class="menu-icon"><i class="bi bi-calendar3"></i></span><span class="menu-text">Calendario</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active fw-bold" : "")"
-                           href="/Reports">
-                            <span class="menu-icon"><i class="bi bi-bar-chart"></i></span><span class="menu-text">Reportes</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventory" ? "active fw-bold" : "")"
-                           asp-controller="Inventory"
-                           asp-action="Index">
-                            <span class="menu-icon"><i class="bi bi-pc-display"></i></span><span class="menu-text">Inventario</span>
-                        </a>
-                    </li>
-
-                    @if (canSeeUsersMenu)
+                    @if (canSeeUsersMenu || canSeeCredentialsMenu)
                     {
-                        <li class="nav-item">
-                            <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active fw-bold" : "")"
-                               asp-controller="Users"
-                               asp-action="Index">
-                                <span class="menu-icon"><i class="bi bi-people"></i></span><span class="menu-text">Usuarios</span>
+                        <li class="nav-item dropdown area-dropdown">
+                            <a id="usuariosMenuTrigger"
+                               class="nav-link menu-link dropdown-toggle @(isUsuariosMenuActive ? "active fw-bold" : "")"
+                               href="@(canSeeUsersMenu ? Url.Action("Index", "Users") : Url.Action("Index", "Credentials"))"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               data-dashboard-url="@(canSeeUsersMenu ? Url.Action("Index", "Users") : Url.Action("Index", "Credentials"))"
+                               aria-expanded="false">
+                                <span class="menu-text">Usuarios</span><span class="menu-plus menu-plus-toggle">+</span>
                             </a>
+                            <ul class="dropdown-menu area-menu operations-menu">
+                                @if (canSeeUsersMenu)
+                                {
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(usersListActive ? "is-active" : "")"
+                                           asp-controller="Users"
+                                           asp-action="Index">
+                                            <span class="op-item-main"><i class="bi bi-people-fill"></i>Usuarios</span>
+                                            <span class="op-item-badge badge-success">Admin</span>
+                                        </a>
+                                    </li>
+                                }
+                                @if (canSeeCredentialsMenu)
+                                {
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(credentialsListActive ? "is-active" : "")"
+                                           asp-controller="Credentials"
+                                           asp-action="Index">
+                                            <span class="op-item-main"><i class="bi bi-shield-lock-fill"></i>Credenciales</span>
+                                            <span class="op-item-badge">Secure</span>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
                         </li>
                     }
 
-                    @if (canSeeCredentialsMenu)
+                    <li class="nav-item dropdown area-dropdown">
+                        <a id="operacionesMenuTrigger"
+                           class="nav-link menu-link dropdown-toggle @(isOperacionesMenuActive ? "active fw-bold" : "")"
+                           href="@Url.Action("Dashboard", "Operaciones")"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           data-dashboard-url="@Url.Action("Dashboard", "Operaciones")"
+                           aria-expanded="false">
+                            <span class="menu-text">Operaciones</span><span class="menu-plus menu-plus-toggle">+</span>
+                        </a>
+                        <ul class="dropdown-menu area-menu operations-menu" id="operacionesAreaMenu">
+                            <li class="operations-search px-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="operacionesMenuSearch"
+                                           placeholder="Buscar opción..."
+                                           autocomplete="off" />
+                                </div>
+                            </li>
+
+                            <li><span class="menu-group-label" data-group-label="monitoreo">Monitoreo</span></li>
+                            <li class="js-op-item" data-group="monitoreo" data-search="dashboard operaciones tablero resumen">
+                                <a class="dropdown-item op-menu-item @(opDashboardActive ? "is-active" : "")"
+                                   asp-controller="Operaciones"
+                                   asp-action="Dashboard">
+                                    <span class="op-item-main"><i class="bi bi-grid-1x2-fill"></i>Dashboard</span>
+                                    <span class="op-item-badge">Top</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="monitoreo" data-search="calendario operativo eventos turnos">
+                                <a class="dropdown-item op-menu-item @(opCalendarioActive ? "is-active" : "")"
+                                   asp-controller="Operaciones"
+                                   asp-action="CalendarioOperativo">
+                                    <span class="op-item-main"><i class="bi bi-calendar3-week"></i>Calendario operativo</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="monitoreo" data-search="seguimiento toneladas produccion">
+                                <a class="dropdown-item op-menu-item @(opToneladasActive ? "is-active" : "")"
+                                   asp-controller="Operaciones"
+                                   asp-action="SeguimientoToneladas">
+                                    <span class="op-item-main"><i class="bi bi-bar-chart-line"></i>Seguimiento de toneladas</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="monitoreo" data-search="seguimiento diesel combustible consumo critico">
+                                <a class="dropdown-item op-menu-item @(opDieselActive ? "is-active" : "")"
+                                   asp-controller="Operaciones"
+                                   asp-action="SeguimientoDiesel">
+                                    <span class="op-item-main"><i class="bi bi-fuel-pump-diesel"></i>Seguimiento de Diésel</span>
+                                    <span class="op-item-badge badge-danger">Crítico</span>
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider" data-group-divider="monitoreo"></li>
+                            <li><span class="menu-group-label" data-group-label="analisis">Análisis</span></li>
+                            <li class="js-op-item" data-group="analisis" data-search="reportes operaciones cumplimiento toneladas diesel pdf">
+                                <a class="dropdown-item op-menu-item @(opReportesActive ? "is-active" : "")"
+                                   asp-controller="Operaciones"
+                                   asp-action="Reportes">
+                                    <span class="op-item-main"><i class="bi bi-file-earmark-bar-graph"></i>Reportes</span>
+                                    <span class="op-item-badge">PDF</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="analisis" data-search="cumplimiento operativo reporte">
+                                <a class="dropdown-item op-menu-item"
+                                   asp-controller="Operaciones"
+                                   asp-action="Reportes"
+                                   asp-route-reporte="CumplimientoOperativo">
+                                    <span class="op-item-main"><i class="bi bi-clipboard2-check"></i>Cumplimiento operativo</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="analisis" data-search="toneladas por ruta reporte">
+                                <a class="dropdown-item op-menu-item"
+                                   asp-controller="Operaciones"
+                                   asp-action="Reportes"
+                                   asp-route-reporte="ToneladasPorRuta">
+                                    <span class="op-item-main"><i class="bi bi-signpost-split"></i>Toneladas por ruta</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="analisis" data-search="diesel por unidad reporte">
+                                <a class="dropdown-item op-menu-item"
+                                   asp-controller="Operaciones"
+                                   asp-action="Reportes"
+                                   asp-route-reporte="DieselPorUnidad">
+                                    <span class="op-item-main"><i class="bi bi-truck-front-fill"></i>Diesel por unidad</span>
+                                </a>
+                            </li>
+
+                            <li class="operations-no-results d-none" id="operacionesMenuNoResults">Sin resultados para la búsqueda.</li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown area-dropdown">
+                        <a id="mantenimientoMenuTrigger"
+                           class="nav-link menu-link dropdown-toggle @(isMantenimientoMenuActive ? "active fw-bold" : "")"
+                           href="@Url.Action("Index", "Tickets", new { department = "Mantenimiento" })"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           data-dashboard-url="@Url.Action("Index", "Tickets", new { department = "Mantenimiento" })"
+                           aria-expanded="false">
+                            <span class="menu-text">Mantenimiento</span><span class="menu-plus menu-plus-toggle">+</span>
+                        </a>
+                        <ul class="dropdown-menu area-menu operations-menu maintenance-menu" id="mantenimientoAreaMenu" data-user="@User.Identity?.Name">
+                            <li class="operations-search px-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="mantenimientoMenuSearch"
+                                           placeholder="Buscar opcion..."
+                                           autocomplete="off" />
+                                </div>
+                            </li>
+
+                            <li class="mnt-quick-tip">Accesos rapidos para ejecutar, monitorear y despachar repuestos.</li>
+
+                            <li><span class="menu-group-label mnt-label-quick" data-mnt-group-label="favoritos">Favoritos</span></li>
+                            <li class="mnt-favorites-host">
+                                <div id="mntFavoritesEmpty" class="mnt-favorites-empty">Marca 3 a 5 favoritos para acceso inmediato.</div>
+                                <div id="mntFavoritesList" class="mnt-favorites-list"></div>
+                            </li>
+
+                            <li><span class="menu-group-label mnt-label-quick" data-mnt-group-label="accesos">Accesos rapidos</span></li>
+                            <li class="js-mnt-item" data-mnt-group="accesos" data-search="nueva orden mantenimiento correctivo preventivo taller varada reparacion unidad" data-mnt-key="mnt-new-order">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntNuevaOrdenActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="CreateMaintenance"
+                                   data-fav-key="mnt-new-order"
+                                   data-fav-label="Nueva orden de mantenimiento">
+                                    <span class="op-item-main"><i class="bi bi-plus-square-dotted"></i>Nueva orden de mantenimiento</span>
+                                    <span class="op-item-right">
+                                        <span class="op-item-badge badge-alert">Live</span>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="accesos" data-search="ver citas hoy agenda taller mantenimiento fecha dia programadas" data-mnt-key="mnt-view-today-appointments">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntCalendarioActive ? "is-active" : "")"
+                                   asp-controller="Calendar"
+                                   asp-action="Index"
+                                   asp-route-scope="maintenance"
+                                   asp-route-sla="appointments"
+                                   asp-route-selectedDate="@todayIso"
+                                   data-fav-key="mnt-view-today-appointments"
+                                   data-fav-label="Ver citas de hoy">
+                                    <span class="op-item-main"><i class="bi bi-calendar-date"></i>Ver citas de hoy</span>
+                                    <span class="op-item-right">
+                                        <span class="op-item-badge badge-success" id="mntBadgeQuickToday">Hoy</span>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="accesos" data-search="despacho repuestos salida bodega vale taller mecanica electrica fricgliner cascadia gondola" data-mnt-key="mnt-spare-dispatch">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link"
+                                   asp-controller="Tickets"
+                                   asp-action="CreateArticleOutput"
+                                   data-fav-key="mnt-spare-dispatch"
+                                   data-fav-label="Despacho de repuestos">
+                                    <span class="op-item-main"><i class="bi bi-box-arrow-up-right"></i>Despacho de repuestos</span>
+                                    <span class="op-item-right">
+                                        <span class="op-item-badge" id="mntBadgeInventoryHealth">Stock</span>
+                                    </span>
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider" data-mnt-group-divider="accesos"></li>
+                            <li><span class="menu-group-label mnt-label-monitor" data-mnt-group-label="monitoreo">Monitoreo</span></li>
+                            <li class="js-mnt-item" data-mnt-group="monitoreo" data-search="dashboard mantenimiento seguimiento ordenes tablero indicadores">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntDashboardActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="Index"
+                                   asp-route-department="Mantenimiento"
+                                   data-fav-key="mnt-dashboard"
+                                   data-fav-label="Dashboard mantenimiento">
+                                    <span class="op-item-main"><i class="bi bi-grid-1x2-fill"></i>Dashboard</span>
+                                    <span class="op-item-right"><span class="op-item-badge">Top</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="monitoreo" data-search="tabla detalle ordenes mantenimiento costo tecnico etapa sla">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntDetalleOrdenesActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="Index"
+                                   asp-route-department="Mantenimiento"
+                                   asp-route-maintenanceView="detail"
+                                   data-fav-key="mnt-detail-orders"
+                                   data-fav-label="Tabla detalle de ordenes">
+                                    <span class="op-item-main"><i class="bi bi-table"></i>Tabla detalle de ordenes</span>
+                                    <span class="op-item-right"><span class="op-item-badge">Detalle</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="monitoreo" data-search="pizarra operativa aeropuerto tecnico equipo tiempo restante taller">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntPizarraOperativaActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="MaintenanceBoard"
+                                   data-fav-key="mnt-airport-board"
+                                   data-fav-label="Pizarra operativa">
+                                    <span class="op-item-main"><i class="bi bi-display"></i>Pizarra operativa</span>
+                                    <span class="op-item-right"><span class="op-item-badge">Live</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="monitoreo" data-search="ordenes vencidas sla fuera tiempo criticidad">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntVencidasActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="Index"
+                                   asp-route-department="Mantenimiento"
+                                   asp-route-quick="overdue"
+                                   data-fav-key="mnt-overdue-orders"
+                                   data-fav-label="Ver ordenes vencidas">
+                                    <span class="op-item-main"><i class="bi bi-exclamation-triangle-fill"></i>Ver ordenes vencidas</span>
+                                    <span class="op-item-right"><span class="op-item-badge badge-danger" id="mntBadgeOverdue">SLA</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="monitoreo" data-search="ordenes sin asignar tecnico pendientes cola">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntSinAsignarActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="Index"
+                                   asp-route-department="Mantenimiento"
+                                   asp-route-quick="unassigned"
+                                   data-fav-key="mnt-unassigned-orders"
+                                   data-fav-label="Ver ordenes sin asignar">
+                                    <span class="op-item-main"><i class="bi bi-person-x-fill"></i>Ver ordenes sin asignar</span>
+                                    <span class="op-item-right"><span class="op-item-badge badge-alert" id="mntBadgeUnassigned">0</span></span>
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider" data-mnt-group-divider="monitoreo"></li>
+                            <li><span class="menu-group-label mnt-label-manage" data-mnt-group-label="gestion">Gestion</span></li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-search="citas mantenimiento agenda programacion taller">
+                                <button type="button"
+                                        class="dropdown-item op-menu-item mnt-submenu-toggle @(mntCitasSubmenuActive ? "is-active is-open" : "")"
+                                        data-mnt-submenu="citas"
+                                        aria-expanded="@(mntCitasSubmenuActive ? "true" : "false")">
+                                    <span class="op-item-main"><i class="bi bi-calendar2-check"></i>Citas de mantenimiento</span>
+                                    <span class="op-item-right">
+                                        <span class="op-item-badge badge-success" id="mntBadgeToday">Hoy</span>
+                                        <i class="bi bi-chevron-down submenu-caret"></i>
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="citas" data-search="nueva cita mantenimiento taller tecnico">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntCitasNuevaActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceAppointments"
+                                   asp-action="Create"
+                                   data-fav-key="mnt-new-appointment"
+                                   data-fav-label="Nueva cita de mantenimiento">
+                                    <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nueva cita de mantenimiento</span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="citas" data-search="ver citas mantenimiento listado historial detalle">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntCitasListaActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceAppointments"
+                                   asp-action="Index"
+                                   data-fav-key="mnt-view-appointments"
+                                   data-fav-label="Ver citas de mantenimiento">
+                                    <span class="op-item-main"><i class="bi bi-list-task"></i>Ver citas de mantenimiento</span>
+                                </a>
+                            </li>
+
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-search="personal tecnico taller mecanico electrico llantero disponibilidad categorias">
+                                <button type="button"
+                                        class="dropdown-item op-menu-item mnt-submenu-toggle @(mntTecnicosSubmenuActive ? "is-active is-open" : "")"
+                                        data-mnt-submenu="tecnicos"
+                                        aria-expanded="@(mntTecnicosSubmenuActive ? "true" : "false")">
+                                    <span class="op-item-main"><i class="bi bi-person-workspace"></i>Personal tecnico</span>
+                                    <span class="op-item-right">
+                                        <span class="op-item-badge badge-success">Taller</span>
+                                        <i class="bi bi-chevron-down submenu-caret"></i>
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="tecnicos" data-search="nuevo tecnico taller mecanico electrico llantero contacto emergencia">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntTecnicosNuevoActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceTechnicians"
+                                   asp-action="Create"
+                                   data-fav-key="mnt-new-technician"
+                                   data-fav-label="Nuevo tecnico de taller">
+                                    <span class="op-item-main"><i class="bi bi-person-plus"></i>Nuevo tecnico</span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="tecnicos" data-search="ver tecnicos taller lista disponibilidad categoria">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntTecnicosListaActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceTechnicians"
+                                   asp-action="Index"
+                                   data-fav-key="mnt-view-technicians"
+                                   data-fav-label="Ver tecnicos de taller">
+                                    <span class="op-item-main"><i class="bi bi-people"></i>Ver tecnicos</span>
+                                </a>
+                            </li>
+
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-search="inventario repuestos stock salidas transito bodega taller">
+                                <button type="button"
+                                        class="dropdown-item op-menu-item mnt-submenu-toggle @(mntInventarioSubmenuActive ? "is-active is-open" : "")"
+                                        data-mnt-submenu="inventario"
+                                        aria-expanded="@(mntInventarioSubmenuActive ? "true" : "false")">
+                                    <span class="op-item-main"><i class="bi bi-box-seam"></i>Inventario de repuestos</span>
+                                    <span class="op-item-right">
+                                        <span class="op-item-badge" id="mntBadgeInventoryHealthMain">Stock</span>
+                                        <i class="bi bi-chevron-down submenu-caret"></i>
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="inventario" data-search="nuevo repuesto inventario mantenimiento pieza articulo">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntInventarioNuevoActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Create"
+                                   data-fav-key="mnt-new-spare"
+                                   data-fav-label="Nuevo repuesto">
+                                    <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nuevo repuesto</span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="inventario" data-search="ver inventario repuestos tabla stock bajo minimo alertas">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntInventarioListaActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Index"
+                                   data-fav-key="mnt-view-inventory"
+                                   data-fav-label="Ver inventario de repuestos">
+                                    <span class="op-item-main"><i class="bi bi-list-task"></i>Ver inventario de repuestos</span>
+                                    <span class="op-item-right"><span class="op-item-badge badge-alert" id="mntBadgeLowStock">Stock</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="inventario" data-search="ver detalle inventario salidas transito costos">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntInventarioDetalleActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Detalle"
+                                   data-fav-key="mnt-view-inventory-detail"
+                                   data-fav-label="Ver detalle de inventario">
+                                    <span class="op-item-main"><i class="bi bi-table"></i>Ver detalle de inventario</span>
+                                    <span class="op-item-right"><span class="op-item-badge" id="mntBadgeTransit">Transito</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="inventario" data-search="tablero transito repuestos en camino proveedor eta logistica">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntInventarioTransitoActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Transito"
+                                   data-fav-key="mnt-view-inventory-transit"
+                                   data-fav-label="Articulos en transito">
+                                    <span class="op-item-main"><i class="bi bi-truck"></i>Articulos en transito</span>
+                                    <span class="op-item-right"><span class="op-item-badge badge-success">ETA</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="inventario" data-search="estado inventario alertas agotado criticidad repuestos">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Detalle"
+                                   asp-route-stockStatus="Agotado"
+                                   data-fav-key="mnt-inventory-alerts"
+                                   data-fav-label="Ver alertas de inventario">
+                                    <span class="op-item-main"><i class="bi bi-exclamation-octagon"></i>Ver alertas de inventario</span>
+                                    <span class="op-item-right"><span class="op-item-badge badge-danger" id="mntBadgeInventoryAlert">Alerta</span></span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-search="calendario mantenimiento planificacion equipos taller citas">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntCalendarioActive ? "is-active" : "")"
+                                   asp-controller="Calendar"
+                                   asp-action="Index"
+                                   asp-route-scope="maintenance"
+                                   data-fav-key="mnt-calendar"
+                                   data-fav-label="Ver calendario de mantenimiento">
+                                    <span class="op-item-main"><i class="bi bi-calendar3-week"></i>Ver calendario de mantenimiento</span>
+                                </a>
+                            </li>
+                            <li class="js-mnt-item" data-mnt-group="gestion" data-search="croquis camion volquete inspeccion unidad partes mantenimiento ubicacion dano">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntCroquisCamionActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceReports"
+                                   asp-action="CroquisCamion"
+                                   data-fav-key="mnt-truck-sketch"
+                                   data-fav-label="Croquis del camion">
+                                    <span class="op-item-main"><i class="bi bi-truck-front"></i>Croquis del camion</span>
+                                    <span class="op-item-right"><span class="op-item-badge">Vista</span></span>
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider" data-mnt-group-divider="gestion"></li>
+                            <li><span class="menu-group-label mnt-label-analysis" data-mnt-group-label="analisis">Analisis</span></li>
+                            <li class="js-mnt-item" data-mnt-group="analisis" data-search="ver reporteria mantenimiento reportes falla falla preventivo correctivo indicadores pdf">
+                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntReporteriaActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceReports"
+                                   asp-action="Index"
+                                   data-fav-key="mnt-reports"
+                                   data-fav-label="Ver reporteria de mantenimiento">
+                                    <span class="op-item-main"><i class="bi bi-file-earmark-bar-graph"></i>Ver reporteria de mantenimiento</span>
+                                    <span class="op-item-right"><span class="op-item-badge">PDF</span></span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    @if (isFinanceRequester || isFinanceApprover || isFinanceAdmin)
                     {
-                        <li class="nav-item">
-                            <a class="nav-link menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Credentials" ? "active fw-bold" : "")"
-                               asp-controller="Credentials"
-                               asp-action="Index">
-                                <span class="menu-icon"><i class="bi bi-key"></i></span><span class="menu-text">Credenciales</span>
+                        <li class="nav-item dropdown area-dropdown">
+                            <a id="finanzasMenuTrigger"
+                               class="nav-link menu-link dropdown-toggle @(isFinanceMenuActive ? "active fw-bold" : "")"
+                               href="@Url.Action("Dashboard", "Finance")"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               data-dashboard-url="@Url.Action("Dashboard", "Finance")"
+                               aria-expanded="false">
+                                <span class="menu-text">Finanzas</span><span class="menu-plus menu-plus-toggle">+</span>
                             </a>
+                            <ul class="dropdown-menu area-menu operations-menu">
+                                <li><span class="menu-group-label">Flujo financiero</span></li>
+                                @if (isFinanceRequester)
+                                {
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeCreateActive ? "is-active" : "")"
+                                           asp-controller="Tickets"
+                                           asp-action="CreateFinance">
+                                            <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nueva solicitud financiera</span>
+                                            <span class="op-item-badge">Nuevo</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeDashboardActive ? "is-active" : "")"
+                                           asp-controller="Finance"
+                                           asp-action="Dashboard">
+                                            <span class="op-item-main"><i class="bi bi-grid-1x2-fill"></i>Dashboard financiero</span>
+                                            <span class="op-item-badge">Top</span>
+                                        </a>
+                                    </li>
+                                }
+                                @if (isFinanceApprover)
+                                {
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><span class="menu-group-label">Documentos</span></li>
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeInvoiceFormActive ? "is-active" : "")"
+                                           asp-controller="FinanceDocuments"
+                                           asp-action="InvoiceCreate">
+                                            <span class="op-item-main"><i class="bi bi-receipt-cutoff"></i>Nueva Factura</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeReceiptFormActive ? "is-active" : "")"
+                                           asp-controller="FinanceDocuments"
+                                           asp-action="ReceiptCreate">
+                                            <span class="op-item-main"><i class="bi bi-journal-check"></i>Nuevo Recibo</span>
+                                            <span class="op-item-badge">Firma</span>
+                                        </a>
+                                    </li>
+                                }
+                                @if (isFinanceApprover)
+                                {
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financePendingActive ? "is-active" : "")"
+                                           asp-controller="Tickets"
+                                           asp-action="Index"
+                                           asp-route-department="Finanzas"
+                                           asp-route-quick="finance_pending_approval">
+                                            <span class="op-item-main"><i class="bi bi-clipboard2-check"></i>Aprobaciones pendientes</span>
+                                            <span class="op-item-badge badge-alert">Pendientes</span>
+                                        </a>
+                                    </li>
+                                }
+                                <li>
+                                    <a class="dropdown-item op-menu-item @(financeReportsActive ? "is-active" : "")"
+                                       asp-controller="Reports"
+                                       asp-action="Index"
+                                       asp-route-areaFilter="Finanzas"
+                                       asp-route-tab="finance">
+                                        <span class="op-item-main"><i class="bi bi-file-earmark-bar-graph"></i>Reportería financiera</span>
+                                        <span class="op-item-badge">PDF</span>
+                                    </a>
+                                </li>
+                                @if (isFinanceAdmin)
+                                {
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><span class="menu-group-label">Configuración</span></li>
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeCostCentersActive ? "is-active" : "")"
+                                           asp-controller="FinanceCostCenters"
+                                           asp-action="Index">
+                                            <span class="op-item-main"><i class="bi bi-diagram-3"></i>Centros de costo (#CC)</span>
+                                            <span class="op-item-badge badge-success">Admin</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeCounterpartiesActive ? "is-active" : "")"
+                                           asp-controller="Finance"
+                                           asp-action="Counterparties">
+                                            <span class="op-item-main"><i class="bi bi-buildings"></i>Contrapartes</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item op-menu-item @(financeSettingsActive ? "is-active" : "")"
+                                           asp-controller="Finance"
+                                           asp-action="Settings">
+                                            <span class="op-item-main"><i class="bi bi-gear"></i>Configuracion financiera</span>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
                         </li>
                     }
+
+                    <li class="nav-item dropdown area-dropdown">
+                        <a id="hsMenuTrigger"
+                           class="nav-link menu-link dropdown-toggle @(isHsMenuActive ? "active fw-bold" : "")"
+                           href="@Url.Action("Dashboard", "Hs")"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           data-dashboard-url="@Url.Action("Dashboard", "Hs")"
+                           aria-expanded="false">
+                            <span class="menu-text">H&amp;S</span><span class="menu-plus menu-plus-toggle">+</span>
+                        </a>
+                        <ul class="dropdown-menu area-menu operations-menu">
+                            <li><span class="menu-group-label">Gestion H&amp;S</span></li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsDashboardActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Dashboard">
+                                    <span class="op-item-main"><i class="bi bi-speedometer2"></i>Dashboard H&amp;S</span>
+                                    <span class="op-item-badge">Gerencia</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsCalendarActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Calendar">
+                                    <span class="op-item-main"><i class="bi bi-calendar-event"></i>Calendario</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsIncidentsActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Incidents">
+                                    <span class="op-item-main"><i class="bi bi-exclamation-triangle"></i>Incidentes</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsInspectionsActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Inspections">
+                                    <span class="op-item-main"><i class="bi bi-clipboard2-check"></i>Inspecciones</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsActionsActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Actions">
+                                    <span class="op-item-main"><i class="bi bi-list-check"></i>Acciones correctivas</span>
+                                    <span class="op-item-badge badge-alert">Seguimiento</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><span class="menu-group-label">Controles</span></li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsTrainingsActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Trainings">
+                                    <span class="op-item-main"><i class="bi bi-mortarboard"></i>Capacitaciones</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsPermitsActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Permits">
+                                    <span class="op-item-main"><i class="bi bi-shield-check"></i>Permisos de trabajo</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsDocumentsActive ? "is-active" : "")"
+                                   asp-controller="Hs"
+                                   asp-action="Documents">
+                                    <span class="op-item-main"><i class="bi bi-folder2-open"></i>Documentos</span>
+                                    <span class="op-item-badge badge-success">Control</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(hsControlDocumentosActive ? "is-active" : "")"
+                                   asp-controller="Operaciones"
+                                   asp-action="ControlDocumentos">
+                                    <span class="op-item-main"><i class="bi bi-file-earmark-check"></i>Control documentos personal/equipos</span>
+                                    <span class="op-item-badge badge-alert">H&amp;S</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown area-dropdown">
+                        <a id="inventarioMenuTrigger"
+                           class="nav-link menu-link dropdown-toggle @(isInventarioMenuActive ? "active fw-bold" : "")"
+                           href="@Url.Action("Index", "InventoryHub")"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           data-dashboard-url="@Url.Action("Index", "InventoryHub")"
+                           aria-expanded="false">
+                            <span class="menu-text">Inventario</span><span class="menu-plus menu-plus-toggle">+</span>
+                        </a>
+                        <ul class="dropdown-menu area-menu operations-menu">
+                            <li><span class="menu-group-label">Inventarios</span></li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invHubActive ? "is-active" : "")"
+                                   asp-controller="InventoryHub"
+                                   asp-action="Index">
+                                    <span class="op-item-main"><i class="bi bi-grid-1x2-fill"></i>Panel de inventario</span>
+                                    <span class="op-item-badge">Top</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invTiListActive ? "is-active" : "")"
+                                   asp-controller="Inventory"
+                                   asp-action="Index">
+                                    <span class="op-item-main"><i class="bi bi-pc-display"></i>Inventario TI</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invSpareListActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Index">
+                                    <span class="op-item-main"><i class="bi bi-box-seam"></i>Inventario de repuestos</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invTiNewActive ? "is-active" : "")"
+                                   asp-controller="Inventory"
+                                   asp-action="Create">
+                                    <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nuevo articulo TI</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invSpareNewActive ? "is-active" : "")"
+                                   asp-controller="MaintenanceInventory"
+                                   asp-action="Create">
+                                    <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nuevo articulo de repuesto</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><span class="menu-group-label">Movimientos</span></li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invPurchaseOrderActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="CreateFinance"
+                                   asp-route-requestType="Orden de compra">
+                                    <span class="op-item-main"><i class="bi bi-receipt"></i>Orden de compra</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invArticleOutputActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="CreateArticleOutput">
+                                    <span class="op-item-main"><i class="bi bi-box-arrow-right"></i>Salida de articulos</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invPurchaseRequestsActive ? "is-active" : "")"
+                                   asp-controller="Tickets"
+                                   asp-action="Index"
+                                   asp-route-department="Inventario">
+                                    <span class="op-item-main"><i class="bi bi-journal-text"></i>Solicitudes de compras</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link menu-link @(currentController == "Servicios" ? "active fw-bold" : "")"
+                           asp-controller="Servicios"
+                           asp-action="Index">
+                            <span class="menu-text">Portal</span>
+                        </a>
+                    </li>
                 </ul>
 
                 <ul class="navbar-nav ms-auto mt-3 mt-lg-0 align-items-lg-center account-strip">
@@ -933,7 +2182,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js?v=ops-static-2"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".notif-mark-read").forEach(function (btn) {
@@ -949,6 +2198,574 @@
                     if (toggle) { toggle.style.display = "none"; }
                 });
             });
+
+            function setOpBadge(id, text, tone) {
+                var badge = document.getElementById(id);
+                if (!badge) return;
+
+                badge.textContent = text;
+                badge.classList.remove("badge-success", "badge-alert", "badge-danger");
+                if (tone === "danger") {
+                    badge.classList.add("badge-danger");
+                } else if (tone === "alert") {
+                    badge.classList.add("badge-alert");
+                } else {
+                    badge.classList.add("badge-success");
+                }
+            }
+
+            function normalizeSearchText(value) {
+                return (value || "")
+                    .toString()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase()
+                    .trim();
+            }
+
+            function setupRelaxedDropdownHover() {
+                var closeDelayMs = 320;
+                document.querySelectorAll(".area-dropdown").forEach(function (dropdown) {
+                    var closeTimer = null;
+
+                    function keepOpen() {
+                        if (closeTimer) {
+                            window.clearTimeout(closeTimer);
+                            closeTimer = null;
+                        }
+
+                        dropdown.classList.add("is-hover-open");
+                    }
+
+                    function closeSoftly() {
+                        if (closeTimer) {
+                            window.clearTimeout(closeTimer);
+                        }
+
+                        closeTimer = window.setTimeout(function () {
+                            if (!dropdown.matches(":hover") && !dropdown.matches(":focus-within")) {
+                                dropdown.classList.remove("is-hover-open");
+                            }
+                        }, closeDelayMs);
+                    }
+
+                    dropdown.addEventListener("mouseenter", keepOpen);
+                    dropdown.addEventListener("mouseleave", closeSoftly);
+                    dropdown.addEventListener("focusin", keepOpen);
+                    dropdown.addEventListener("focusout", closeSoftly);
+                });
+            }
+
+            function setupOperacionesPrimaryNavigation() {
+                var trigger = document.getElementById("operacionesMenuTrigger");
+                if (!trigger) return;
+
+                var dashboardUrl = trigger.getAttribute("data-dashboard-url");
+                if (!dashboardUrl) return;
+
+                trigger.addEventListener("click", function (e) {
+                    var clickedPlus = e.target && e.target.closest(".menu-plus-toggle");
+                    if (clickedPlus) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = dashboardUrl;
+                }, true);
+            }
+
+            function setupMantenimientoPrimaryNavigation() {
+                var trigger = document.getElementById("mantenimientoMenuTrigger");
+                if (!trigger) return;
+
+                var dashboardUrl = trigger.getAttribute("data-dashboard-url");
+                if (!dashboardUrl) return;
+
+                trigger.addEventListener("click", function (e) {
+                    var clickedPlus = e.target && e.target.closest(".menu-plus-toggle");
+                    if (clickedPlus) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = dashboardUrl;
+                }, true);
+            }
+
+            function setupInventarioPrimaryNavigation() {
+                var trigger = document.getElementById("inventarioMenuTrigger");
+                if (!trigger) return;
+
+                var dashboardUrl = trigger.getAttribute("data-dashboard-url");
+                if (!dashboardUrl) return;
+
+                trigger.addEventListener("click", function (e) {
+                    var clickedPlus = e.target && e.target.closest(".menu-plus-toggle");
+                    if (clickedPlus) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = dashboardUrl;
+                }, true);
+            }
+
+            function setupFinanzasPrimaryNavigation() {
+                var trigger = document.getElementById("finanzasMenuTrigger");
+                if (!trigger) return;
+
+                var dashboardUrl = trigger.getAttribute("data-dashboard-url");
+                if (!dashboardUrl) return;
+
+                trigger.addEventListener("click", function (e) {
+                    var clickedPlus = e.target && e.target.closest(".menu-plus-toggle");
+                    if (clickedPlus) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = dashboardUrl;
+                }, true);
+            }
+
+            function setupHsPrimaryNavigation() {
+                var trigger = document.getElementById("hsMenuTrigger");
+                if (!trigger) return;
+
+                var dashboardUrl = trigger.getAttribute("data-dashboard-url");
+                if (!dashboardUrl) return;
+
+                trigger.addEventListener("click", function (e) {
+                    var clickedPlus = e.target && e.target.closest(".menu-plus-toggle");
+                    if (clickedPlus) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = dashboardUrl;
+                }, true);
+            }
+
+            function setupUsuariosPrimaryNavigation() {
+                var trigger = document.getElementById("usuariosMenuTrigger");
+                if (!trigger) return;
+
+                var dashboardUrl = trigger.getAttribute("data-dashboard-url");
+                if (!dashboardUrl) return;
+
+                trigger.addEventListener("click", function (e) {
+                    var clickedPlus = e.target && e.target.closest(".menu-plus-toggle");
+                    if (clickedPlus) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = dashboardUrl;
+                }, true);
+            }
+
+            function setupOperacionesMenuSearch() {
+                var menu = document.getElementById("operacionesAreaMenu");
+                var searchInput = document.getElementById("operacionesMenuSearch");
+                if (!menu || !searchInput) return;
+
+                var items = Array.prototype.slice.call(menu.querySelectorAll(".js-op-item"));
+                var groups = ["monitoreo", "analisis", "gestion"];
+                var noResults = document.getElementById("operacionesMenuNoResults");
+
+                function applyFilter() {
+                    var query = normalizeSearchText(searchInput.value);
+                    var visibleItems = 0;
+
+                    items.forEach(function (item) {
+                        var searchable = normalizeSearchText((item.getAttribute("data-search") || "") + " " + item.textContent);
+                        var show = !query || searchable.indexOf(query) >= 0;
+                        item.style.display = show ? "" : "none";
+                        if (show) {
+                            visibleItems += 1;
+                        }
+                    });
+
+                    groups.forEach(function (groupKey) {
+                        var label = menu.querySelector('[data-group-label="' + groupKey + '"]');
+                        var divider = menu.querySelector('[data-group-divider="' + groupKey + '"]');
+                        var hasVisible = items.some(function (item) {
+                            return item.getAttribute("data-group") === groupKey && item.style.display !== "none";
+                        });
+
+                        if (label) {
+                            label.parentElement.style.display = hasVisible ? "" : "none";
+                        }
+
+                        if (divider) {
+                            divider.parentElement.style.display = hasVisible ? "" : "none";
+                        }
+                    });
+
+                    if (noResults) {
+                        noResults.classList.toggle("d-none", !query || visibleItems > 0);
+                    }
+                }
+
+                searchInput.addEventListener("input", applyFilter);
+                searchInput.addEventListener("click", function (e) { e.stopPropagation(); });
+                searchInput.addEventListener("keydown", function (e) { e.stopPropagation(); });
+
+                var dropdown = menu.closest(".area-dropdown");
+                var toggle = dropdown ? dropdown.querySelector('[data-bs-toggle="dropdown"]') : null;
+                if (toggle) {
+                    toggle.addEventListener("shown.bs.dropdown", function () {
+                        applyFilter();
+                        searchInput.focus();
+                        searchInput.select();
+                    });
+                    toggle.addEventListener("hide.bs.dropdown", function () {
+                        if (searchInput.value) {
+                            searchInput.value = "";
+                            applyFilter();
+                        }
+                    });
+                }
+
+                applyFilter();
+            }
+
+            function setupMantenimientoMenuSearch() {
+                var menu = document.getElementById("mantenimientoAreaMenu");
+                var searchInput = document.getElementById("mantenimientoMenuSearch");
+                if (!menu || !searchInput) return;
+
+                var items = Array.prototype.slice.call(menu.querySelectorAll(".js-mnt-item"));
+                var groups = ["accesos", "monitoreo", "gestion", "analisis"];
+                var favoritesList = document.getElementById("mntFavoritesList");
+                var favoritesEmpty = document.getElementById("mntFavoritesEmpty");
+                var favoritesHost = menu.querySelector(".mnt-favorites-host");
+                var submenuToggles = Array.prototype.slice.call(menu.querySelectorAll(".mnt-submenu-toggle"));
+                var currentQuery = "";
+                var submenuState = {};
+                var menuUser = (menu.getAttribute("data-user") || "anon").trim().toLowerCase();
+                var favoritesStorageKey = "mnt-menu-favorites::" + menuUser;
+                var maxFavorites = 5;
+                var defaultFavorites = [
+                    "mnt-new-order",
+                    "mnt-view-appointments",
+                    "mnt-view-inventory"
+                ];
+                var favoriteLinks = Array.prototype.slice.call(menu.querySelectorAll("a.js-mnt-fav-link"));
+                var favoriteMap = new Map();
+
+                function safeReadFavorites() {
+                    try {
+                        var raw = localStorage.getItem(favoritesStorageKey);
+                        if (!raw) return [];
+                        var parsed = JSON.parse(raw);
+                        if (!Array.isArray(parsed)) return [];
+                        return parsed
+                            .map(function (x) { return (x || "").toString().trim(); })
+                            .filter(function (x) { return x.length > 0; });
+                    } catch {
+                        return [];
+                    }
+                }
+
+                function safeWriteFavorites(keys) {
+                    try {
+                        localStorage.setItem(favoritesStorageKey, JSON.stringify(keys.slice(0, maxFavorites)));
+                    } catch {
+                        // Ignorar almacenamiento no disponible.
+                    }
+                }
+
+                function ensureDefaultFavorites() {
+                    var existing = safeReadFavorites().filter(function (key) { return favoriteMap.has(key); });
+                    if (existing.length > 0) {
+                        safeWriteFavorites(existing);
+                        return;
+                    }
+
+                    var defaults = defaultFavorites.filter(function (key) { return favoriteMap.has(key); });
+                    safeWriteFavorites(defaults);
+                }
+
+                function getFavoriteKeys() {
+                    return safeReadFavorites()
+                        .filter(function (key) { return favoriteMap.has(key); })
+                        .slice(0, maxFavorites);
+                }
+
+                function toggleFavorite(key) {
+                    var current = getFavoriteKeys();
+                    var index = current.indexOf(key);
+
+                    if (index >= 0) {
+                        current.splice(index, 1);
+                    } else if (current.length < maxFavorites) {
+                        current.push(key);
+                    } else {
+                        current.shift();
+                        current.push(key);
+                    }
+
+                    safeWriteFavorites(current);
+                    syncFavoriteButtons();
+                    renderFavorites();
+                }
+
+                function syncFavoriteButtons() {
+                    var activeKeys = getFavoriteKeys();
+                    var activeSet = new Set(activeKeys);
+                    menu.querySelectorAll(".mnt-fav-toggle").forEach(function (btn) {
+                        var key = btn.getAttribute("data-fav-key") || "";
+                        var isOn = activeSet.has(key);
+                        btn.classList.toggle("mnt-fav-on", isOn);
+                        btn.setAttribute("title", isOn ? "Quitar de favoritos" : "Agregar a favoritos");
+                        btn.setAttribute("aria-label", isOn ? "Quitar de favoritos" : "Agregar a favoritos");
+                        btn.innerHTML = isOn
+                            ? '<i class="bi bi-star-fill"></i>'
+                            : '<i class="bi bi-star"></i>';
+                    });
+                }
+
+                function renderFavorites() {
+                    if (!favoritesList || !favoritesEmpty) return;
+
+                    var keys = getFavoriteKeys();
+                    favoritesList.innerHTML = "";
+
+                    if (keys.length === 0) {
+                        favoritesList.style.display = "none";
+                        favoritesEmpty.style.display = "";
+                        return;
+                    }
+
+                    keys.forEach(function (key) {
+                        var meta = favoriteMap.get(key);
+                        if (!meta) return;
+
+                        var link = document.createElement("a");
+                        link.className = "dropdown-item op-menu-item mnt-favorite-link";
+                        link.href = meta.href;
+                        link.innerHTML =
+                            '<span class="op-item-main"><i class="' + meta.icon + '"></i>' + meta.label + '</span>';
+
+                        var right = document.createElement("span");
+                        right.className = "op-item-right";
+
+                        var removeBtn = document.createElement("button");
+                        removeBtn.type = "button";
+                        removeBtn.className = "mnt-fav-toggle mnt-fav-on";
+                        removeBtn.setAttribute("data-fav-key", key);
+                        removeBtn.innerHTML = '<i class="bi bi-star-fill"></i>';
+                        removeBtn.title = "Quitar de favoritos";
+                        removeBtn.addEventListener("click", function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleFavorite(key);
+                        });
+
+                        right.appendChild(removeBtn);
+                        link.appendChild(right);
+                        favoritesList.appendChild(link);
+                    });
+
+                    favoritesEmpty.style.display = "none";
+                    favoritesList.style.display = "";
+                }
+
+                favoriteLinks.forEach(function (link) {
+                    var key = (link.getAttribute("data-fav-key") || "").trim();
+                    var label = (link.getAttribute("data-fav-label") || "").trim() || (link.textContent || "").trim();
+                    if (!key || !label) return;
+
+                    var iconNode = link.querySelector(".op-item-main i");
+                    var icon = iconNode ? iconNode.className : "bi bi-star";
+                    favoriteMap.set(key, { key: key, label: label, href: link.getAttribute("href") || "#", icon: icon });
+
+                    var right = link.querySelector(".op-item-right");
+                    if (!right) {
+                        right = document.createElement("span");
+                        right.className = "op-item-right";
+                        link.appendChild(right);
+                    }
+
+                    var favBtn = document.createElement("button");
+                    favBtn.type = "button";
+                    favBtn.className = "mnt-fav-toggle";
+                    favBtn.setAttribute("data-fav-key", key);
+                    favBtn.innerHTML = '<i class="bi bi-star"></i>';
+                    favBtn.title = "Agregar a favoritos";
+                    favBtn.addEventListener("click", function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFavorite(key);
+                    });
+
+                    right.appendChild(favBtn);
+                });
+
+                function setSubmenuState(name, expanded) {
+                    submenuState[name] = expanded;
+                    var toggle = menu.querySelector('.mnt-submenu-toggle[data-mnt-submenu="' + name + '"]');
+                    if (toggle) {
+                        toggle.classList.toggle("is-open", expanded);
+                        toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+                    }
+
+                    if (currentQuery) return;
+
+                    menu.querySelectorAll('[data-mnt-subitem="' + name + '"]').forEach(function (item) {
+                        item.style.display = expanded ? "" : "none";
+                    });
+                }
+
+                submenuToggles.forEach(function (toggle) {
+                    var submenu = toggle.getAttribute("data-mnt-submenu");
+                    if (!submenu) return;
+
+                    var hasActiveChild = Array.prototype.slice.call(menu.querySelectorAll('[data-mnt-subitem="' + submenu + '"] .is-active')).length > 0;
+                    submenuState[submenu] = toggle.classList.contains("is-open") || toggle.classList.contains("is-active") || hasActiveChild;
+
+                    toggle.addEventListener("click", function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var next = !submenuState[submenu];
+                        setSubmenuState(submenu, next);
+                    });
+                });
+
+                function applyFilter() {
+                    var query = (searchInput.value || "").trim().toLowerCase();
+                    currentQuery = query;
+
+                    items.forEach(function (item) {
+                        var searchable = ((item.getAttribute("data-search") || "") + " " + item.textContent).toLowerCase();
+                        var show = !query || searchable.indexOf(query) >= 0;
+                        item.style.display = show ? "" : "none";
+                    });
+
+                    groups.forEach(function (groupKey) {
+                        var label = menu.querySelector('[data-mnt-group-label="' + groupKey + '"]');
+                        var divider = menu.querySelector('[data-mnt-group-divider="' + groupKey + '"]');
+                        var hasVisible = items.some(function (item) {
+                            return item.getAttribute("data-mnt-group") === groupKey && item.style.display !== "none";
+                        });
+
+                        if (label) {
+                            label.parentElement.style.display = hasVisible ? "" : "none";
+                        }
+
+                        if (divider) {
+                            divider.parentElement.style.display = hasVisible ? "" : "none";
+                        }
+                    });
+
+                    if (!query) {
+                        Object.keys(submenuState).forEach(function (key) {
+                            setSubmenuState(key, !!submenuState[key]);
+                        });
+                    }
+
+                    var showFavorites = !query;
+                    var favoritesLabel = menu.querySelector('[data-mnt-group-label="favoritos"]');
+                    if (favoritesLabel) {
+                        favoritesLabel.parentElement.style.display = showFavorites ? "" : "none";
+                    }
+
+                    if (favoritesHost) {
+                        favoritesHost.style.display = showFavorites ? "" : "none";
+                    }
+                }
+
+                searchInput.addEventListener("input", applyFilter);
+                searchInput.addEventListener("click", function (e) { e.stopPropagation(); });
+                searchInput.addEventListener("keydown", function (e) { e.stopPropagation(); });
+
+                var dropdown = menu.closest(".area-dropdown");
+                var toggle = dropdown ? dropdown.querySelector('[data-bs-toggle="dropdown"]') : null;
+                if (toggle) {
+                    toggle.addEventListener("shown.bs.dropdown", function () {
+                        searchInput.focus();
+                        searchInput.select();
+                    });
+                    toggle.addEventListener("hide.bs.dropdown", function () {
+                        if (searchInput.value) {
+                            searchInput.value = "";
+                            applyFilter();
+                        }
+                    });
+                }
+
+                ensureDefaultFavorites();
+                syncFavoriteButtons();
+                renderFavorites();
+                applyFilter();
+            }
+
+            function refreshMantenimientoBadges() {
+                var url = '@Url.Action("GetMaintenanceMenuMetrics", "Tickets")';
+
+                fetch(url, { method: "GET" })
+                    .then(function (response) {
+                        return response.ok ? response.json() : null;
+                    })
+                    .then(function (data) {
+                        if (!data) return;
+
+                        var todayText = (data.appointmentsToday || 0) + " hoy";
+                        setOpBadge("mntBadgeToday", todayText, (data.appointmentsToday || 0) > 0 ? "success" : "alert");
+                        setOpBadge("mntBadgeQuickToday", todayText, (data.appointmentsToday || 0) > 0 ? "success" : "alert");
+
+                        if ((data.overdueOrders || 0) > 0) {
+                            setOpBadge("mntBadgeOverdue", data.overdueOrders + " vencida(s)", "danger");
+                        } else {
+                            setOpBadge("mntBadgeOverdue", "Al dia", "success");
+                        }
+
+                        if ((data.unassignedOrders || 0) > 0) {
+                            setOpBadge("mntBadgeUnassigned", data.unassignedOrders + " sin asignar", "alert");
+                        } else {
+                            setOpBadge("mntBadgeUnassigned", "Al dia", "success");
+                        }
+
+                        if ((data.lowStock || 0) > 0) {
+                            setOpBadge("mntBadgeLowStock", data.lowStock + " bajo", "alert");
+                        } else {
+                            setOpBadge("mntBadgeLowStock", "Stock OK", "success");
+                        }
+
+                        if ((data.inTransit || 0) > 0) {
+                            setOpBadge("mntBadgeTransit", data.inTransit + " transito", "alert");
+                        } else {
+                            setOpBadge("mntBadgeTransit", "Sin transito", "success");
+                        }
+
+                        var healthTone = (data.inventoryHealthTone || "success").toLowerCase();
+                        var healthLabel = data.inventoryHealthLabel || "Stock estable";
+                        setOpBadge("mntBadgeInventoryHealth", healthLabel, healthTone);
+                        setOpBadge("mntBadgeInventoryHealthMain", healthLabel, healthTone);
+                        setOpBadge("mntBadgeInventoryAlert", healthLabel, healthTone);
+                    })
+                    .catch(function () {
+                        // Si falla la carga, dejamos los badges por defecto.
+                    });
+            }
+
+            setupOperacionesPrimaryNavigation();
+            setupMantenimientoPrimaryNavigation();
+            setupFinanzasPrimaryNavigation();
+            setupHsPrimaryNavigation();
+            setupInventarioPrimaryNavigation();
+            setupUsuariosPrimaryNavigation();
+            setupRelaxedDropdownHover();
+            setupOperacionesMenuSearch();
+            setupMantenimientoMenuSearch();
+            refreshMantenimientoBadges();
         });
     </script>
 
@@ -956,6 +2773,7 @@
 
 </body>
 </html>
+
 
 
 

@@ -1,106 +1,364 @@
-@model IEnumerable<ITServiceDeskApp.Models.User>
+﻿@model ITServiceDeskApp.ViewModels.Users.UserListViewModel
 @using ITServiceDeskApp.Models
 
 @{
     var canManageUsers =
         User.IsInRole(nameof(UserRole.Administrator)) ||
         User.IsInRole(nameof(UserRole.CoordinadorIT));
-}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Listado de Usuarios</h2>
+    string ToggleSortDir(string column) =>
+        Model.SortBy == column && Model.SortDir == "asc" ? "desc" : "asc";
 
-    <div class="d-flex gap-2">
-        <a asp-action="ExportPdf" class="btn btn-outline-danger">
-            <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
-        </a>
-
-        @if (canManageUsers)
+    string SortIcon(string column)
+    {
+        if (Model.SortBy != column)
         {
-            <a asp-action="Create" class="btn btn-danger">
-                <i class="bi bi-person-plus"></i> Nuevo Usuario
-            </a>
+            return "bi bi-arrow-down-up";
         }
-    </div>
-</div>
 
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-info">
-        No hay usuarios registrados.
-    </div>
-}
-else
-{
-    <table class="table table-striped table-bordered align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th style="width:280px;">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var user in Model)
+        return Model.SortDir == "asc" ? "bi bi-sort-up" : "bi bi-sort-down";
+    }
+
+    string BuildUrl(int page, string? sortBy = null, string? sortDir = null)
+    {
+        return Url.Action("Index", "Users", new
         {
-            <tr>
-                <td>@user.FullName</td>
-                <td>@user.Email</td>
-                <td>@Html.DisplayFor(modelItem => user.Role)</td>
+            search = Model.Search,
+            role = Model.SelectedRole,
+            department = Model.SelectedDepartment,
+            status = Model.SelectedStatus,
+            sortBy = sortBy ?? Model.SortBy,
+            sortDir = sortDir ?? Model.SortDir,
+            page,
+            pageSize = Model.PageSize
+        }) ?? "#";
+    }
+}
 
-                <td>
-                    @if (user.IsActive)
-                    {
-                        <span class="badge bg-success">Activo</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">Inactivo</span>
-                    }
-                </td>
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="mb-0">Listado de Usuarios</h2>
+            <small class="text-muted">Gestiona usuarios del sistema con filtros y acciones rapidas</small>
+        </div>
 
-                <td>
-                    @if (canManageUsers)
-                    {
-                        <a asp-action="Edit"
-                           asp-route-id="@user.Id"
-                           class="btn btn-sm btn-warning">
-                            <i class="bi bi-pencil"></i> Editar
-                        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-action="ExportPdf"
+               asp-route-search="@Model.Search"
+               asp-route-role="@Model.SelectedRole"
+               asp-route-department="@Model.SelectedDepartment"
+               asp-route-status="@Model.SelectedStatus"
+               class="btn btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
 
-                        <form asp-action="ToggleStatus"
-                              asp-route-id="@user.Id"
-                              method="post"
-                              style="display:inline-block;"
-                              onsubmit="return confirm('�Desea cambiar el estado de este usuario?');">
+            @if (canManageUsers)
+            {
+                <a asp-action="Create" class="btn btn-danger">
+                    <i class="bi bi-person-plus"></i> Nuevo Usuario
+                </a>
+            }
+        </div>
+    </div>
 
-                            @Html.AntiForgeryToken()
+    @if (!string.IsNullOrWhiteSpace(Model.Message))
+    {
+        <div class="alert alert-success">@Model.Message</div>
+    }
 
-                            @if (user.IsActive)
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-danger">@Model.Error</div>
+    }
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 align-items-end">
+                <input type="hidden" name="page" value="1" />
+
+                <div class="col-12 col-md-4 col-xl-3">
+                    <label class="form-label">Buscar</label>
+                    <input type="text"
+                           name="search"
+                           class="form-control"
+                           value="@Model.Search"
+                           placeholder="Nombre, correo, telefono o departamento" />
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-2">
+                    <label class="form-label">Rol</label>
+                    <select class="form-select" name="role">
+                        @foreach (var option in Model.RoleOptions)
+                        {
+                            if (option.Value == Model.SelectedRole)
                             {
-                                <button type="submit"
-                                        class="btn btn-sm btn-secondary">
-                                    <i class="bi bi-toggle-off"></i> Desactivar
-                                </button>
+                                <option value="@option.Value" selected="selected">@option.Label</option>
                             }
                             else
                             {
-                                <button type="submit"
-                                        class="btn btn-sm btn-success">
-                                    <i class="bi bi-toggle-on"></i> Activar
-                                </button>
+                                <option value="@option.Value">@option.Label</option>
                             }
-                        </form>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Solo lectura</span>
-                    }
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-}
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-2">
+                    <label class="form-label">Departamento</label>
+                    <select class="form-select" name="department">
+                        @foreach (var option in Model.DepartmentOptions)
+                        {
+                            if (option.Value == Model.SelectedDepartment)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-2">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        @foreach (var option in Model.StatusOptions)
+                        {
+                            if (option.Value == Model.SelectedStatus)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-2">
+                    <label class="form-label">Tamano pagina</label>
+                    <select class="form-select" name="pageSize">
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (size == Model.PageSize)
+                            {
+                                <option value="@size" selected="selected">@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-8 col-xl-1 d-grid">
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Users == null || Model.Users.Count == 0)
+    {
+        <div class="alert alert-info">No hay usuarios para los filtros seleccionados.</div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>
+                                <a class="text-white text-decoration-none"
+                                   href="@BuildUrl(1, "name", ToggleSortDir("name"))">
+                                    Nombre <i class="@SortIcon("name")"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-white text-decoration-none"
+                                   href="@BuildUrl(1, "email", ToggleSortDir("email"))">
+                                    Email <i class="@SortIcon("email")"></i>
+                                </a>
+                            </th>
+                            <th>Telefono</th>
+                            <th>
+                                <a class="text-white text-decoration-none"
+                                   href="@BuildUrl(1, "department", ToggleSortDir("department"))">
+                                    Departamento <i class="@SortIcon("department")"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-white text-decoration-none"
+                                   href="@BuildUrl(1, "role", ToggleSortDir("role"))">
+                                    Rol <i class="@SortIcon("role")"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-white text-decoration-none"
+                                   href="@BuildUrl(1, "status", ToggleSortDir("status"))">
+                                    Estado <i class="@SortIcon("status")"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-white text-decoration-none"
+                                   href="@BuildUrl(1, "created", ToggleSortDir("created"))">
+                                    Creado <i class="@SortIcon("created")"></i>
+                                </a>
+                            </th>
+                            <th style="width: 340px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            var resetModalId = $"resetPwd_{user.Id}";
+                            <tr>
+                                <td class="fw-semibold">@user.FullName</td>
+                                <td>@user.Email</td>
+                                <td>@user.Phone</td>
+                                <td>@user.Department</td>
+                                <td>@user.Role</td>
+                                <td>
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    }
+                                </td>
+                                <td>@user.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>
+                                    @if (canManageUsers)
+                                    {
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <a asp-action="Edit"
+                                               asp-route-id="@user.Id"
+                                               class="btn btn-sm btn-warning">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </a>
+
+                                            <form asp-action="ToggleStatus" method="post" class="d-inline"
+                                                  onsubmit="return confirm('¿Desea cambiar el estado de este usuario?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@user.Id" />
+                                                <input type="hidden" name="search" value="@Model.Search" />
+                                                <input type="hidden" name="role" value="@Model.SelectedRole" />
+                                                <input type="hidden" name="department" value="@Model.SelectedDepartment" />
+                                                <input type="hidden" name="status" value="@Model.SelectedStatus" />
+                                                <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                                                <input type="hidden" name="sortDir" value="@Model.SortDir" />
+                                                <input type="hidden" name="page" value="@Model.Page" />
+                                                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+                                                @if (user.IsActive)
+                                                {
+                                                    <button type="submit" class="btn btn-sm btn-secondary">
+                                                        <i class="bi bi-toggle-off"></i> Desactivar
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-toggle-on"></i> Activar
+                                                    </button>
+                                                }
+                                            </form>
+
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal" data-bs-target="#@resetModalId">
+                                                <i class="bi bi-key"></i> Reset Password
+                                            </button>
+                                        </div>
+
+                                        <div class="modal fade" id="@resetModalId" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Restablecer contraseña</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <form asp-action="ResetPassword" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <div class="modal-body">
+                                                            <input type="hidden" name="id" value="@user.Id" />
+                                                            <input type="hidden" name="search" value="@Model.Search" />
+                                                            <input type="hidden" name="role" value="@Model.SelectedRole" />
+                                                            <input type="hidden" name="department" value="@Model.SelectedDepartment" />
+                                                            <input type="hidden" name="status" value="@Model.SelectedStatus" />
+                                                            <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                                                            <input type="hidden" name="sortDir" value="@Model.SortDir" />
+                                                            <input type="hidden" name="page" value="@Model.Page" />
+                                                            <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Usuario</label>
+                                                                <input class="form-control" value="@user.FullName" readonly />
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Nueva contraseña</label>
+                                                                <input name="newPassword" type="password" class="form-control" minlength="8" required />
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Confirmar contraseña</label>
+                                                                <input name="confirmPassword" type="password" class="form-control" minlength="8" required />
+                                                            </div>
+                                                            <small class="text-muted">Debe contener mínimo 8 caracteres, mayúscula, minúscula y número.</small>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary">Restablecer</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Solo lectura</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+                    <small class="text-muted">Mostrando página @Model.Page de @Model.TotalPages - @Model.TotalItems usuario(s)</small>
+
+                    <nav aria-label="Paginación usuarios">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                                <a class="page-link" href="@BuildUrl(Math.Max(1, Model.Page - 1))">Anterior</a>
+                            </li>
+
+                            @{
+                                var startPage = Math.Max(1, Model.Page - 2);
+                                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                            }
+
+                            @for (var p = startPage; p <= endPage; p++)
+                            {
+                                <li class="page-item @(p == Model.Page ? "active" : "")">
+                                    <a class="page-link" href="@BuildUrl(p)">@p</a>
+                                </li>
+                            }
+
+                            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                                <a class="page-link" href="@BuildUrl(Math.Min(Model.TotalPages, Model.Page + 1))">Siguiente</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    }
+</div>

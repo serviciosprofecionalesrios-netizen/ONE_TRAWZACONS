@@ -1,0 +1,1585 @@
+@{
+    ViewData["Title"] = "Nuevo ingreso de equipo y gondola";
+}
+
+<style>
+    .card .btn-primary {
+        background-color: #0f3d8c;
+        border-color: #0f3d8c;
+    }
+
+    .card .btn-primary:hover,
+    .card .btn-primary:focus {
+        background-color: #0b2f6d;
+        border-color: #0b2f6d;
+    }
+
+    .card .btn-outline-primary {
+        color: #0f3d8c;
+        border-color: #0f3d8c;
+    }
+
+    .card .btn-outline-primary:hover,
+    .card .btn-outline-primary:focus {
+        color: #ffffff;
+        background-color: #0f3d8c;
+        border-color: #0f3d8c;
+    }
+
+    .card .form-label .text-danger {
+        color: #0f3d8c !important;
+    }
+
+    .ingreso-eg-insight-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.85rem;
+        background: #f8fafc;
+        padding: 0.9rem;
+        height: 100%;
+    }
+
+    .ingreso-eg-insight-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1f3555;
+        margin-bottom: 0.5rem;
+    }
+
+    .checklist-eg-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .checklist-eg-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid #dbe3ef;
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.85rem;
+        background: #ffffff;
+    }
+
+    .checklist-eg-item strong {
+        font-size: 0.8rem;
+    }
+
+    .checklist-eg-item.done {
+        border-color: #86efac;
+        background: #ecfdf3;
+    }
+
+    .checklist-eg-item.pending {
+        border-color: #fecaca;
+        background: #fff5f5;
+    }
+
+    .timeline-eg-compact {
+        max-height: 200px;
+        overflow: auto;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .timeline-eg-row {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.65rem;
+        background: #fff;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.82rem;
+    }
+
+    .timeline-eg-date {
+        color: #64748b;
+        font-size: 0.76rem;
+    }
+
+    .sla-eg-progress {
+        height: 10px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .sla-eg-bar {
+        height: 100%;
+        border-radius: 999px;
+        transition: width .25s ease;
+    }
+
+    .sla-eg-badge {
+        font-size: 0.74rem;
+        font-weight: 700;
+        padding: 0.3rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .sla-eg-badge.success {
+        color: #0f5132;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .sla-eg-badge.warning {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .sla-eg-badge.danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .solicitudes-eg-sla-col {
+        min-width: 165px;
+    }
+
+    .sla-eg-dashboard-grid {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .sla-eg-kpi-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.8rem;
+        background: #f8fafc;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .sla-eg-kpi-label {
+        font-size: 0.76rem;
+        color: #64748b;
+        margin-bottom: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-weight: 700;
+    }
+
+    .sla-eg-kpi-value {
+        font-size: 1.3rem;
+        line-height: 1;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .sla-eg-kpi-value.success {
+        color: #15803d;
+    }
+
+    .sla-eg-kpi-value.warning {
+        color: #b45309;
+    }
+
+    .sla-eg-kpi-value.danger {
+        color: #b91c1c;
+    }
+
+    .sla-eg-tipo-grid {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .sla-eg-tipo-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 0.8rem;
+        background: #ffffff;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .sla-eg-tipo-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1f3555;
+        margin-bottom: 0.45rem;
+    }
+
+    .sla-eg-tipo-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.76rem;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+
+    .sla-eg-pill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .sla-eg-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+    }
+
+    .sla-eg-pill.success {
+        color: #0f5132;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .sla-eg-pill.warning {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .sla-eg-pill.danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+</style>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h2 class="fw-bold mb-2">Nuevo ingreso de equipo y gondola</h2>
+        <p class="text-muted mb-4">Registro operativo para ingresos de equipo pesado y gondolas.</p>
+
+        @if (TempData["NuevoIngresoEquipoGondolaOk"] is string okMessage)
+        {
+            <div class="alert alert-success">@okMessage</div>
+        }
+        @if (TempData["NuevoIngresoEquipoGondolaError"] is string errorMessage)
+        {
+            <div class="alert alert-warning">@errorMessage</div>
+        }
+
+        <div class="mb-4">
+            <label class="form-label fw-semibold d-block mb-2">Selecciona el tipo de ingreso</label>
+            <div class="d-flex flex-wrap gap-2" id="tipoIngresoEquipoGondolaButtons">
+                <button type="button"
+                        class="btn btn-outline-primary js-tipo-ingreso-equipo-gondola"
+                        data-tipo="Ingreso de Equipo">
+                    Ingreso de Equipo
+                </button>
+                <button type="button"
+                        class="btn btn-outline-primary js-tipo-ingreso-equipo-gondola"
+                        data-tipo="Ingreso de Gondola">
+                    Ingreso de Gondola
+                </button>
+            </div>
+            <div class="form-text mt-2">El formulario se habilita al seleccionar uno de los dos botones.</div>
+        </div>
+
+        <form id="formNuevoIngresoEquipoGondola"
+              class="d-none"
+              asp-controller="Operaciones"
+              asp-action="NuevoIngresoEquipoGondola"
+              method="post"
+              enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="solicitud_id" id="solicitudIdEquipoGondolaInput" />
+            <input type="hidden" name="tipo_ingreso" id="tipoIngresoEquipoGondolaInput" required />
+
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMenuPrincipalEquipoGondola">
+                    <i class="bi bi-house-door me-1"></i>
+                    Menu principal
+                </button>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold">Asunto <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="asunto" required />
+                    <div id="tareaPadreHintEquipoGondola" class="form-text"></div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Descripcion</label>
+                    <textarea class="form-control" name="descripcion" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div id="panelIngresoEquipoGondolaInsights" class="row g-3 mb-4 d-none">
+                <div class="col-lg-4">
+                    <div class="ingreso-eg-insight-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="ingreso-eg-insight-title mb-0">Checklist por etapa</div>
+                            <span id="checklistEquipoGondolaSummaryBadge" class="badge text-bg-light border">0/0</span>
+                        </div>
+                        <ul id="checklistEquipoGondolaStageList" class="checklist-eg-list">
+                            <li class="text-muted small">Selecciona un tipo para iniciar.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="ingreso-eg-insight-card">
+                        <div class="ingreso-eg-insight-title">SLA operativo (48 h laborales)</div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span id="slaEquipoGondolaStatusBadgePreview" class="sla-eg-badge success">
+                                <span class="rounded-circle bg-success" style="width:8px;height:8px;display:inline-block;"></span>
+                                Cumplido
+                            </span>
+                            <span id="slaEquipoGondolaDeadlinePreview" class="small text-muted">-</span>
+                        </div>
+                        <div id="slaEquipoGondolaRemainingPreview" class="small mb-2">Restan - h laborales.</div>
+                        <div class="sla-eg-progress mb-2">
+                            <div id="slaEquipoGondolaProgressBarPreview" class="sla-eg-bar" style="width:0%; background:#16a34a;"></div>
+                        </div>
+                        <div class="small text-muted">Horario: Lunes a Viernes, 07:30 a.m. - 05:00 p.m.</div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="ingreso-eg-insight-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="ingreso-eg-insight-title mb-0">Linea de tiempo</div>
+                            <span id="timelineEquipoGondolaCountBadge" class="badge text-bg-light border">0 eventos</span>
+                        </div>
+                        <div id="ingresoEquipoGondolaTimelineCompact" class="timeline-eg-compact">
+                            <div class="text-muted small">Aun no hay eventos para mostrar.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionIngresoEquipo" class="row g-4">
+                <div class="col-12">
+                    <div class="border rounded p-3">
+                        <h5 class="fw-bold mb-3">Solicitud de ingreso de equipo y gondola</h5>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select" name="equipo_estado" required>
+                                    <option>New</option>
+                                    <option>En revision</option>
+                                    <option>Aprobado</option>
+                                    <option>Rechazado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                <select class="form-select" name="equipo_prioridad" required>
+                                    <option>Alta</option>
+                                    <option>Media</option>
+                                    <option>Baja</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Asignado a</label>
+                                <input type="text" class="form-control" name="equipo_asignado_a" />
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="equipo_empresa" required>
+                                            <option value="">--- Por favor seleccione ---</option>
+                                            <option>TRITON</option>
+                                            <option>PAVON ASM</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Codigo del cabezal <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="equipo_codigo_cabezal" required />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Placa de cabezal <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="equipo_placa_cabezal" required />
+                                        <div class="form-text">Escribir sin guiones ni espacios.</div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Tenencia <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="equipo_tenencia" required>
+                                            <option value="">--- Por favor seleccione ---</option>
+                                            <option>Propio</option>
+                                            <option>Rentado</option>
+                                            <option>Tercero</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Propietario <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="equipo_propietario" required />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Placa de gondola</label>
+                                        <input type="text" class="form-control" name="equipo_placa_gondola" />
+                                        <div class="form-text">Escribir sin guiones ni espacios.</div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Circulacion de cabezal <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" name="equipo_circulacion_cabezal" required />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Emision de gases <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" name="equipo_emision_gases" required />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Ficheros</label>
+                                        <input type="file" class="form-control" name="equipo_ficheros" multiple />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tarea padre</label>
+                                        <input type="text" class="form-control js-tarea-padre-eg" name="equipo_tarea_padre" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fecha de inicio</label>
+                                        <input type="date" class="form-control" name="equipo_fecha_inicio" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fecha fin</label>
+                                        <input type="date" class="form-control" name="equipo_fecha_fin" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tiempo estimado</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="equipo_tiempo_estimado" min="0" step="1" />
+                                            <span class="input-group-text">Horas</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">% Realizado</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="equipo_porcentaje_realizado" min="0" max="100" value="0" />
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Vencimiento emision de gases</label>
+                                        <input type="date" class="form-control" name="equipo_vencimiento_emision_gases" />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Inspeccion mecanica</label>
+                                        <input type="file" class="form-control" name="equipo_inspeccion_mecanica" />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Vencimiento insp. mecanica</label>
+                                        <input type="date" class="form-control" name="equipo_vencimiento_inspeccion_mecanica" />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Seguro vehicular <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" name="equipo_seguro_vehicular" required />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Vencimiento seguro vehicular</label>
+                                        <input type="date" class="form-control" name="equipo_vencimiento_seguro_vehicular" />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Circulacion de gondola</label>
+                                        <input type="file" class="form-control" name="equipo_circulacion_gondola" />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Check List de Inspeccion</label>
+                                        <input type="file" class="form-control" name="equipo_checklist_inspeccion" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sectionIngresoGondola" class="row g-4 d-none">
+                <div class="col-12">
+                    <div class="border rounded p-3">
+                        <h5 class="fw-bold mb-3">Solicitud de ingreso de gondola</h5>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select" name="gondola_estado" required>
+                                    <option>New</option>
+                                    <option>En revision</option>
+                                    <option>Aprobado</option>
+                                    <option>Rechazado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                <select class="form-select" name="gondola_prioridad" required>
+                                    <option>Alta</option>
+                                    <option>Media</option>
+                                    <option>Baja</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Asignado a</label>
+                                <input type="text" class="form-control" name="gondola_asignado_a" />
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Placa de gondola <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="gondola_placa" required />
+                                        <div class="form-text">Escribir sin guiones ni espacios.</div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Circulacion de gondola <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" name="gondola_circulacion" required />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Ficheros</label>
+                                        <input type="file" class="form-control" name="gondola_ficheros" multiple />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Seguidores</label>
+                                        <input type="text" class="form-control" name="gondola_seguidores_texto" placeholder="Buscar seguidores para anadirlos" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tarea padre</label>
+                                        <input type="text" class="form-control js-tarea-padre-eg" name="gondola_tarea_padre" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fecha de inicio</label>
+                                        <input type="date" class="form-control" name="gondola_fecha_inicio" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fecha fin</label>
+                                        <input type="date" class="form-control" name="gondola_fecha_fin" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tiempo estimado</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="gondola_tiempo_estimado" min="0" step="1" />
+                                            <span class="input-group-text">Horas</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">% Realizado</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="gondola_porcentaje_realizado" min="0" max="100" value="0" />
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Check list de Inspeccion</label>
+                                        <input type="file" class="form-control" name="gondola_checklist_inspeccion" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end gap-2">
+                <button type="reset" class="btn btn-outline-secondary">Limpiar</button>
+                <button type="button" class="btn btn-outline-secondary d-none" id="btnCancelarEdicionEquipoGondola">Cancelar edicion</button>
+                <button type="submit" class="btn btn-primary" id="btnGuardarEquipoGondola">
+                    <i class="bi bi-save me-1"></i>
+                    Guardar registro
+                </button>
+            </div>
+        </form>
+
+        <div id="solicitudesEquipoGondolaPanel" class="mt-4 border rounded p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold mb-0">Solicitudes guardadas</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshSolicitudesEquipoGondola">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                </button>
+            </div>
+            <div class="mb-3">
+                <div id="solicitudesEquipoGondolaSlaGlobalCards" class="sla-eg-dashboard-grid mb-2">
+                    <div class="sla-eg-kpi-card">
+                        <div class="sla-eg-kpi-label">Solicitudes</div>
+                        <div class="sla-eg-kpi-value">0</div>
+                    </div>
+                </div>
+                <div id="solicitudesEquipoGondolaSlaByTipo" class="sla-eg-tipo-grid">
+                    <div class="text-muted small">Cargando resumen SLA por tipo...</div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Asunto</th>
+                            <th>Solicitante</th>
+                            <th>Tarea padre</th>
+                            <th>Estado</th>
+                            <th>Prioridad</th>
+                            <th class="solicitudes-eg-sla-col">SLA limite</th>
+                            <th class="solicitudes-eg-sla-col">Semaforo SLA</th>
+                            <th class="solicitudes-eg-sla-col">Restante</th>
+                            <th>Actualizado</th>
+                            <th style="width: 170px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="solicitudesEquipoGondolaBody">
+                        <tr>
+                            <td colspan="12" class="text-muted text-center py-3">Cargando solicitudes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="historialTrazabilidadEquipoGondolaPanel" class="mt-4 border rounded p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold mb-0">Historial de trazabilidad</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshHistoryEquipoGondola">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                </button>
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <input type="text"
+                           id="traceSearchInputEquipoGondola"
+                           class="form-control form-control-sm"
+                           placeholder="Buscar por nombre del solicitante..." />
+                </div>
+                <div class="col-md-6">
+                    <select id="traceTypeFilterEquipoGondola" class="form-select form-select-sm">
+                        <option value="">Todos los tipos</option>
+                        <option value="Ingreso de Equipo">Ingreso de Equipo</option>
+                        <option value="Ingreso de Gondola">Ingreso de Gondola</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Solicitante</th>
+                            <th>Tarea padre</th>
+                            <th>Tipo origen</th>
+                            <th>Ultimo tipo</th>
+                            <th>Ultimo asunto</th>
+                            <th>Creado</th>
+                            <th>Actualizado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="traceHistoryBodyEquipoGondola">
+                        <tr>
+                            <td colspan="7" class="text-muted text-center py-3">Cargando historial...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const SLA_TOTAL_HOURS = 48;
+            const SLA_NEAR_HOURS = 8;
+            const WORK_START_MINUTES = 7 * 60 + 30;
+            const WORK_END_MINUTES = 17 * 60;
+            const buttons = document.querySelectorAll('.js-tipo-ingreso-equipo-gondola');
+            const form = document.getElementById('formNuevoIngresoEquipoGondola');
+            const hiddenTipo = document.getElementById('tipoIngresoEquipoGondolaInput');
+            const solicitudIdInput = document.getElementById('solicitudIdEquipoGondolaInput');
+            const sectionEquipo = document.getElementById('sectionIngresoEquipo');
+            const sectionGondola = document.getElementById('sectionIngresoGondola');
+            const btnMenuPrincipal = document.getElementById('btnMenuPrincipalEquipoGondola');
+            const asuntoInput = form ? form.querySelector('input[name="asunto"]') : null;
+            const hint = document.getElementById('tareaPadreHintEquipoGondola');
+            const tareaPadreInputs = form ? form.querySelectorAll('.js-tarea-padre-eg') : [];
+            const btnGuardar = document.getElementById('btnGuardarEquipoGondola');
+            const btnCancelarEdicion = document.getElementById('btnCancelarEdicionEquipoGondola');
+
+            const historyUrl = '@Url.Action("GetIngresoEquipoGondolaTraceHistory", "Operaciones")';
+            const resolveUrl = '@Url.Action("ResolveTareaPadreIngresoEquipoGondola", "Operaciones")';
+            const requestsUrl = '@Url.Action("GetIngresoEquipoGondolaRequests", "Operaciones")';
+            const requestByIdTemplate = '@Url.Action("GetIngresoEquipoGondolaRequestById", "Operaciones", new { id = "__id__" })';
+            const deleteRequestUrl = '@Url.Action("DeleteIngresoEquipoGondolaRequest", "Operaciones")';
+
+            const traceHistoryBody = document.getElementById('traceHistoryBodyEquipoGondola');
+            const btnRefreshHistory = document.getElementById('btnRefreshHistoryEquipoGondola');
+            const traceSearchInput = document.getElementById('traceSearchInputEquipoGondola');
+            const traceTypeFilter = document.getElementById('traceTypeFilterEquipoGondola');
+            const solicitudesBody = document.getElementById('solicitudesEquipoGondolaBody');
+            const btnRefreshSolicitudes = document.getElementById('btnRefreshSolicitudesEquipoGondola');
+            const insightsPanel = document.getElementById('panelIngresoEquipoGondolaInsights');
+            const checklistStageList = document.getElementById('checklistEquipoGondolaStageList');
+            const checklistSummaryBadge = document.getElementById('checklistEquipoGondolaSummaryBadge');
+            const slaStatusBadgePreview = document.getElementById('slaEquipoGondolaStatusBadgePreview');
+            const slaDeadlinePreview = document.getElementById('slaEquipoGondolaDeadlinePreview');
+            const slaRemainingPreview = document.getElementById('slaEquipoGondolaRemainingPreview');
+            const slaProgressBarPreview = document.getElementById('slaEquipoGondolaProgressBarPreview');
+            const timelineCompact = document.getElementById('ingresoEquipoGondolaTimelineCompact');
+            const timelineCountBadge = document.getElementById('timelineEquipoGondolaCountBadge');
+            const solicitudesSlaGlobalCards = document.getElementById('solicitudesEquipoGondolaSlaGlobalCards');
+            const solicitudesSlaByTipo = document.getElementById('solicitudesEquipoGondolaSlaByTipo');
+
+            let allHistoryRows = [];
+            let allSolicitudesRows = [];
+            let anchorCreatedAt = null;
+            let anchorUpdatedAt = null;
+
+            if (!buttons.length || !form || !hiddenTipo || !sectionEquipo || !sectionGondola || !asuntoInput) {
+                return;
+            }
+
+            function escapeHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function formatDate(date) {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                    return '-';
+                }
+
+                return date.toLocaleString('es-NI', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
+
+            function toDate(dateValue) {
+                const parsed = new Date(dateValue);
+                return Number.isNaN(parsed.getTime()) ? null : parsed;
+            }
+
+            function parseDateInputValue(value) {
+                if (!value || typeof value !== 'string') {
+                    return null;
+                }
+
+                const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (!match) {
+                    return null;
+                }
+
+                return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 7, 30, 0, 0);
+            }
+
+            function isBusinessDay(date) {
+                const day = date.getDay();
+                return day >= 1 && day <= 5;
+            }
+
+            function nextBusinessStart(date) {
+                const current = new Date(date.getTime());
+                current.setHours(0, 0, 0, 0);
+                do {
+                    current.setDate(current.getDate() + 1);
+                } while (!isBusinessDay(current));
+                current.setHours(7, 30, 0, 0);
+                return current;
+            }
+
+            function normalizeBusinessMoment(date) {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                    return null;
+                }
+
+                const current = new Date(date.getTime());
+                while (!isBusinessDay(current)) {
+                    current.setDate(current.getDate() + 1);
+                    current.setHours(7, 30, 0, 0);
+                }
+
+                const minutes = current.getHours() * 60 + current.getMinutes();
+                if (minutes < WORK_START_MINUTES) {
+                    current.setHours(7, 30, 0, 0);
+                    return current;
+                }
+
+                if (minutes >= WORK_END_MINUTES) {
+                    return nextBusinessStart(current);
+                }
+
+                return current;
+            }
+
+            function addBusinessHours(start, hours) {
+                let current = normalizeBusinessMoment(start);
+                if (!current || !Number.isFinite(hours) || hours <= 0) {
+                    return current;
+                }
+
+                let remaining = hours;
+                while (remaining > 0) {
+                    const dayEnd = new Date(current.getTime());
+                    dayEnd.setHours(17, 0, 0, 0);
+                    const available = (dayEnd.getTime() - current.getTime()) / 3600000;
+                    if (available <= 0) {
+                        current = nextBusinessStart(current);
+                        continue;
+                    }
+
+                    const used = Math.min(remaining, available);
+                    current = new Date(current.getTime() + used * 3600000);
+                    remaining -= used;
+
+                    if (remaining > 0) {
+                        current = nextBusinessStart(current);
+                    }
+                }
+
+                return current;
+            }
+
+            function businessHoursBetween(from, to) {
+                if (!(from instanceof Date) || !(to instanceof Date) || to <= from) {
+                    return 0;
+                }
+
+                let total = 0;
+                let cursor = new Date(from.getTime());
+
+                while (cursor < to) {
+                    if (!isBusinessDay(cursor)) {
+                        cursor = nextBusinessStart(cursor);
+                        continue;
+                    }
+
+                    const dayStart = new Date(cursor.getTime());
+                    dayStart.setHours(7, 30, 0, 0);
+                    const dayEnd = new Date(cursor.getTime());
+                    dayEnd.setHours(17, 0, 0, 0);
+
+                    if (cursor < dayStart) {
+                        cursor = dayStart;
+                    }
+
+                    if (cursor >= dayEnd) {
+                        cursor = nextBusinessStart(cursor);
+                        continue;
+                    }
+
+                    const segmentEnd = to < dayEnd ? to : dayEnd;
+                    if (segmentEnd > cursor) {
+                        total += (segmentEnd.getTime() - cursor.getTime()) / 3600000;
+                    }
+
+                    cursor = segmentEnd;
+                    if (cursor >= dayEnd) {
+                        cursor = nextBusinessStart(cursor);
+                    }
+                }
+
+                return total;
+            }
+
+            function isClosedStatus(status) {
+                const raw = String(status ?? '').trim().toLowerCase();
+                return raw === 'aprobado' || raw === 'rechazado' || raw === 'cerrado' || raw === 'finalizado';
+            }
+
+            function getSlaColor(statusClass) {
+                if (statusClass === 'warning') return '#f59e0b';
+                if (statusClass === 'danger') return '#ef4444';
+                return '#16a34a';
+            }
+
+            function getCurrentPrefix() {
+                return (hiddenTipo.value || '').trim() === 'Ingreso de Equipo' ? 'equipo_' : 'gondola_';
+            }
+
+            function getField(name) {
+                return form.querySelector(`[name="${name}"]`);
+            }
+
+            function hasValue(name) {
+                const field = getField(name);
+                if (!field || field.disabled) return false;
+
+                if (field.type === 'checkbox') {
+                    return form.querySelectorAll(`[name="${name}"]:checked`).length > 0;
+                }
+
+                return String(field.value || '').trim().length > 0;
+            }
+
+            function hasPositiveNumber(name) {
+                const field = getField(name);
+                if (!field || field.disabled) return false;
+                const value = Number(field.value);
+                return Number.isFinite(value) && value > 0;
+            }
+
+            function computeSlaSnapshot() {
+                const prefix = getCurrentPrefix();
+                const stateField = getField(`${prefix}estado`);
+                const status = stateField ? stateField.value : '';
+                const baseStart = anchorCreatedAt instanceof Date ? anchorCreatedAt : new Date();
+                const deadline = addBusinessHours(baseStart, SLA_TOTAL_HOURS);
+                const reference = isClosedStatus(status) && anchorUpdatedAt instanceof Date
+                    ? anchorUpdatedAt
+                    : new Date();
+
+                const consumedHours = Math.max(0, businessHoursBetween(baseStart, reference));
+                const remainingHours = SLA_TOTAL_HOURS - consumedHours;
+                const progress = Math.max(0, Math.min(100, (consumedHours / SLA_TOTAL_HOURS) * 100));
+
+                let statusLabel = 'Cumplido';
+                let statusClass = 'success';
+                let remainingLabel = `Restan ${remainingHours.toFixed(1)} h laborales.`;
+                if (remainingHours <= 0) {
+                    statusLabel = 'Vencido';
+                    statusClass = 'danger';
+                    remainingLabel = `Vencido por ${Math.abs(remainingHours).toFixed(1)} h laborales.`;
+                } else if (remainingHours <= SLA_NEAR_HOURS) {
+                    statusLabel = 'Por vencer';
+                    statusClass = 'warning';
+                    remainingLabel = `Restan ${remainingHours.toFixed(1)} h laborales.`;
+                }
+
+                return { deadline, statusLabel, statusClass, remainingLabel, progress };
+            }
+
+            function renderSlaBadge(statusLabel, statusClass) {
+                const dotClass = statusClass === 'warning'
+                    ? 'bg-warning'
+                    : (statusClass === 'danger' ? 'bg-danger' : 'bg-success');
+                return `<span class="sla-eg-badge ${statusClass}"><span class="rounded-circle ${dotClass}" style="width:8px;height:8px;display:inline-block;"></span>${escapeHtml(statusLabel)}</span>`;
+            }
+
+            function renderSlaPreview() {
+                if (!slaStatusBadgePreview || !slaDeadlinePreview || !slaRemainingPreview || !slaProgressBarPreview) {
+                    return;
+                }
+
+                const sla = computeSlaSnapshot();
+                slaStatusBadgePreview.className = `sla-eg-badge ${sla.statusClass}`;
+                slaStatusBadgePreview.innerHTML = `<span class="rounded-circle ${sla.statusClass === 'warning' ? 'bg-warning' : (sla.statusClass === 'danger' ? 'bg-danger' : 'bg-success')}" style="width:8px;height:8px;display:inline-block;"></span>${escapeHtml(sla.statusLabel)}`;
+                slaDeadlinePreview.textContent = `Limite: ${formatDate(sla.deadline)}`;
+                slaRemainingPreview.textContent = sla.remainingLabel;
+                slaProgressBarPreview.style.width = `${sla.progress.toFixed(1)}%`;
+                slaProgressBarPreview.style.background = getSlaColor(sla.statusClass);
+            }
+
+            function getChecklistDefinition() {
+                const isEquipo = (hiddenTipo.value || '').trim() === 'Ingreso de Equipo';
+                const prefix = isEquipo ? 'equipo_' : 'gondola_';
+                return [
+                    {
+                        title: 'Registro base',
+                        done: () => hasValue('tipo_ingreso') && hasValue('asunto') && hasValue(`${prefix}tarea_padre`)
+                    },
+                    {
+                        title: 'Documentacion tecnica',
+                        done: isEquipo
+                            ? () => hasValue('equipo_empresa') && hasValue('equipo_codigo_cabezal') && hasValue('equipo_placa_cabezal') && hasValue('equipo_propietario')
+                            : () => hasValue('gondola_placa') && hasValue('gondola_tarea_padre')
+                    },
+                    {
+                        title: 'Asignacion y plan',
+                        done: () => hasValue(`${prefix}estado`) && hasValue(`${prefix}prioridad`) && hasPositiveNumber(`${prefix}tiempo_estimado`)
+                    },
+                    {
+                        title: 'Cierre',
+                        done: () => isClosedStatus((getField(`${prefix}estado`) || {}).value || '') || hasValue(`${prefix}fecha_fin`) || Number((getField(`${prefix}porcentaje_realizado`) || {}).value || 0) >= 100
+                    }
+                ];
+            }
+
+            function renderChecklist() {
+                if (!checklistStageList || !checklistSummaryBadge) return;
+                const stages = getChecklistDefinition();
+                const rows = stages.map(stage => ({ title: stage.title, done: stage.done() }));
+                const doneCount = rows.filter(x => x.done).length;
+                checklistSummaryBadge.textContent = `${doneCount}/${rows.length}`;
+                checklistStageList.innerHTML = rows.map(row => `
+                    <li class="checklist-eg-item ${row.done ? 'done' : 'pending'}">
+                        <strong>${escapeHtml(row.title)}</strong>
+                        <span class="badge ${row.done ? 'text-bg-success' : 'text-bg-secondary'}">${row.done ? 'Completo' : 'Pendiente'}</span>
+                    </li>
+                `).join('');
+            }
+
+            function getDateInputLabel(input) {
+                const wrapper = input.closest('.col-md-4, .col-md-6, .col-md-8, .col-md-12, .col-12');
+                const label = wrapper ? wrapper.querySelector('label') : null;
+                return (label ? label.textContent : input.name || 'Fecha')?.trim() || 'Fecha';
+            }
+
+            function renderTimeline() {
+                if (!timelineCompact || !timelineCountBadge) return;
+                const events = [];
+                const createdDate = anchorCreatedAt instanceof Date ? anchorCreatedAt : new Date();
+                const updatedDate = anchorUpdatedAt instanceof Date ? anchorUpdatedAt : null;
+                const sla = computeSlaSnapshot();
+
+                events.push({ date: createdDate, title: 'Registro creado', subtitle: 'Inicio de flujo' });
+                events.push({ date: sla.deadline, title: 'Limite SLA', subtitle: '48 h laborales' });
+                if (updatedDate) {
+                    events.push({ date: updatedDate, title: 'Ultima actualizacion', subtitle: 'Bitacora de solicitud' });
+                }
+
+                form.querySelectorAll('input[type="date"]').forEach(input => {
+                    if (input.disabled || !input.value) return;
+                    const eventDate = parseDateInputValue(input.value);
+                    if (!eventDate) return;
+                    events.push({
+                        date: eventDate,
+                        title: getDateInputLabel(input),
+                        subtitle: 'Fecha capturada en formulario'
+                    });
+                });
+
+                const ordered = events
+                    .filter(x => x.date instanceof Date && !Number.isNaN(x.date.getTime()))
+                    .sort((a, b) => a.date.getTime() - b.date.getTime());
+                timelineCountBadge.textContent = `${ordered.length} evento${ordered.length === 1 ? '' : 's'}`;
+
+                if (!ordered.length) {
+                    timelineCompact.innerHTML = '<div class="text-muted small">Aun no hay eventos para mostrar.</div>';
+                    return;
+                }
+
+                timelineCompact.innerHTML = ordered.map(eventItem => `
+                    <div class="timeline-eg-row">
+                        <div class="timeline-eg-date">${escapeHtml(formatDate(eventItem.date))}</div>
+                        <div class="fw-semibold">${escapeHtml(eventItem.title)}</div>
+                        <div class="text-muted">${escapeHtml(eventItem.subtitle || '')}</div>
+                    </div>
+                `).join('');
+            }
+
+            function refreshInsights() {
+                if (insightsPanel && insightsPanel.classList.contains('d-none') && !form.classList.contains('d-none')) {
+                    insightsPanel.classList.remove('d-none');
+                }
+                renderChecklist();
+                renderSlaPreview();
+                renderTimeline();
+            }
+
+            function renderSolicitudesSlaDashboard(rows) {
+                if (!solicitudesSlaGlobalCards || !solicitudesSlaByTipo) {
+                    return;
+                }
+
+                const items = Array.isArray(rows) ? rows : [];
+                const total = items.length;
+                const cumplidas = items.filter(r => (r.slaStatusClass || '').toLowerCase() === 'success').length;
+                const porVencer = items.filter(r => (r.slaStatusClass || '').toLowerCase() === 'warning').length;
+                const vencidas = items.filter(r => (r.slaStatusClass || '').toLowerCase() === 'danger').length;
+                const cumplimientoPct = total > 0 ? Math.round((cumplidas / total) * 100) : 0;
+
+                solicitudesSlaGlobalCards.innerHTML = `
+                    <div class="sla-eg-kpi-card">
+                        <div class="sla-eg-kpi-label">Solicitudes</div>
+                        <div class="sla-eg-kpi-value">${total}</div>
+                    </div>
+                    <div class="sla-eg-kpi-card">
+                        <div class="sla-eg-kpi-label">Cumplidas</div>
+                        <div class="sla-eg-kpi-value success">${cumplidas}</div>
+                    </div>
+                    <div class="sla-eg-kpi-card">
+                        <div class="sla-eg-kpi-label">Por vencer</div>
+                        <div class="sla-eg-kpi-value warning">${porVencer}</div>
+                    </div>
+                    <div class="sla-eg-kpi-card">
+                        <div class="sla-eg-kpi-label">Vencidas</div>
+                        <div class="sla-eg-kpi-value danger">${vencidas}</div>
+                    </div>
+                    <div class="sla-eg-kpi-card">
+                        <div class="sla-eg-kpi-label">% Cumplimiento</div>
+                        <div class="sla-eg-kpi-value">${cumplimientoPct}%</div>
+                    </div>
+                `;
+
+                if (!total) {
+                    solicitudesSlaByTipo.innerHTML = '<div class="text-muted small">Sin datos de solicitudes para calcular SLA por tipo.</div>';
+                    return;
+                }
+
+                const grouped = new Map();
+                items.forEach(item => {
+                    const key = (item.tipo || 'Sin tipo').trim() || 'Sin tipo';
+                    if (!grouped.has(key)) {
+                        grouped.set(key, { total: 0, success: 0, warning: 0, danger: 0 });
+                    }
+
+                    const bucket = grouped.get(key);
+                    bucket.total += 1;
+                    const status = (item.slaStatusClass || '').toLowerCase();
+                    if (status === 'danger') bucket.danger += 1;
+                    else if (status === 'warning') bucket.warning += 1;
+                    else bucket.success += 1;
+                });
+
+                const ordered = Array.from(grouped.entries())
+                    .sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0], 'es'));
+
+                solicitudesSlaByTipo.innerHTML = ordered.map(([tipo, data]) => {
+                    const pct = data.total > 0 ? Math.round((data.success / data.total) * 100) : 0;
+                    return `
+                        <div class="sla-eg-tipo-card">
+                            <div class="sla-eg-tipo-title">${escapeHtml(tipo)}</div>
+                            <div class="sla-eg-tipo-meta">
+                                <span>Total: ${data.total}</span>
+                                <strong>${pct}% cumplido</strong>
+                            </div>
+                            <div class="sla-eg-pill-list">
+                                <span class="sla-eg-pill success">Cumplidas: ${data.success}</span>
+                                <span class="sla-eg-pill warning">Por vencer: ${data.warning}</span>
+                                <span class="sla-eg-pill danger">Vencidas: ${data.danger}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function setSectionState(section, enabled) {
+                section.classList.toggle('d-none', !enabled);
+                section.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (enabled) {
+                        field.disabled = false;
+                        if (field.dataset.wasRequired === '1') {
+                            field.required = true;
+                        }
+                    } else {
+                        if (field.required) {
+                            field.dataset.wasRequired = '1';
+                            field.required = false;
+                        }
+                        field.disabled = true;
+                    }
+                });
+            }
+
+            function setTareaPadreValue(value) {
+                tareaPadreInputs.forEach(input => {
+                    input.value = value || '';
+                });
+                refreshInsights();
+            }
+
+            function setEditMode(enabled) {
+                if (!btnGuardar || !btnCancelarEdicion || !solicitudIdInput) return;
+
+                if (enabled) {
+                    btnGuardar.innerHTML = '<i class="bi bi-save me-1"></i>Actualizar registro';
+                    btnCancelarEdicion.classList.remove('d-none');
+                } else {
+                    solicitudIdInput.value = '';
+                    btnGuardar.innerHTML = '<i class="bi bi-save me-1"></i>Guardar registro';
+                    btnCancelarEdicion.classList.add('d-none');
+                }
+            }
+
+            function renderTraceHistory(rows) {
+                if (!traceHistoryBody) return;
+
+                if (!rows || !rows.length) {
+                    traceHistoryBody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">Sin registros de trazabilidad.</td></tr>';
+                    return;
+                }
+
+                traceHistoryBody.innerHTML = rows.map(row => `
+                    <tr>
+                        <td>${row.solicitante || ''}</td>
+                        <td><span class="badge text-bg-light border">${row.tareaPadre || ''}</span></td>
+                        <td>${row.tipoOrigen || ''}</td>
+                        <td>${row.ultimoTipo || ''}</td>
+                        <td>${row.ultimoAsunto || ''}</td>
+                        <td>${row.createdAt || ''}</td>
+                        <td>${row.updatedAt || ''}</td>
+                    </tr>
+                `).join('');
+            }
+
+            function applyTraceFilters() {
+                const query = ((traceSearchInput && traceSearchInput.value) ? traceSearchInput.value : '').trim().toLowerCase();
+                const type = ((traceTypeFilter && traceTypeFilter.value) ? traceTypeFilter.value : '').trim();
+
+                const filtered = allHistoryRows.filter(row => {
+                    const byName = !query || ((row.solicitante || '').toLowerCase().includes(query));
+                    const byType = !type || row.tipoOrigen === type || row.ultimoTipo === type;
+                    return byName && byType;
+                });
+
+                renderTraceHistory(filtered);
+            }
+
+            async function loadTraceHistory() {
+                if (!traceHistoryBody) return;
+                try {
+                    const response = await fetch(`${historyUrl}?take=30`, { method: 'GET' });
+                    if (!response.ok) throw new Error('Trace error');
+                    const result = await response.json();
+                    allHistoryRows = (result && result.rows) ? result.rows : [];
+                    applyTraceFilters();
+                } catch {
+                    traceHistoryBody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-3">No se pudo cargar el historial.</td></tr>';
+                }
+            }
+
+            function renderSolicitudes(rows) {
+                if (!solicitudesBody) return;
+                renderSolicitudesSlaDashboard(rows);
+
+                if (!rows || !rows.length) {
+                    solicitudesBody.innerHTML = '<tr><td colspan="12" class="text-muted text-center py-3">No hay solicitudes registradas.</td></tr>';
+                    return;
+                }
+
+                solicitudesBody.innerHTML = rows.map(row => `
+                    <tr>
+                        <td>${row.id}</td>
+                        <td>${row.tipo || ''}</td>
+                        <td>${row.asunto || ''}</td>
+                        <td>${row.solicitante || ''}</td>
+                        <td><span class="badge text-bg-light border">${row.tareaPadre || ''}</span></td>
+                        <td>${row.estado || ''}</td>
+                        <td>${row.prioridad || ''}</td>
+                        <td>${row.slaDeadline || '-'}</td>
+                        <td>${renderSlaBadge(row.slaStatus || 'Cumplido', row.slaStatusClass || 'success')}</td>
+                        <td>
+                            <div>${escapeHtml(row.slaRemainingLabel || '-')}</div>
+                            <div class="sla-eg-progress mt-1">
+                                <div class="sla-eg-bar" style="width:${Math.max(0, Math.min(100, Number(row.slaProgress || 0))).toFixed(1)}%; background:${getSlaColor(row.slaStatusClass || 'success')};"></div>
+                            </div>
+                        </td>
+                        <td>${row.updatedAt || ''}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary js-edit-eg" data-id="${row.id}">Editar</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger js-delete-eg" data-id="${row.id}">Eliminar</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            async function loadSolicitudes() {
+                if (!solicitudesBody) return;
+                try {
+                    const response = await fetch(`${requestsUrl}?take=100`, { method: 'GET' });
+                    if (!response.ok) throw new Error('Request list error');
+                    const result = await response.json();
+                    allSolicitudesRows = (result && result.rows) ? result.rows : [];
+                    renderSolicitudes(allSolicitudesRows);
+                } catch {
+                    solicitudesBody.innerHTML = '<tr><td colspan="12" class="text-danger text-center py-3">No se pudo cargar el listado.</td></tr>';
+                    renderSolicitudesSlaDashboard([]);
+                }
+            }
+
+            async function resolveTareaPadre() {
+                const tipo = (hiddenTipo.value || '').trim();
+                const asunto = (asuntoInput.value || '').trim();
+
+                if (!tipo || !asunto) {
+                    setTareaPadreValue('');
+                    if (hint) hint.textContent = '';
+                    return;
+                }
+
+                try {
+                    const query = `?tipo=${encodeURIComponent(tipo)}&asunto=${encodeURIComponent(asunto)}`;
+                    const response = await fetch(`${resolveUrl}${query}`, { method: 'GET' });
+                    if (!response.ok) throw new Error('Resolve error');
+                    const result = await response.json();
+
+                    if (result && result.success) {
+                        setTareaPadreValue(result.tareaPadre || '');
+                        if (hint) {
+                            hint.textContent = result.message || '';
+                            hint.classList.remove('text-danger');
+                            hint.classList.add('text-success');
+                        }
+                        loadTraceHistory();
+                    } else {
+                        setTareaPadreValue('');
+                        if (hint) {
+                            hint.textContent = (result && result.message) ? result.message : 'No fue posible generar la tarea padre.';
+                            hint.classList.remove('text-success');
+                            hint.classList.add('text-danger');
+                        }
+                    }
+                } catch {
+                    setTareaPadreValue('');
+                    if (hint) {
+                        hint.textContent = 'No se pudo validar la trazabilidad en este momento.';
+                        hint.classList.remove('text-success');
+                        hint.classList.add('text-danger');
+                    }
+                }
+            }
+
+            function resetFormValuesForEdit() {
+                form.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name === '__RequestVerificationToken' || field.name === 'solicitud_id' || field.name === 'tipo_ingreso') {
+                        return;
+                    }
+
+                    if (field.type === 'file') {
+                        return;
+                    }
+
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.checked = false;
+                        return;
+                    }
+
+                    field.value = '';
+                });
+            }
+
+            function applyPayload(payload) {
+                if (!payload) return;
+
+                Object.entries(payload).forEach(([name, values]) => {
+                    if (!name || name === '__RequestVerificationToken' || name === 'solicitud_id') {
+                        return;
+                    }
+
+                    const fields = form.querySelectorAll(`[name="${name}"]`);
+                    if (!fields.length) {
+                        return;
+                    }
+
+                    const valueArray = Array.isArray(values) ? values : [values];
+
+                    fields.forEach(field => {
+                        if (field.type === 'file') {
+                            return;
+                        }
+
+                        if (field.type === 'checkbox' || field.type === 'radio') {
+                            field.checked = valueArray.includes(field.value);
+                            return;
+                        }
+
+                        field.value = valueArray.length ? (valueArray[0] ?? '') : '';
+                    });
+                });
+            }
+
+            async function editSolicitud(id) {
+                if (!id || !Number.isInteger(id)) return;
+
+                try {
+                    const url = requestByIdTemplate.replace('__id__', String(id));
+                    const response = await fetch(url, { method: 'GET' });
+                    if (!response.ok) throw new Error('Detail error');
+                    const result = await response.json();
+
+                    if (!result || !result.success || !result.detail) {
+                        alert((result && result.message) ? result.message : 'No se encontró el detalle de la solicitud.');
+                        return;
+                    }
+
+                    const detail = result.detail;
+                    const button = Array.from(buttons).find(btn => (btn.getAttribute('data-tipo') || '') === (detail.tipo || ''));
+                    if (button) {
+                        selectTipo(button, false);
+                    } else {
+                        form.classList.remove('d-none');
+                    }
+
+                    resetFormValuesForEdit();
+                    applyPayload(detail.payload);
+
+                    if (solicitudIdInput) {
+                        solicitudIdInput.value = String(detail.id || '');
+                    }
+
+                    if (detail.tareaPadre) {
+                        setTareaPadreValue(detail.tareaPadre);
+                    }
+
+                    anchorCreatedAt = toDate(detail.createdAtIso) || new Date();
+                    anchorUpdatedAt = toDate(detail.updatedAtIso);
+                    setEditMode(true);
+                    refreshInsights();
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } catch {
+                    alert('No se pudo cargar la solicitud para editar.');
+                }
+            }
+
+            async function deleteSolicitud(id) {
+                if (!id || !Number.isInteger(id)) return;
+
+                if (!confirm('¿Deseas eliminar esta solicitud? Esta accion no se puede deshacer.')) {
+                    return;
+                }
+
+                try {
+                    const tokenField = form.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenField ? tokenField.value : '';
+                    const body = new URLSearchParams();
+                    body.append('id', String(id));
+                    body.append('__RequestVerificationToken', token);
+
+                    const response = await fetch(deleteRequestUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: body.toString()
+                    });
+
+                    if (!response.ok) throw new Error('Delete error');
+                    const result = await response.json();
+                    if (!result || !result.success) {
+                        alert((result && result.message) ? result.message : 'No se pudo eliminar la solicitud.');
+                        return;
+                    }
+
+                    if (solicitudIdInput && Number(solicitudIdInput.value) === id) {
+                        backToMenuPrincipal();
+                    }
+
+                    loadSolicitudes();
+                } catch {
+                    alert('No se pudo eliminar la solicitud en este momento.');
+                }
+            }
+
+            function selectTipo(button, autoResolve = true) {
+                buttons.forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-primary');
+
+                const tipo = button.getAttribute('data-tipo') || '';
+                const isEquipo = tipo === 'Ingreso de Equipo';
+
+                hiddenTipo.value = tipo;
+                form.classList.remove('d-none');
+
+                setSectionState(sectionEquipo, isEquipo);
+                setSectionState(sectionGondola, !isEquipo);
+
+                if (autoResolve && (asuntoInput.value || '').trim()) {
+                    resolveTareaPadre();
+                } else {
+                    setTareaPadreValue('');
+                    if (hint) hint.textContent = '';
+                }
+
+                anchorCreatedAt = new Date();
+                anchorUpdatedAt = null;
+                if (insightsPanel) {
+                    insightsPanel.classList.remove('d-none');
+                }
+                refreshInsights();
+            }
+
+            function backToMenuPrincipal() {
+                buttons.forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+
+                hiddenTipo.value = '';
+                setTareaPadreValue('');
+                if (hint) {
+                    hint.textContent = '';
+                    hint.classList.remove('text-success', 'text-danger');
+                }
+                setEditMode(false);
+                setSectionState(sectionEquipo, false);
+                setSectionState(sectionGondola, false);
+                form.classList.add('d-none');
+                if (insightsPanel) {
+                    insightsPanel.classList.add('d-none');
+                }
+                anchorCreatedAt = null;
+                anchorUpdatedAt = null;
+            }
+
+            setSectionState(sectionEquipo, false);
+            setSectionState(sectionGondola, false);
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function () {
+                    selectTipo(this);
+                });
+            });
+
+            if (btnMenuPrincipal) {
+                btnMenuPrincipal.addEventListener('click', backToMenuPrincipal);
+            }
+
+            if (btnCancelarEdicion) {
+                btnCancelarEdicion.addEventListener('click', backToMenuPrincipal);
+            }
+
+            if (asuntoInput) {
+                asuntoInput.addEventListener('change', resolveTareaPadre);
+                asuntoInput.addEventListener('blur', resolveTareaPadre);
+            }
+
+            if (btnRefreshHistory) {
+                btnRefreshHistory.addEventListener('click', loadTraceHistory);
+            }
+
+            if (traceSearchInput) {
+                traceSearchInput.addEventListener('input', applyTraceFilters);
+            }
+
+            if (traceTypeFilter) {
+                traceTypeFilter.addEventListener('change', applyTraceFilters);
+            }
+
+            if (btnRefreshSolicitudes) {
+                btnRefreshSolicitudes.addEventListener('click', loadSolicitudes);
+            }
+
+            if (solicitudesBody) {
+                solicitudesBody.addEventListener('click', function (event) {
+                    const target = event.target;
+                    if (!(target instanceof HTMLElement)) {
+                        return;
+                    }
+
+                    const editButton = target.closest('.js-edit-eg');
+                    if (editButton instanceof HTMLElement) {
+                        const id = Number(editButton.getAttribute('data-id'));
+                        editSolicitud(id);
+                        return;
+                    }
+
+                    const deleteButton = target.closest('.js-delete-eg');
+                    if (deleteButton instanceof HTMLElement) {
+                        const id = Number(deleteButton.getAttribute('data-id'));
+                        deleteSolicitud(id);
+                    }
+                });
+            }
+
+            form.addEventListener('input', refreshInsights);
+            form.addEventListener('change', refreshInsights);
+
+            loadTraceHistory();
+            loadSolicitudes();
+        })();
+    </script>
+}

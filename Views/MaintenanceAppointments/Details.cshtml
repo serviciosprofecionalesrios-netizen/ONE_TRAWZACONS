@@ -1,0 +1,137 @@
+@model ITServiceDeskApp.Models.MaintenanceAppointment
+@using ITServiceDeskApp.Models
+@using ITServiceDeskApp.ViewModels.MaintenanceAppointments
+
+@{
+    ViewData["Title"] = "Detalle de Cita";
+    var meta = ViewBag.Metadata as MaintenanceAppointmentMetadata ?? new MaintenanceAppointmentMetadata();
+    var userNotes = ViewBag.UserNotes as string ?? string.Empty;
+    var linkedTicketId = ViewBag.LinkedTicketId as int?;
+    var statusClass = ViewBag.StatusLabelClass as string ?? "secondary";
+    var auditEntries = ViewBag.AuditEntries as IEnumerable<MaintenanceAppointmentAuditEntryViewModel> ?? Enumerable.Empty<MaintenanceAppointmentAuditEntryViewModel>();
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Detalle de Cita de Mantenimiento</h4>
+            <span class="fw-bold">@Model.AppointmentNumber</span>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="row g-2">
+                        <div class="col-md-6"><strong>Fecha programada:</strong> @Model.ScheduledFor.ToString("yyyy-MM-dd HH:mm")</div>
+                        <div class="col-md-6"><strong>Estado:</strong> <span class="badge bg-@statusClass">@Model.Status</span></div>
+                        <div class="col-md-6"><strong>Solicitante:</strong> @Model.RequestingUser</div>
+                        <div class="col-md-6"><strong>Tecnico asignado:</strong> @(string.IsNullOrWhiteSpace(Model.AssignedTechnician) ? "Sin asignar" : Model.AssignedTechnician)</div>
+                        <div class="col-md-6"><strong>Categoria tecnico:</strong> @(string.IsNullOrWhiteSpace(Model.TechnicianCategory) ? "No definida" : Model.TechnicianCategory)</div>
+                        <div class="col-md-6"><strong>Sitio:</strong> @Model.Site</div>
+                        <div class="col-md-6"><strong>Tenencia:</strong> @Model.Tenencia</div>
+                        <div class="col-md-6"><strong>Tipo mantenimiento:</strong> @Model.MaintenanceType</div>
+                        <div class="col-md-6"><strong>Unidad/Area:</strong> @Model.AssetOrArea</div>
+                        <div class="col-md-6"><strong>Duracion estimada:</strong> @(meta.EstimatedDurationHours?.ToString("0.##") ?? "N/D") h</div>
+                        <div class="col-md-6">
+                            <strong>Orden relacionada:</strong>
+                            @if (!string.IsNullOrWhiteSpace(meta.MaintenanceOrderNumber) && linkedTicketId.HasValue)
+                            {
+                                <a asp-controller="Tickets" asp-action="Details" asp-route-id="@linkedTicketId.Value">@meta.MaintenanceOrderNumber</a>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(meta.MaintenanceOrderNumber))
+                            {
+                                @meta.MaintenanceOrderNumber
+                            }
+                            else
+                            {
+                                <span>Sin enlazar</span>
+                            }
+                        </div>
+                        <div class="col-md-6"><strong>Ingreso taller:</strong> @(meta.WorkshopEntryAt?.ToString("yyyy-MM-dd HH:mm") ?? "N/D")</div>
+                        <div class="col-md-6"><strong>Salida taller:</strong> @(meta.WorkshopExitAt?.ToString("yyyy-MM-dd HH:mm") ?? "N/D")</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <h6 class="fw-bold mb-2">Checklist tecnico</h6>
+                        <ul class="list-unstyled mb-2">
+                            <li>@(meta.ChecklistInspectionCompleted ? "SI" : "NO") Inspeccion inicial</li>
+                            <li>@(meta.ChecklistSparePartsCompleted ? "SI" : "NO") Repuestos validados</li>
+                            <li>@(meta.ChecklistFinalTestCompleted ? "SI" : "NO") Prueba final</li>
+                            <li>@(meta.ChecklistUserConformityCompleted ? "SI" : "NO") Conformidad usuario</li>
+                        </ul>
+                        <div class="small text-muted">Progreso: @meta.GetChecklistProgressPercent()%</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+            <h5>Descripcion</h5>
+            <p>@Model.Description</p>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <h6>Evidencia tecnica de cierre</h6>
+                    <p>@(string.IsNullOrWhiteSpace(meta.CompletionEvidenceNotes) ? "Sin evidencia registrada." : meta.CompletionEvidenceNotes)</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Usuarios destino</h6>
+                    <p>@(string.IsNullOrWhiteSpace(Model.RecipientUsers) ? "No definido" : Model.RecipientUsers)</p>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(userNotes))
+            {
+                <hr />
+                <h5>Notas</h5>
+                <p>@userNotes</p>
+            }
+
+            <hr />
+            <h5>Historial auditable de cambios</h5>
+            @if (!auditEntries.Any())
+            {
+                <p class="text-muted mb-0">No hay cambios registrados todavia.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Usuario</th>
+                                <th>Campo</th>
+                                <th>Antes</th>
+                                <th>Despues</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in auditEntries)
+                            {
+                                <tr>
+                                    <td>@item.ChangeDateLocal.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    <td>@item.ChangedBy</td>
+                                    <td>@item.FieldChanged</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.OldValue) ? "-" : item.OldValue)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.NewValue) ? "-" : item.NewValue)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.ChangeReason) ? "-" : item.ChangeReason)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="mt-3 text-end">
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
+        <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+        </a>
+    </div>
+</div>

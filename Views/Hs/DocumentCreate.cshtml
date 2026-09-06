@@ -1,0 +1,33 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsDocumentEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Nuevo documento H&S";
+    var types = new SelectList(ViewBag.DocumentTypeOptions as string[] ?? Array.Empty<string>(), Model.DocumentType);
+    var statuses = new SelectList(ViewBag.DocumentStatusOptions as string[] ?? Array.Empty<string>(), Model.Status);
+    var sites = new SelectList(ViewBag.SiteOptions as string[] ?? Array.Empty<string>(), Model.Site);
+}
+
+<div class="container mt-4" style="max-width:900px;">
+    <h3>@ViewData["Title"]</h3>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="DocumentCreate" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-8"><label asp-for="Title" class="form-label fw-semibold"></label><input asp-for="Title" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="DocumentType" class="form-label fw-semibold"></label><select asp-for="DocumentType" asp-items="types" class="form-select"></select></div>
+                <div class="col-md-4"><label asp-for="Code" class="form-label fw-semibold"></label><input asp-for="Code" class="form-control" /></div>
+                <div class="col-md-2"><label asp-for="Version" class="form-label fw-semibold"></label><input asp-for="Version" class="form-control" /></div>
+                <div class="col-md-3"><label asp-for="Site" class="form-label fw-semibold"></label><select asp-for="Site" asp-items="sites" class="form-select"><option>General</option></select></div>
+                <div class="col-md-3"><label asp-for="Status" class="form-label fw-semibold"></label><select asp-for="Status" asp-items="statuses" class="form-select"></select></div>
+                <div class="col-md-4"><label asp-for="EffectiveDate" class="form-label fw-semibold"></label><input asp-for="EffectiveDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="ReviewDate" class="form-label fw-semibold"></label><input asp-for="ReviewDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="DocumentFile" class="form-label fw-semibold"></label><input asp-for="DocumentFile" type="file" class="form-control" /></div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Documents" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button></div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

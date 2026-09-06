@@ -1,0 +1,62 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsWorkPermitEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Editar permiso de trabajo" : "Nuevo permiso de trabajo";
+    var sites = new SelectList(ViewBag.SiteOptions as string[] ?? Array.Empty<string>(), Model.Site);
+    var statuses = new SelectList(ViewBag.PermitStatusOptions as string[] ?? Array.Empty<string>(), Model.Status);
+    var permitTypes = new SelectList(ViewBag.PermitTypeOptions as string[] ?? Array.Empty<string>(), Model.PermitType);
+    var evidencePaths = string.IsNullOrWhiteSpace(Model.EvidencePaths)
+        ? Array.Empty<string>()
+        : Model.EvidencePaths.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
+
+<div class="container mt-4" style="max-width:920px;">
+    <h3>@ViewData["Title"]</h3>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="PermitEdit" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="EvidencePaths" type="hidden" />
+            <div asp-validation-summary="All" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-4"><label asp-for="PermitType" class="form-label fw-semibold"></label><select asp-for="PermitType" class="form-select" asp-items="permitTypes"></select><span asp-validation-for="PermitType" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="Site" class="form-label fw-semibold"></label><select asp-for="Site" class="form-select" asp-items="sites"><option value="">Seleccionar</option></select><span asp-validation-for="Site" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="Area" class="form-label fw-semibold"></label><input asp-for="Area" class="form-control" /><span asp-validation-for="Area" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="RequestedBy" class="form-label fw-semibold"></label><input asp-for="RequestedBy" class="form-control" /><span asp-validation-for="RequestedBy" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="StartAt" class="form-label fw-semibold"></label><input asp-for="StartAt" type="datetime-local" class="form-control" /><span asp-validation-for="StartAt" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="EndAt" class="form-label fw-semibold"></label><input asp-for="EndAt" type="datetime-local" class="form-control" /><span asp-validation-for="EndAt" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="Status" class="form-label fw-semibold"></label><select asp-for="Status" class="form-select" asp-items="statuses"></select><span asp-validation-for="Status" class="text-danger small"></span></div>
+                <div class="col-12"><label asp-for="Controls" class="form-label fw-semibold"></label><textarea asp-for="Controls" class="form-control" rows="4"></textarea><span asp-validation-for="Controls" class="text-danger small"></span></div>
+                <div class="col-12">
+                    <div class="row g-2">
+                        <div class="col-md-4"><div class="form-check"><input asp-for="HasRiskAssessment" class="form-check-input" /><label asp-for="HasRiskAssessment" class="form-check-label"></label></div></div>
+                        <div class="col-md-4"><div class="form-check"><input asp-for="HasAreaIsolation" class="form-check-input" /><label asp-for="HasAreaIsolation" class="form-check-label"></label></div></div>
+                        <div class="col-md-4"><div class="form-check"><input asp-for="HasPpe" class="form-check-input" /><label asp-for="HasPpe" class="form-check-label"></label></div></div>
+                        <div class="col-md-4"><div class="form-check"><input asp-for="HasEmergencyPlan" class="form-check-input" /><label asp-for="HasEmergencyPlan" class="form-check-label"></label></div></div>
+                        <div class="col-md-4"><div class="form-check"><input asp-for="HasSupervisorApproval" class="form-check-input" /><label asp-for="HasSupervisorApproval" class="form-check-label"></label></div></div>
+                    </div>
+                </div>
+                <div class="col-12"><label asp-for="ChecklistNotes" class="form-label fw-semibold"></label><textarea asp-for="ChecklistNotes" class="form-control" rows="3"></textarea><span asp-validation-for="ChecklistNotes" class="text-danger small"></span></div>
+                <div class="col-12">
+                    <label asp-for="EvidenceFiles" class="form-label fw-semibold"></label>
+                    <input asp-for="EvidenceFiles" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple />
+                    <div class="form-text">Adjunta fotos del area, equipos, bloqueo, señalizacion o condiciones antes de aprobar el trabajo.</div>
+                    <span asp-validation-for="EvidenceFiles" class="text-danger small"></span>
+                    @if (evidencePaths.Length > 0)
+                    {
+                        <div class="mt-2 d-flex flex-wrap gap-2">
+                            @for (var i = 0; i < evidencePaths.Length; i++)
+                            {
+                                <a href="@evidencePaths[i]" target="_blank" class="btn btn-sm btn-outline-secondary">Foto @(i + 1)</a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Permits" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button></div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

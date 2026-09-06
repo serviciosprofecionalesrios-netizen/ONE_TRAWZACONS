@@ -1,0 +1,297 @@
+@model ITServiceDeskApp.ViewModels.MaintenanceReports.MaintenanceReportsViewModel
+
+@{
+    ViewData["Title"] = "Reporteria de Mantenimiento";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Reporteria de Mantenimiento</h2>
+            <p class="text-muted mb-0">Analisis de falla a falla, componentes danados y desempeño preventivo/correctivo.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-success"
+               asp-action="ExportExcel"
+               asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")"
+               asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")"
+               asp-route-site="@Model.Site"
+               asp-route-failureCategory="@Model.FailureCategory">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Exportar Excel
+            </a>
+            <a class="btn btn-danger"
+               asp-action="ExportPdf"
+               asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")"
+               asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")"
+               asp-route-site="@Model.Site"
+               asp-route-failureCategory="@Model.FailureCategory">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Fecha inicio</label>
+                    <input type="date" class="form-control" name="startDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Fecha fin</label>
+                    <input type="date" class="form-control" name="endDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Sitio</label>
+                    <select class="form-select" name="site">
+                        <option value="">Todos</option>
+                        @foreach (var site in Model.SiteOptions)
+                        {
+                            if (string.Equals(site, Model.Site, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@site" selected>@site</option>
+                            }
+                            else
+                            {
+                                <option value="@site">@site</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Categoria de falla</label>
+                    <select class="form-select" name="failureCategory">
+                        <option value="">Todas</option>
+                        @foreach (var category in Model.FailureCategoryOptions)
+                        {
+                            if (string.Equals(category, Model.FailureCategory, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@category" selected>@category</option>
+                            }
+                            else
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary me-1">Aplicar</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-2">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">Tickets mantenimiento</div>
+                    <div class="display-6 fw-bold">@Model.TotalMaintenanceTickets</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">Preventivos</div>
+                    <div class="display-6 fw-bold text-success">@Model.PreventiveTickets</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">Correctivos</div>
+                    <div class="display-6 fw-bold text-danger">@Model.CorrectiveTickets</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">Eventos Falla-Falla</div>
+                    <div class="display-6 fw-bold">@Model.FailureToFailureEvents</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">Promedio KM</div>
+                    <div class="display-6 fw-bold">@((Model.AverageKmBetweenFailures ?? 0).ToString("N1"))</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">Rango KM</div>
+                    <div class="fw-bold">
+                        @if (Model.FailureToFailureEvents == 0)
+                        {
+                            <span>N/D</span>
+                        }
+                        else
+                        {
+                            <span>@Model.MinKmBetweenFailures?.ToString("N1") - @Model.MaxKmBetweenFailures?.ToString("N1")</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Falla a Falla (KM despues de salir de taller)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Unidad</th>
+                                <th>Ticket anterior</th>
+                                <th>Reparado</th>
+                                <th>KM salida</th>
+                                <th>Ticket actual</th>
+                                <th>Falla</th>
+                                <th>KM falla</th>
+                                <th>KM entre fallas</th>
+                                <th>Dias</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.FailureToFailureRows.Any())
+                            {
+                                <tr><td colspan="9" class="text-center text-muted py-3">No hay eventos de falla a falla con KM registrados.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var row in Model.FailureToFailureRows.Take(50))
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@row.UnitCode</td>
+                                        <td>@row.PreviousTicketNumber</td>
+                                        <td>@row.PreviousRepairDate.ToString("yyyy-MM-dd")</td>
+                                        <td>@row.PreviousExitKm.ToString("N2")</td>
+                                        <td>@row.CurrentTicketNumber</td>
+                                        <td>@row.CurrentFailureDate.ToString("yyyy-MM-dd")</td>
+                                        <td>@row.CurrentFailureKm.ToString("N2")</td>
+                                        <td class="fw-bold @(row.KmBetweenFailures < 200 ? "text-danger" : "text-success")">@row.KmBetweenFailures.ToString("N2")</td>
+                                        <td>@row.DaysBetweenFailures</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Elementos mas danados</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Categoria</th>
+                                <th>Elemento</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.TopDamagedElements.Any())
+                            {
+                                <tr><td colspan="3" class="text-center text-muted py-3">Sin datos de elementos danados.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var row in Model.TopDamagedElements)
+                                {
+                                    <tr>
+                                        <td>@row.FailureCategory</td>
+                                        <td>@row.DamagedElement</td>
+                                        <td class="fw-bold">@row.Total</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Resumen por categoria</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Categoria</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.FailureCategorySummary.Any())
+                            {
+                                <tr><td colspan="2" class="text-center text-muted py-3">Sin datos de categorias.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var row in Model.FailureCategorySummary)
+                                {
+                                    <tr>
+                                        <td>@row.FailureCategory</td>
+                                        <td class="fw-bold">@row.Total</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Preventivo / Correctivo</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Total</th>
+                                <th>Prom. Res. (h)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.MaintenanceTypeSummary.Any())
+                            {
+                                <tr><td colspan="3" class="text-center text-muted py-3">Sin datos de tipos de mantenimiento.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var row in Model.MaintenanceTypeSummary)
+                                {
+                                    <tr>
+                                        <td>@row.MaintenanceType</td>
+                                        <td class="fw-bold">@row.Total</td>
+                                        <td>@row.AverageResolutionHours.ToString("N1")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vs
+bin
+obj
+out_temp
+tmp_*
+*.log
+*.user
+*.suo
+Entregables
+scripts

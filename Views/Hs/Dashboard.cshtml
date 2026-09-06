@@ -1,0 +1,166 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard H&S";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Dashboard H&S</h2>
+            <div class="text-muted">Indicadores ejecutivos, riesgos, acciones, documentos y calendario H&amp;S.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="IncidentCreate" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nuevo incidente</a>
+            <a asp-action="Calendar" class="btn btn-outline-primary"><i class="bi bi-calendar-event"></i> Calendario</a>
+            <a asp-action="Export" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3"><label class="form-label">Fecha inicio</label><input type="date" name="startDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" class="form-control" /></div>
+                <div class="col-md-3"><label class="form-label">Fecha fin</label><input type="date" name="endDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" class="form-control" /></div>
+                <div class="col-md-3"><button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Aplicar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Incidentes abiertos</div><div class="fs-3 fw-bold">@Model.OpenIncidents</div><div class="small text-danger">Criticos: @Model.CriticalIncidents</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Acciones abiertas</div><div class="fs-3 fw-bold">@Model.OpenActions</div><div class="small text-danger">Vencidas: @Model.OverdueActions</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Inspecciones</div><div class="fs-3 fw-bold">@Model.Inspections</div><div class="small text-muted">Promedio: @Model.AverageInspectionScore.ToString("N2")%</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Capacitaciones</div><div class="fs-3 fw-bold">@Model.Trainings</div><div class="small text-muted">Personas: @Model.TrainedPeople</div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Dias sin LTI</div><div class="fs-3 fw-bold">@Model.DaysWithoutLostTimeIncident</div><div class="small text-muted">Incidentes con tiempo perdido: @Model.LostTimeIncidents</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">TRIR / LTIFR</div><div class="fs-3 fw-bold">@Model.Trir.ToString("N2")</div><div class="small text-muted">LTIFR: @Model.Ltifr.ToString("N2")</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Investigaciones</div><div class="fs-3 fw-bold">@Model.PendingInvestigations</div><div class="small text-muted">Riesgo alto: @Model.HighRiskIncidents</div></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Aprobaciones y vencimientos</div><div class="fs-3 fw-bold">@Model.PendingApprovals</div><div class="small text-muted">Permisos: @Model.PendingPermitApprovals | Vencidos: @Model.OverduePermitApprovals</div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Alertas</div>
+                <div class="card-body">
+                    @foreach (var alert in Model.Alerts)
+                    {
+                        <div class="alert alert-@alert.Tone py-2 mb-2">@alert.Message</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Resumen por sitio</div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Sitio</th><th class="text-end">Incidentes</th><th class="text-end">Acciones abiertas</th><th class="text-end">Cumplimiento</th></tr></thead>
+                        <tbody>
+                        @foreach (var row in Model.SiteSummaries)
+                        {
+                            <tr><td>@row.Site</td><td class="text-end">@row.Incidents</td><td class="text-end">@row.OpenActions</td><td class="text-end">@row.AverageScore.ToString("N2")%</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">Inspecciones por camion</div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Camion / equipo</th><th class="text-end">Inspecciones</th><th>Ultima inspeccion</th><th class="text-end">Ultimo score</th><th class="text-end">Hallazgos</th></tr></thead>
+                        <tbody>
+                        @if (Model.TruckInspectionSummaries.Count == 0)
+                        {
+                            <tr><td colspan="5" class="text-muted">Sin croquis guardados todavia.</td></tr>
+                        }
+                        @foreach (var row in Model.TruckInspectionSummaries)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@row.EquipmentCode</td>
+                                <td class="text-end">@row.Total</td>
+                                <td>@row.LastInspectionAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-end"><span class="badge @(row.LastScorePercent < 70 ? "text-bg-danger" : row.LastScorePercent < 85 ? "text-bg-warning" : "text-bg-success")">@row.LastScorePercent.ToString("N2")%</span></td>
+                                <td class="text-end">@row.OpenFindings</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Incidentes recientes</div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>No.</th><th>Tipo</th><th>Sitio</th><th>Severidad</th><th>Estado</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.RecentIncidents)
+                        {
+                            <tr>
+                                <td><a asp-action="IncidentDetails" asp-route-id="@item.Id">@item.IncidentNumber</a></td>
+                                <td>@item.IncidentType</td>
+                                <td>@item.Site</td>
+                                <td><span class="badge @(item.Severity == "Critica" ? "text-bg-danger" : item.Severity == "Alta" ? "text-bg-warning" : "text-bg-secondary")">@item.Severity</span></td>
+                                <td>@item.Status</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Acciones por vencer</div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Accion</th><th>Responsable</th><th>Prioridad</th><th>Fecha</th><th>Estado</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.DueActions)
+                        {
+                            <tr>
+                                <td>@item.Title</td>
+                                <td>@item.Owner</td>
+                                <td>@item.Priority</td>
+                                <td>@item.DueDateUtc.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge @(item.Status == "Vencida" ? "text-bg-danger" : "text-bg-warning")">@item.Status</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Calendario H&amp;S</div>
+                <div class="list-group list-group-flush">
+                    @foreach (var item in Model.CalendarItems)
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge text-bg-@item.Tone me-2">@item.Type</span>
+                                @item.Title
+                            </div>
+                            <span class="text-muted small">@item.Date.ToString("dd/MM/yyyy")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,562 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.OperacionesReportesViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Reportes de Operaciones";
+}
+
+<style>
+    .ops-report-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .ops-report-card {
+        border: 1px solid #dbe3ef;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .ops-report-card .card-header {
+        background: #f8fbff;
+        border-bottom: 1px solid #e5edf7;
+        font-weight: 800;
+        color: #1d2d44;
+    }
+
+    .ops-kpi {
+        border: 1px solid #d7e2ee;
+        border-radius: 12px;
+        background: #f9fbfd;
+        padding: 0.7rem 0.8rem;
+        height: 100%;
+    }
+
+    .ops-kpi .label {
+        font-size: 0.78rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .ops-kpi .value {
+        font-size: 1.42rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .ops-kpi .sub {
+        font-size: 0.82rem;
+        color: #64748b;
+    }
+
+    .ops-pill {
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.76rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+    }
+
+    .ops-pill.success { color: #166534; background: #dcfce7; border-color: #86efac; }
+    .ops-pill.warning { color: #92400e; background: #fef3c7; border-color: #fcd34d; }
+    .ops-pill.danger { color: #991b1b; background: #fee2e2; border-color: #fca5a5; }
+    .ops-pill.secondary { color: #334155; background: #e2e8f0; border-color: #cbd5e1; }
+
+    .ops-report-item {
+        border: 1px solid #e5edf7;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.8rem;
+    }
+
+    .ops-report-item .title {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .ops-report-item .desc {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .ops-highlight-list {
+        margin: 0 0 0.65rem 0;
+        padding-left: 1rem;
+        color: #334155;
+        font-size: 0.86rem;
+    }
+
+    .ops-highlight-list li {
+        margin-bottom: 0.18rem;
+    }
+
+    .ops-mini {
+        font-size: 0.83rem;
+        color: #64748b;
+    }
+</style>
+
+<div class="ops-report-shell">
+    <div class="ops-report-card card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Reportes de Operaciones</h2>
+                    <p class="text-muted mb-0">Centro de reportes con filtros globales, resumen ejecutivo, trazabilidad y exportaciones.</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("ExportReportesAuditoriaCsv", "Operaciones")">
+                        <i class="bi bi-clock-history me-1"></i>Auditoria CSV
+                    </a>
+                </div>
+            </div>
+
+            @if (TempData["ReportesOk"] is string okMessage && !string.IsNullOrWhiteSpace(okMessage))
+            {
+                <div class="alert alert-success py-2 mb-3">@okMessage</div>
+            }
+            @if (TempData["ReportesError"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger py-2 mb-3">@errorMessage</div>
+            }
+
+            @if (Model.IsFromUpload)
+            {
+                <div class="alert alert-success py-2 mb-3">
+                    Fuente: <strong>@Model.SourceFileName</strong>
+                    @if (Model.FechaCorte.HasValue)
+                    {
+                        <span class="ms-2 text-muted">Corte: @Model.FechaCorte.Value.ToString("dd/MM/yyyy")</span>
+                    }
+                </div>
+            }
+
+            <form method="get" asp-action="Reportes" asp-controller="Operaciones" class="row g-2 align-items-end">
+                <div class="col-xl-2 col-md-3 col-6">
+                    <label class="form-label fw-semibold mb-1">Fecha desde</label>
+                    <input type="date" class="form-control" name="fechaDesde" value="@Model.Filtros.FechaDesde" />
+                </div>
+                <div class="col-xl-2 col-md-3 col-6">
+                    <label class="form-label fw-semibold mb-1">Fecha hasta</label>
+                    <input type="date" class="form-control" name="fechaHasta" value="@Model.Filtros.FechaHasta" />
+                </div>
+                <div class="col-xl-2 col-md-3 col-6">
+                    <label class="form-label fw-semibold mb-1">Sitio</label>
+                    <select class="form-select" name="sitio">
+                        @foreach (var sitio in Model.SitiosDisponibles)
+                        {
+                            <option value="@sitio" selected="@(Model.Filtros.Sitio == sitio ? "selected" : null)">@sitio</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-3 col-6">
+                    <label class="form-label fw-semibold mb-1">Turno</label>
+                    <select class="form-select" name="turno">
+                        @foreach (var turno in Model.TurnosDisponibles)
+                        {
+                            <option value="@turno" selected="@(Model.Filtros.Turno == turno ? "selected" : null)">@turno</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-6 col-6">
+                    <label class="form-label fw-semibold mb-1">Conductor</label>
+                    <input type="text" class="form-control" name="conductor" value="@Model.Filtros.Conductor" placeholder="Buscar conductor" />
+                </div>
+                <div class="col-xl-2 col-md-6 col-6">
+                    <label class="form-label fw-semibold mb-1">Equipo</label>
+                    <input type="text" class="form-control" name="equipo" value="@Model.Filtros.Equipo" placeholder="Buscar equipo" />
+                </div>
+                <div class="col-xl-2 col-md-3 col-6">
+                    <label class="form-label fw-semibold mb-1">Estado</label>
+                    <select class="form-select" name="estado">
+                        @foreach (var estado in Model.EstadosDisponibles)
+                        {
+                            <option value="@estado" selected="@(Model.Filtros.Estado == estado ? "selected" : null)">@estado</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-xl-4 col-md-9 col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>Aplicar filtros
+                    </button>
+                    <a class="btn btn-outline-secondary" href="@Url.Action("Reportes", "Operaciones")">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="ops-report-card card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Resumen ejecutivo</span>
+            <span class="ops-pill @Model.ResumenEjecutivo.EstadoOperativoClase">@Model.ResumenEjecutivo.EstadoOperativo</span>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-warning py-2 mb-3">@Model.ErrorMessage</div>
+            }
+
+            <div class="row g-2 mb-3">
+                <div class="col-xl-3 col-md-6">
+                    <div class="ops-kpi">
+                        <div class="label">Toneladas</div>
+                        <div class="value">@Model.ResumenEjecutivo.Toneladas.ToString("N1", CultureInfo.CurrentCulture)</div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="ops-kpi">
+                        <div class="label">Diesel (gal)</div>
+                        <div class="value">@Model.ResumenEjecutivo.DieselGalones.ToString("N2", CultureInfo.CurrentCulture)</div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <div class="ops-kpi">
+                        <div class="label">% Cumplimiento</div>
+                        <div class="value">@Model.ResumenEjecutivo.CumplimientoPorcentaje%</div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <div class="ops-kpi">
+                        <div class="label">Var. vs periodo ant.</div>
+                        <div class="value @(Model.ResumenEjecutivo.VariacionVsPeriodoAnteriorPorcentaje < 0 ? "text-danger" : "text-success")">
+                            @Model.ResumenEjecutivo.VariacionVsPeriodoAnteriorPorcentaje.ToString("N1", CultureInfo.CurrentCulture)%
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <div class="ops-kpi">
+                        <div class="label">Registros</div>
+                        <div class="value">@Model.ResumenEjecutivo.Registros</div>
+                        <div class="sub">@Model.ResumenEjecutivo.EquiposUnicos equipos | @Model.ResumenEjecutivo.ConductoresUnicos conductores</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Comparativo</th>
+                                    <th class="text-end">Actual Tn</th>
+                                    <th class="text-end">Anterior Tn</th>
+                                    <th class="text-end">Delta Tn</th>
+                                    <th class="text-end">Delta %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var comp in Model.Comparativos)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@comp.Periodo</td>
+                                        <td class="text-end">@comp.ActualToneladas.ToString("N1", CultureInfo.CurrentCulture)</td>
+                                        <td class="text-end">@comp.AnteriorToneladas.ToString("N1", CultureInfo.CurrentCulture)</td>
+                                        <td class="text-end @(comp.DeltaToneladas < 0 ? "text-danger" : "text-success")">@comp.DeltaToneladas.ToString("N1", CultureInfo.CurrentCulture)</td>
+                                        <td class="text-end @(comp.DeltaPorcentaje < 0 ? "text-danger" : "text-success")">@comp.DeltaPorcentaje.ToString("N1", CultureInfo.CurrentCulture)%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="ops-kpi mb-2">
+                        <div class="label">Calidad de datos</div>
+                        <div class="value">@Model.CalidadDatos.PorcentajeIncompleto.ToString("N1", CultureInfo.CurrentCulture)%</div>
+                        <div class="sub">@Model.CalidadDatos.RegistrosIncompletos de @Model.CalidadDatos.RegistrosTotales incompletos</div>
+                    </div>
+                    <div class="ops-mini">
+                        Sin fecha: <strong>@Model.CalidadDatos.SinFecha</strong> |
+                        Sin conductor: <strong>@Model.CalidadDatos.SinConductor</strong> |
+                        Sin equipo: <strong>@Model.CalidadDatos.SinEquipo</strong> |
+                        Sin estado: <strong>@Model.CalidadDatos.SinEstado</strong> |
+                        Sin ruta: <strong>@Model.CalidadDatos.SinRuta</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ops-report-card card border-0 shadow-sm">
+        <div class="card-header">Hallazgos y alertas automáticas</div>
+        <div class="card-body py-2">
+            <ul class="mb-0">
+                @foreach (var alerta in Model.Hallazgos)
+                {
+                    <li class="py-1">@alerta</li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    @foreach (var categoria in Model.Categorias)
+    {
+        <div class="ops-report-card card border-0 shadow-sm">
+            <div class="card-header">
+                <div class="d-flex flex-column">
+                    <span>@categoria.Nombre</span>
+                    <small class="text-muted fw-normal">@categoria.Descripcion</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @foreach (var reporte in categoria.Reportes)
+                    {
+                        <div class="col-12">
+                            <div class="ops-report-item">
+                                <div class="title">@reporte.Nombre</div>
+                                <div class="desc">@reporte.Descripcion</div>
+                                @if (reporte.Highlights.Any())
+                                {
+                                    <ul class="ops-highlight-list">
+                                        @foreach (var highlight in reporte.Highlights)
+                                        {
+                                            <li>@highlight</li>
+                                        }
+                                    </ul>
+                                }
+                                <div class="d-flex flex-wrap gap-2">
+                                    @if (!string.Equals(reporte.PdfPreviewUrl, "#", StringComparison.Ordinal))
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-secondary btn-sm js-preview-reporte"
+                                                data-reporte-title="@reporte.Nombre"
+                                                data-reporte-preview-url="@reporte.PdfPreviewUrl"
+                                                data-reporte-download-url="@reporte.PdfDownloadUrl">
+                                            <i class="bi bi-eye me-1"></i>Vista previa
+                                        </button>
+                                    }
+                                    @if (!string.Equals(reporte.PdfDownloadUrl, "#", StringComparison.Ordinal))
+                                    {
+                                        <a href="@reporte.PdfDownloadUrl" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                        </a>
+                                    }
+                                    @if (!string.Equals(reporte.ExcelDownloadUrl, "#", StringComparison.Ordinal))
+                                    {
+                                        <a href="@reporte.ExcelDownloadUrl" class="btn btn-outline-success btn-sm">
+                                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                                        </a>
+                                    }
+                                    @if (!string.Equals(reporte.CsvDownloadUrl, "#", StringComparison.Ordinal))
+                                    {
+                                        <a href="@reporte.CsvDownloadUrl" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-filetype-csv me-1"></i>CSV
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="ops-report-card card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Historial de generación</span>
+            <span class="badge text-bg-light">@Model.HistorialGeneracion.Count registros</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Fecha</th>
+                            <th>Usuario</th>
+                            <th>Reporte</th>
+                            <th>Formato</th>
+                            <th class="text-end">Registros</th>
+                            <th class="pe-3">Filtros</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.HistorialGeneracion.Any())
+                        {
+                            @foreach (var item in Model.HistorialGeneracion)
+                            {
+                                <tr>
+                                    <td class="ps-3">@item.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.Usuario</td>
+                                    <td>@item.Reporte</td>
+                                    <td>@item.Formato</td>
+                                    <td class="text-end">@item.Registros</td>
+                                    <td class="pe-3 small text-muted">@item.FiltrosAplicados</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">Aun no hay historial de reportes generados.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="ops-report-card card border-0 shadow-sm">
+        <div class="card-header">Programación automática de reportes</div>
+        <div class="card-body">
+            <form method="post" asp-action="ProgramarReporteOperacion" asp-controller="Operaciones" class="row g-2 align-items-end mb-3">
+                @Html.AntiForgeryToken()
+                <div class="col-xl-3 col-md-6">
+                    <label class="form-label fw-semibold mb-1">Reporte</label>
+                    <select class="form-select" name="reporte" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Toneladas por ruta">Toneladas por ruta</option>
+                        <option value="Diesel por unidad">Diesel por unidad</option>
+                        <option value="Cumplimiento operativo">Cumplimiento operativo</option>
+                        <option value="Gerencial mensual toneladas por sitio">Gerencial mensual toneladas por sitio</option>
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-6">
+                    <label class="form-label fw-semibold mb-1">Frecuencia</label>
+                    <select class="form-select" name="frecuencia" required>
+                        <option value="DIARIA">Diaria</option>
+                        <option value="SEMANAL">Semanal</option>
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <label class="form-label fw-semibold mb-1">Hora</label>
+                    <input type="time" class="form-control" name="hora" value="06:00" required />
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <label class="form-label fw-semibold mb-1">Día (si semanal)</label>
+                    <select class="form-select" name="diaSemana">
+                        <option value="MONDAY">Lunes</option>
+                        <option value="TUESDAY">Martes</option>
+                        <option value="WEDNESDAY">Miércoles</option>
+                        <option value="THURSDAY">Jueves</option>
+                        <option value="FRIDAY">Viernes</option>
+                        <option value="SATURDAY">Sábado</option>
+                        <option value="SUNDAY">Domingo</option>
+                    </select>
+                </div>
+                <div class="col-xl-3 col-md-8">
+                    <label class="form-label fw-semibold mb-1">Destinatarios</label>
+                    <input type="text" class="form-control" name="destinatarios" placeholder="correo1@empresa.com; correo2@empresa.com" required />
+                </div>
+                <div class="col-xl-12 col-md-4">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-check me-1"></i>Guardar programación
+                    </button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reporte</th>
+                            <th>Frecuencia</th>
+                            <th>Hora</th>
+                            <th>Día</th>
+                            <th>Destinatarios</th>
+                            <th>Estado</th>
+                            <th>Próxima ejecución</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Programaciones.Any())
+                        {
+                            @foreach (var programacion in Model.Programaciones)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@programacion.Reporte</td>
+                                    <td>@programacion.Frecuencia</td>
+                                    <td>@programacion.Hora</td>
+                                    <td>@programacion.DiaSemana</td>
+                                    <td class="small">@programacion.Destinatarios</td>
+                                    <td>
+                                        <span class="ops-pill @(programacion.Activo ? "success" : "secondary")">@(programacion.Activo ? "Activa" : "Pausada")</span>
+                                    </td>
+                                    <td>@(programacion.ProximaEjecucion.HasValue ? programacion.ProximaEjecucion.Value.ToString("dd/MM/yyyy HH:mm") : "-")</td>
+                                    <td class="text-end">
+                                        <form method="post" asp-action="ToggleProgramacionReporteOperacion" asp-controller="Operaciones" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@programacion.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                @(programacion.Activo ? "Pausar" : "Activar")
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-2">Aún no hay programaciones registradas.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPreviewReporteOperacion" tabindex="-1" aria-labelledby="modalPreviewReporteOperacionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="modalPreviewReporteOperacionLabel">Vista previa del reporte</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="iframePreviewReporteOperacion"
+                        title="Vista previa de reporte PDF"
+                        style="width:100%; height:78vh; border:0;"
+                        loading="lazy"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a id="btnDescargarDesdePreviewReporteOperacion" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
+                </a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const modalElement = document.getElementById('modalPreviewReporteOperacion');
+            const iframe = document.getElementById('iframePreviewReporteOperacion');
+            const title = document.getElementById('modalPreviewReporteOperacionLabel');
+            const downloadBtn = document.getElementById('btnDescargarDesdePreviewReporteOperacion');
+
+            if (!modalElement || !iframe || !title || !downloadBtn || typeof bootstrap === 'undefined') return;
+
+            const modal = new bootstrap.Modal(modalElement);
+            const triggers = document.querySelectorAll('.js-preview-reporte');
+
+            triggers.forEach(trigger => {
+                trigger.addEventListener('click', function () {
+                    const reportTitle = this.getAttribute('data-reporte-title') || 'Vista previa del reporte';
+                    const previewUrl = this.getAttribute('data-reporte-preview-url') || '';
+                    const downloadUrl = this.getAttribute('data-reporte-download-url') || '#';
+
+                    title.textContent = reportTitle;
+                    downloadBtn.setAttribute('href', downloadUrl);
+                    iframe.setAttribute('src', previewUrl ? previewUrl + (previewUrl.includes('?') ? '&' : '?') + 'ts=' + Date.now() : 'about:blank');
+                    modal.show();
+                });
+            });
+
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                iframe.setAttribute('src', 'about:blank');
+            });
+        })();
+    </script>
+}

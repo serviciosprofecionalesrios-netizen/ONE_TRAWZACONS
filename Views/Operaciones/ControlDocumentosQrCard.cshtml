@@ -1,0 +1,170 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.ControlDocumentosQrViewModel
+@{
+    ViewData["Title"] = "QR de conductor";
+    var vigentes = Model.Capacitaciones.Count(x => string.Equals(x.EstadoFiltro, "vigente", StringComparison.OrdinalIgnoreCase));
+    var porVencer = Model.Capacitaciones.Count(x => string.Equals(x.EstadoFiltro, "porvencer", StringComparison.OrdinalIgnoreCase));
+    var vencidas = Model.Capacitaciones.Count(x => string.Equals(x.EstadoFiltro, "vencida", StringComparison.OrdinalIgnoreCase));
+    var sinFecha = Model.Capacitaciones.Count(x => string.Equals(x.EstadoFiltro, "sinfecha", StringComparison.OrdinalIgnoreCase));
+}
+
+<style>
+    .qr-card-shell {
+        max-width: 700px;
+        margin: 1.2rem auto;
+        border: 1px solid #dbe4f1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+    }
+
+    .qr-card-head {
+        border-bottom: 2px solid #0f172a;
+        background: linear-gradient(120deg, #0f172a 0%, #1d4ed8 100%);
+        color: #fff;
+        padding: 1rem 1.1rem 0.9rem;
+    }
+
+    .qr-card-head h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    .qr-card-head p {
+        margin: 0.2rem 0 0;
+        opacity: 0.95;
+    }
+
+    .qr-card-body {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .qr-card-qr {
+        border: 1px solid #dbe4f1;
+        border-radius: 12px;
+        background: #f8fbff;
+        padding: 0.7rem;
+        text-align: center;
+    }
+
+    .qr-card-qr img {
+        width: 100%;
+        max-width: 205px;
+        height: auto;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        padding: 0.45rem;
+    }
+
+    .qr-card-note {
+        margin-top: 0.45rem;
+        font-size: 0.76rem;
+        color: #475569;
+        line-height: 1.35;
+    }
+
+    .qr-card-meta {
+        border: 1px solid #dbe4f1;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 0.75rem;
+    }
+
+    .qr-card-kpis {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+        gap: 0.45rem;
+        margin-top: 0.7rem;
+    }
+
+    .qr-card-kpi {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.45rem 0.5rem;
+        background: #f8fafc;
+    }
+
+    .qr-card-kpi strong {
+        display: block;
+        font-size: 1rem;
+        line-height: 1;
+        color: #0f172a;
+    }
+
+    .qr-card-kpi span {
+        font-size: 0.73rem;
+        color: #64748b;
+    }
+
+    .qr-card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-top: 0.75rem;
+    }
+
+    .qr-card-url {
+        margin-top: 0.6rem;
+        word-break: break-all;
+        font-size: 0.72rem;
+        color: #475569;
+    }
+
+    @@media print {
+        .qr-card-actions {
+            display: none;
+        }
+
+        .qr-card-shell {
+            box-shadow: none;
+            border-color: #cbd5e1;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .qr-card-body {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="qr-card-shell">
+    <div class="qr-card-head">
+        <h3>QR unico de conductor</h3>
+        <p>@Model.Conductor</p>
+    </div>
+    <div class="qr-card-body">
+        <div class="qr-card-qr">
+            <img src="@Model.QrImageUrl" alt="QR de @Model.Conductor" />
+            <div class="qr-card-note">
+                Este QR es permanente para este conductor. Al escanearlo se consulta siempre la informacion mas reciente.
+            </div>
+        </div>
+        <div class="qr-card-meta">
+            <div><strong>Conductor:</strong> @Model.Conductor</div>
+            <div><strong>Codigo unico:</strong> @Model.ConductorKey</div>
+            <div><strong>Actualizado:</strong> @Model.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</div>
+            <div><strong>Total capacitaciones:</strong> @Model.Capacitaciones.Count</div>
+
+            <div class="qr-card-kpis">
+                <div class="qr-card-kpi"><strong>@vigentes</strong><span>Vigentes</span></div>
+                <div class="qr-card-kpi"><strong>@porVencer</strong><span>Por vencer</span></div>
+                <div class="qr-card-kpi"><strong>@vencidas</strong><span>Vencidas</span></div>
+                <div class="qr-card-kpi"><strong>@sinFecha</strong><span>Sin fecha</span></div>
+            </div>
+
+            <div class="qr-card-actions">
+                <a class="btn btn-sm btn-primary" href="@Model.RegistroUrl" target="_blank" rel="noopener">Abrir registro</a>
+                <a class="btn btn-sm btn-outline-primary" href="@Model.QrPdfUrl" target="_blank" rel="noopener">PDF</a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">Imprimir QR</button>
+                <a class="btn btn-sm btn-outline-dark" href="@Url.Action("ControlDocumentos", "Operaciones")">Volver</a>
+            </div>
+            <div class="qr-card-url">@Model.RegistroUrl</div>
+        </div>
+    </div>
+</div>

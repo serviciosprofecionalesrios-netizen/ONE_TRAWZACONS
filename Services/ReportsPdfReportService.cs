@@ -40,7 +40,7 @@ namespace ITServiceDeskApp.Services
         private static void ComposeHeader(IContainer container, DateTime generatedAt, byte[]? logo)
         {
             container.BorderBottom(2)
-                .BorderColor("#C91010")
+                .BorderColor("#11439A")
                 .PaddingBottom(8)
                 .Row(row =>
                 {
@@ -58,10 +58,10 @@ namespace ITServiceDeskApp.Services
 
                     row.RelativeItem().PaddingLeft(10).Column(column =>
                     {
-                        column.Item().Text("GRUPO TRANSAN")
+                        column.Item().Text(string.Empty)
                             .FontSize(18)
                             .SemiBold()
-                            .FontColor("#C91010");
+                            .FontColor("#11439A");
                         column.Item().Text("Service Desk - Reporte Ejecutivo")
                             .FontSize(12)
                             .SemiBold()
@@ -99,15 +99,16 @@ namespace ITServiceDeskApp.Services
                             row.Spacing(8);
                             row.RelativeItem().Element(c => ComposeMetricCard(c, "Total Tickets", model.TotalTickets.ToString(), "#0B1D3A"));
                             row.RelativeItem().Element(c => ComposeMetricCard(c, "Resueltos", model.ResolvedTickets.ToString(), "#0B6E4F"));
-                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Pendientes", model.PendingTickets.ToString(), "#D97706"));
-                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Vencidos", model.OverdueTickets.ToString(), "#C91010"));
+                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Vencidos", model.OverdueTickets.ToString(), "#11439A"));
+                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Por vencer", model.NearDueTickets.ToString(), "#D97706"));
                         });
                         col.Item().Row(row =>
                         {
                             row.Spacing(8);
                             row.RelativeItem().Element(c => ComposeMetricCard(c, "SLA", $"{model.SlaCompliancePercent}%", "#0B6E4F"));
-                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Satisfaccion", $"{model.SatisfactionPercent}%", "#2563EB"));
-                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Tiempo Promedio", $"{model.AverageResolutionHours:0.0} hrs", "#7C3AED"));
+                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Primera respuesta", $"{model.AverageFirstResponseHours:0.0} hrs", "#2563EB"));
+                            row.RelativeItem().Element(c => ComposeMetricCard(c, "MTTR", $"{model.AverageResolutionHours:0.0} hrs", "#7C3AED"));
+                            row.RelativeItem().Element(c => ComposeMetricCard(c, "Reaperturas", model.ReopenedTickets.ToString(), "#B45309"));
                         });
                     });
                 }));
@@ -121,7 +122,9 @@ namespace ITServiceDeskApp.Services
                         new("Tecnico", OptionLabel(model.SelectedTechnician)),
                         new("Area", OptionLabel(model.SelectedArea)),
                         new("Sitio", OptionLabel(model.SelectedSite)),
-                        new("Vista", OptionLabel(model.ActiveTab))
+                        new("Vista", OptionLabel(model.ActiveTab)),
+                        new("Backlog Delta", model.BacklogDelta.ToString("+0;-0;0")),
+                        new("Costo Total Est. (C$)", model.EstimatedTotalCostCordoba.ToString("N2"))
                     };
                     ComposeKeyValueTable(body, rows);
                 }));
@@ -159,7 +162,7 @@ namespace ITServiceDeskApp.Services
                 .PaddingTop(5)
                 .Row(row =>
                 {
-                    row.RelativeItem().Text($"Confidencial - Grupo Transan | {generatedAt:dd/MM/yyyy HH:mm}")
+                    row.RelativeItem().Text($"Confidencial | {generatedAt:dd/MM/yyyy HH:mm}")
                         .FontSize(8)
                         .FontColor(Colors.Grey.Darken1);
 
@@ -183,7 +186,7 @@ namespace ITServiceDeskApp.Services
                 {
                     column.Item().Row(row =>
                     {
-                        row.ConstantItem(4).Height(16).Background("#C91010");
+                        row.ConstantItem(4).Height(16).Background("#11439A");
                         row.RelativeItem().PaddingLeft(8).Text(title)
                             .SemiBold()
                             .FontSize(12)
@@ -233,7 +236,7 @@ namespace ITServiceDeskApp.Services
                 .Padding(8)
                 .Column(column =>
                 {
-                    column.Item().Text(title).SemiBold().FontSize(10).FontColor("#C91010");
+                    column.Item().Text(title).SemiBold().FontSize(10).FontColor("#11439A");
 
                     if (rows.Count == 0)
                     {
@@ -329,9 +332,9 @@ namespace ITServiceDeskApp.Services
         {
             return container
                 .BorderBottom(1)
-                .BorderColor("#C91010")
+                .BorderColor("#11439A")
                 .PaddingVertical(4)
-                .DefaultTextStyle(TextStyle.Default.SemiBold().FontColor("#C91010").FontSize(9));
+                .DefaultTextStyle(TextStyle.Default.SemiBold().FontColor("#11439A").FontSize(9));
         }
 
         private static IContainer BodyCell(IContainer container)
@@ -348,7 +351,8 @@ namespace ITServiceDeskApp.Services
             return
                 $"El periodo evaluado comprende del {model.StartDate:dd/MM/yyyy} al {model.EndDate:dd/MM/yyyy}. " +
                 $"Durante este intervalo se registraron {model.TotalTickets} incidencias, con {model.ResolvedTickets} resueltas " +
-                $"y un cumplimiento SLA de {model.SlaCompliancePercent}%. La satisfaccion estimada del servicio es {model.SatisfactionPercent}%.";
+                $"y un cumplimiento SLA de {model.SlaCompliancePercent}%. La primera respuesta promedio fue {model.AverageFirstResponseHours:0.0} horas, " +
+                $"con MTTR de {model.AverageResolutionHours:0.0} horas. El backlog vario {model.BacklogDelta:+0;-0;0} y el costo estimado fue C$ {model.EstimatedTotalCostCordoba:N2}.";
         }
 
         private static string OptionLabel(string value)
@@ -370,8 +374,8 @@ namespace ITServiceDeskApp.Services
         {
             var candidates = new[]
             {
-                Path.Combine(webRootPath, "images", "logo-transan-corporativo.png"),
-                Path.Combine(webRootPath, "images", "logo-transan.png")
+                Path.Combine(webRootPath, "images", "logo-trawzacons-corporativo.png"),
+                Path.Combine(webRootPath, "images", "logo-trawzacons.png")
             };
 
             foreach (var path in candidates)
@@ -406,3 +410,6 @@ namespace ITServiceDeskApp.Services
         string Area,
         string Site);
 }
+
+
+

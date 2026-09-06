@@ -42,7 +42,7 @@ namespace ITServiceDeskApp.Services
         private static void ComposeHeader(IContainer container, TicketReportData report)
         {
             container.BorderBottom(2)
-                .BorderColor("#C91010")
+                .BorderColor("#11439A")
                 .PaddingBottom(8)
                 .Row(row =>
                 {
@@ -65,10 +65,10 @@ namespace ITServiceDeskApp.Services
 
                     row.RelativeItem().PaddingLeft(10).Column(column =>
                     {
-                        column.Item().Text("GRUPO TRANSAN")
+                        column.Item().Text(string.Empty)
                             .FontSize(18)
                             .SemiBold()
-                            .FontColor("#C91010");
+                            .FontColor("#11439A");
 
                         column.Item().Text("Service Desk - Reporte Ejecutivo de Incidencia")
                             .FontSize(12)
@@ -109,12 +109,12 @@ namespace ITServiceDeskApp.Services
 
                 column.Item().Element(section => ComposeSectionCard(
                     section,
-                    "Daño Reportado",
+                    "Daï¿½o Reportado",
                     body => body.Text(report.Description).FontSize(10)));
 
                 column.Item().Element(section => ComposeSectionCard(
                     section,
-                    "Gestión Técnica",
+                    "Gestiï¿½n Tï¿½cnica",
                     body => ComposeKeyValueTable(body, report.TechnicalRows)));
 
                 column.Item().Element(section => ComposeSectionCard(
@@ -139,13 +139,13 @@ namespace ITServiceDeskApp.Services
                 .PaddingTop(5)
                 .Row(row =>
                 {
-                    row.RelativeItem().Text($"Confidencial - Grupo Transan | {generatedAt:dd/MM/yyyy HH:mm}")
+                    row.RelativeItem().Text($"Confidencial | {generatedAt:dd/MM/yyyy HH:mm}")
                         .FontSize(8)
                         .FontColor(Colors.Grey.Darken1);
 
                     row.ConstantItem(120).AlignRight().Text(text =>
                     {
-                        text.Span("Página ").FontSize(8).FontColor(Colors.Grey.Darken1);
+                        text.Span("Pï¿½gina ").FontSize(8).FontColor(Colors.Grey.Darken1);
                         text.CurrentPageNumber().FontSize(8).SemiBold();
                         text.Span(" de ").FontSize(8).FontColor(Colors.Grey.Darken1);
                         text.TotalPages().FontSize(8).SemiBold();
@@ -163,7 +163,7 @@ namespace ITServiceDeskApp.Services
                 {
                     column.Item().Row(row =>
                     {
-                        row.ConstantItem(4).Height(16).Background("#C91010");
+                        row.ConstantItem(4).Height(16).Background("#11439A");
                         row.RelativeItem().PaddingLeft(8).Text(title)
                             .SemiBold()
                             .FontSize(12)
@@ -338,9 +338,9 @@ namespace ITServiceDeskApp.Services
         {
             return container
                 .BorderBottom(1)
-                .BorderColor("#C91010")
+                .BorderColor("#11439A")
                 .PaddingVertical(4)
-                .DefaultTextStyle(TextStyle.Default.SemiBold().FontColor("#C91010"));
+                .DefaultTextStyle(TextStyle.Default.SemiBold().FontColor("#11439A"));
         }
 
         private static IContainer BodyCell(IContainer container)
@@ -376,29 +376,29 @@ namespace ITServiceDeskApp.Services
                 new("Fecha de Cierre", closedLocal.HasValue ? closedLocal.Value.ToString("dd/MM/yyyy HH:mm") : "No cerrada"),
                 new("Usuario Solicitante", Safe(ticket.RequestingUser) ?? "No especificado"),
                 new("Sitio / Sede", Safe(ticket.Site) ?? "No especificado"),
-                new("Área / Departamento", Safe(ticket.Department) ?? "No especificado"),
+                new("ï¿½rea / Departamento", Safe(ticket.Department) ?? "No especificado"),
                 new("Tipo de Incidencia", Safe(ticket.IncidentType) ?? "No especificado"),
-                new("Técnico Asignado", Safe(ticket.AssignedTechnician) ?? "Sin asignar"),
+                new("Tï¿½cnico Asignado", Safe(ticket.AssignedTechnician) ?? "Sin asignar"),
                 new("Prioridad", priorityLabel),
                 new("Estado", statusLabel),
-                new("SLA Límite", slaLocal.ToString("dd/MM/yyyy HH:mm")),
+                new("SLA Lï¿½mite", slaLocal.ToString("dd/MM/yyyy HH:mm")),
                 new("Cumplimiento SLA", slaCompliance)
             };
 
             var technicalRows = new List<ReportRow>
             {
-                new("Condición Inicial", Safe(ticket.InitialConditionNotes) ?? "Sin detalle"),
+                new("Condiciï¿½n Inicial", Safe(ticket.InitialConditionNotes) ?? "Sin detalle"),
                 new("Reparaciones Realizadas", Safe(ticket.RepairActionsPerformed) ?? "Sin detalle"),
-                new("Causa Raíz", Safe(ticket.RootCause) ?? "Sin detalle"),
-                new("Pruebas Técnicas", Safe(ticket.TechnicalTestsPerformed) ?? "Sin detalle"),
-                new("Requirió Repuesto", ticket.SparePartRequired ? "Sí" : "No"),
-                new("Compró Repuesto", ticket.SparePartPurchased ? "Sí" : "No"),
+                new("Causa Raï¿½z", Safe(ticket.RootCause) ?? "Sin detalle"),
+                new("Pruebas Tï¿½cnicas", Safe(ticket.TechnicalTestsPerformed) ?? "Sin detalle"),
+                new("Requiriï¿½ Repuesto", ticket.SparePartRequired ? "Sï¿½" : "No"),
+                new("Comprï¿½ Repuesto", ticket.SparePartPurchased ? "Sï¿½" : "No"),
                 new("Detalle Repuesto", Safe(ticket.SparePartDetails) ?? "No aplica"),
-                new("Cambio de Componente", ticket.ComponentChanged ? "Sí" : "No"),
+                new("Cambio de Componente", ticket.ComponentChanged ? "Sï¿½" : "No"),
                 new("Componente Cambiado", Safe(ticket.ChangedComponentName) ?? "No aplica"),
                 new("Costo Componente C$", FormatCurrency(ticket.ChangedComponentCostCordoba, "C$")),
                 new("Costo Componente $", FormatCurrency(ticket.ChangedComponentCostUsd, "$")),
-                new("Usuario Confirmó Solución", ticket.UserConformityConfirmed ? "Sí" : "No"),
+                new("Usuario Confirmï¿½ Soluciï¿½n", ticket.UserConformityConfirmed ? "Sï¿½" : "No"),
                 new("Observaciones", Safe(ticket.Observations) ?? "Sin observaciones"),
                 new("Recomendaciones Preventivas", Safe(ticket.PreventiveRecommendations) ?? "Sin recomendaciones")
             };
@@ -408,7 +408,7 @@ namespace ITServiceDeskApp.Services
                 BuildEvidence("Evidencia del Usuario (Caso Reportado)", ticket.AttachmentPath, webRootPath),
                 BuildEvidence("Evidencia Inicial (Equipo Recibido)", ticket.BeforeEvidencePath, webRootPath),
                 BuildEvidence("Evidencia Final (Equipo Entregado)", ticket.AfterEvidencePath, webRootPath),
-                BuildEvidence("Ficha Técnica", ticket.TechnicalSheetPath, webRootPath),
+                BuildEvidence("Ficha Tï¿½cnica", ticket.TechnicalSheetPath, webRootPath),
                 BuildEvidence("Orden de Salida", ticket.ExitOrderPath, webRootPath)
             };
 
@@ -417,8 +417,8 @@ namespace ITServiceDeskApp.Services
                 .Select(h => new HistoryRow(
                     h.ChangeDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
                     Safe(h.FieldChanged) ?? "Campo",
-                    Safe(h.OldValue) ?? "(vacío)",
-                    Safe(h.NewValue) ?? "(vacío)",
+                    Safe(h.OldValue) ?? "(vacï¿½o)",
+                    Safe(h.NewValue) ?? "(vacï¿½o)",
                     Safe(h.ChangedBy) ?? "Sistema"))
                 .ToList();
 
@@ -429,10 +429,10 @@ namespace ITServiceDeskApp.Services
                 StatusLabel = statusLabel,
                 PriorityLabel = priorityLabel,
                 SlaCompliance = slaCompliance,
-                SlaColor = slaCompliance == "Cumplido" ? "#0B6E4F" : (slaCompliance == "Vencido" ? "#C91010" : "#D97706"),
+                SlaColor = slaCompliance == "Cumplido" ? "#0B6E4F" : (slaCompliance == "Vencido" ? "#11439A" : "#D97706"),
                 ResolutionTimeLabel = resolutionTimeLabel,
                 ExecutiveSummary = executiveSummary,
-                Description = Safe(ticket.Description) ?? "Sin descripción.",
+                Description = Safe(ticket.Description) ?? "Sin descripciï¿½n.",
                 GeneralRows = generalRows,
                 TechnicalRows = technicalRows,
                 Evidences = evidences,
@@ -457,15 +457,15 @@ namespace ITServiceDeskApp.Services
             return
                 $"Incidencia {Safe(ticket.TicketNumber) ?? $"TK-{ticket.Id:D4}"} registrada el {createdLocal:dd/MM/yyyy HH:mm} " +
                 $"por {Safe(ticket.RequestingUser) ?? "usuario no identificado"}. " +
-                $"Estado actual: {statusLabel}. Cumplimiento SLA: {slaCompliance} (límite {slaLocal:dd/MM/yyyy HH:mm}). " +
-                $"Técnico responsable: {technician}. {closingLabel}";
+                $"Estado actual: {statusLabel}. Cumplimiento SLA: {slaCompliance} (lï¿½mite {slaLocal:dd/MM/yyyy HH:mm}). " +
+                $"Tï¿½cnico responsable: {technician}. {closingLabel}";
         }
 
         private static EvidenceData BuildEvidence(string title, string? webPath, string webRootPath)
         {
             if (string.IsNullOrWhiteSpace(webPath))
             {
-                return new EvidenceData(title, null, "No se adjuntó archivo.");
+                return new EvidenceData(title, null, "No se adjuntï¿½ archivo.");
             }
 
             var fullPath = ResolvePhysicalPath(webRootPath, webPath);
@@ -494,8 +494,8 @@ namespace ITServiceDeskApp.Services
         {
             var candidates = new[]
             {
-                Path.Combine(webRootPath, "images", "logo-transan-corporativo.png"),
-                Path.Combine(webRootPath, "images", "logo-transan.png")
+                Path.Combine(webRootPath, "images", "logo-trawzacons-corporativo.png"),
+                Path.Combine(webRootPath, "images", "logo-trawzacons.png")
             };
 
             foreach (var path in candidates)
@@ -561,7 +561,7 @@ namespace ITServiceDeskApp.Services
                 PriorityLevel.Low => "Baja",
                 PriorityLevel.Medium => "Media",
                 PriorityLevel.High => "Alta",
-                PriorityLevel.Critical => "Crítica",
+                PriorityLevel.Critical => "Crï¿½tica",
                 _ => priority.ToString()
             };
         }
@@ -649,4 +649,7 @@ namespace ITServiceDeskApp.Services
             string ChangedBy);
     }
 }
+
+
+
 

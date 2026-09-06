@@ -1,0 +1,141 @@
+@model ITServiceDeskApp.ViewModels.Tickets.FinanceAccountingViewModel
+
+@{
+    ViewData["Title"] = "Trazabilidad Contable";
+
+    var q = ViewContext.HttpContext.Request.Query;
+    var mine = q["mine"].ToString();
+    var search = q["search"].ToString();
+    var status = q["status"].ToString();
+    var priority = q["priority"].ToString();
+    var quick = q["quick"].ToString();
+    var department = q["department"].ToString();
+    var site = q["site"].ToString();
+    var tenencia = q["tenencia"].ToString();
+    var technician = q["technician"].ToString();
+    var incidentType = q["incidentType"].ToString();
+    var maintenanceStage = q["maintenanceStage"].ToString();
+    var overdueBand = q["overdueBand"].ToString();
+    var currentPage = q["page"].ToString();
+    var currentPageSize = q["pageSize"].ToString();
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">Trazabilidad Contable</h4>
+                <small class="text-muted">@Model.TicketNumber - @Model.RequestType - @Model.CostCenter</small>
+            </div>
+            <a asp-action="Index"
+               asp-route-mine="@mine"
+               asp-route-search="@search"
+               asp-route-status="@status"
+               asp-route-priority="@priority"
+               asp-route-quick="@quick"
+               asp-route-department="@(string.IsNullOrWhiteSpace(department) ? "Finanzas" : department)"
+               asp-route-site="@site"
+               asp-route-tenencia="@tenencia"
+               asp-route-technician="@technician"
+               asp-route-incidentType="@incidentType"
+               asp-route-maintenanceStage="@maintenanceStage"
+               asp-route-overdueBand="@overdueBand"
+               asp-route-page="@currentPage"
+               asp-route-pageSize="@currentPageSize"
+               class="btn btn-outline-secondary btn-sm">Volver</a>
+        </div>
+        <div class="card-body">
+            <form asp-action="FinanceAccounting"
+                  asp-route-mine="@mine"
+                  asp-route-search="@search"
+                  asp-route-status="@status"
+                  asp-route-priority="@priority"
+                  asp-route-quick="@quick"
+                  asp-route-department="@(string.IsNullOrWhiteSpace(department) ? "Finanzas" : department)"
+                  asp-route-site="@site"
+                  asp-route-tenencia="@tenencia"
+                  asp-route-technician="@technician"
+                  asp-route-incidentType="@incidentType"
+                  asp-route-maintenanceStage="@maintenanceStage"
+                  asp-route-overdueBand="@overdueBand"
+                  asp-route-page="@currentPage"
+                  asp-route-pageSize="@currentPageSize"
+                  method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TicketId" />
+                <input type="hidden" asp-for="TicketNumber" />
+                <input type="hidden" asp-for="RequestType" />
+                <input type="hidden" asp-for="CostCenter" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="AccountingEntryNumber" class="form-label"></label>
+                        <input asp-for="AccountingEntryNumber" class="form-control" />
+                        <span asp-validation-for="AccountingEntryNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="PurchaseOrderNumber" class="form-label"></label>
+                        <input asp-for="PurchaseOrderNumber" class="form-control" />
+                        <span asp-validation-for="PurchaseOrderNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="InvoiceNumber" class="form-label"></label>
+                        <input asp-for="InvoiceNumber" class="form-control" />
+                        <span asp-validation-for="InvoiceNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="PaymentDate" class="form-label"></label>
+                        <input asp-for="PaymentDate" type="date" class="form-control" />
+                        <span asp-validation-for="PaymentDate" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="FinalPaymentMethod" class="form-label"></label>
+                        <input asp-for="FinalPaymentMethod" class="form-control" />
+                        <span asp-validation-for="FinalPaymentMethod" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="ReconciliationStatus" class="form-label"></label>
+                        <select asp-for="ReconciliationStatus" class="form-select">
+                            <option value="">Seleccionar estado</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Conciliado">Conciliado</option>
+                            <option value="Observado">Observado</option>
+                        </select>
+                        <span asp-validation-for="ReconciliationStatus" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ErpExportReference" class="form-label"></label>
+                        <input asp-for="ErpExportReference" class="form-control" />
+                        <span asp-validation-for="ErpExportReference" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a asp-action="Index"
+                       asp-route-mine="@mine"
+                       asp-route-search="@search"
+                       asp-route-status="@status"
+                       asp-route-priority="@priority"
+                       asp-route-quick="@quick"
+                       asp-route-department="@(string.IsNullOrWhiteSpace(department) ? "Finanzas" : department)"
+                       asp-route-site="@site"
+                       asp-route-tenencia="@tenencia"
+                       asp-route-technician="@technician"
+                       asp-route-incidentType="@incidentType"
+                       asp-route-maintenanceStage="@maintenanceStage"
+                       asp-route-overdueBand="@overdueBand"
+                       asp-route-page="@currentPage"
+                       asp-route-pageSize="@currentPageSize"
+                       class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Guardar trazabilidad</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

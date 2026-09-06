@@ -1,0 +1,65 @@
+@model ITServiceDeskApp.Models.MaintenanceInventoryPart
+@using ITServiceDeskApp.Models
+
+@{
+    ViewData["Title"] = "Detalle Repuesto";
+    var canManage =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
+}
+
+<div class="container mt-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Detalle de Repuesto</h4>
+            <span class="fw-bold">@Model.PartCode</span>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6"><strong>Codigo:</strong> @Model.PartCode</div>
+                <div class="col-md-6"><strong>Nombre:</strong> @Model.PartName</div>
+                <div class="col-md-6"><strong>Categoria:</strong> @Model.Category</div>
+                <div class="col-md-6"><strong>Subcategoria:</strong> @(string.IsNullOrWhiteSpace(Model.Subcategory) ? "N/A" : Model.Subcategory)</div>
+                <div class="col-md-6"><strong>Sistema:</strong> @Model.SystemType</div>
+                <div class="col-md-6"><strong>Tipo equipo:</strong> @Model.EquipmentType</div>
+                <div class="col-md-6"><strong>Modelo compatible:</strong> @(string.IsNullOrWhiteSpace(Model.CompatibleModel) ? "N/A" : Model.CompatibleModel)</div>
+                <div class="col-md-6"><strong>Marca:</strong> @(string.IsNullOrWhiteSpace(Model.Brand) ? "N/A" : Model.Brand)</div>
+                <div class="col-md-6"><strong>No. parte:</strong> @(string.IsNullOrWhiteSpace(Model.ManufacturerPartNumber) ? "N/A" : Model.ManufacturerPartNumber)</div>
+                <div class="col-md-6"><strong>ITEM:</strong> @(string.IsNullOrWhiteSpace(Model.ItemCode) ? "N/A" : Model.ItemCode)</div>
+                <div class="col-md-6"><strong>Sitio:</strong> @Model.Site</div>
+                <div class="col-md-6"><strong>Tenencia:</strong> @Model.Tenencia</div>
+                <div class="col-md-6"><strong>Unidad medida:</strong> @Model.UnitOfMeasure</div>
+                <div class="col-md-6"><strong>Ubicacion bodega:</strong> @(string.IsNullOrWhiteSpace(Model.ShelfLocation) ? "N/A" : Model.ShelfLocation)</div>
+                <div class="col-md-6"><strong>Stock actual:</strong> @Model.QuantityOnHand</div>
+                <div class="col-md-6"><strong>Stock minimo:</strong> @Model.MinimumStock</div>
+                <div class="col-md-6"><strong>Salidas acumuladas:</strong> @Model.QuantityIssued</div>
+                <div class="col-md-6"><strong>Repuestos en transito:</strong> @Model.QuantityInTransit</div>
+                <div class="col-md-6"><strong>Stock proyectado:</strong> @(Model.QuantityOnHand + Model.QuantityInTransit)</div>
+                <div class="col-md-6"><strong>Ultima salida:</strong> @(Model.LastIssueDate?.ToString("dd/MM/yyyy") ?? "N/A")</div>
+                <div class="col-md-6"><strong>Estado stock:</strong> @Model.StockStatus</div>
+                <div class="col-md-6"><strong>Proveedor:</strong> @(string.IsNullOrWhiteSpace(Model.Supplier) ? "N/A" : Model.Supplier)</div>
+                <div class="col-md-6"><strong>Factura:</strong> @(string.IsNullOrWhiteSpace(Model.InvoiceNumber) ? "N/A" : Model.InvoiceNumber)</div>
+                <div class="col-md-6"><strong>Fecha compra:</strong> @(Model.PurchaseDate?.ToString("dd/MM/yyyy") ?? "N/A")</div>
+                <div class="col-md-6"><strong>Costo C$:</strong> @(Model.UnitCostCordoba.HasValue ? $"C$ {Model.UnitCostCordoba.Value:N2}" : "N/A")</div>
+                <div class="col-md-6"><strong>Costo $:</strong> @(Model.UnitCostUsd.HasValue ? $"$ {Model.UnitCostUsd.Value:N2}" : "N/A")</div>
+                <div class="col-md-6"><strong>Activo:</strong> @(Model.IsActive ? "Si" : "No")</div>
+                <div class="col-md-6"><strong>Creado:</strong> @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                <div class="col-md-6"><strong>Actualizado:</strong> @Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+
+            <hr />
+            <h5>Notas de taller</h5>
+            <p>@(string.IsNullOrWhiteSpace(Model.Notes) ? "Sin notas" : Model.Notes)</p>
+        </div>
+    </div>
+
+    <div class="text-end">
+        @if (canManage)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
+        }
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+    </div>
+</div>

@@ -1,0 +1,33 @@
+@model List<ITServiceDeskApp.Models.HsTrainingRecord>
+
+@{
+    ViewData["Title"] = "Capacitaciones H&S";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div><h2 class="mb-1">Capacitaciones H&S</h2><div class="text-muted">Control de temas, audiencia y participantes.</div></div>
+        <a asp-action="TrainingCreate" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nueva</a>
+    </div>
+    @if (TempData["TicketsMessage"] is string msg && !string.IsNullOrWhiteSpace(msg)) { <div class="alert alert-success">@msg</div> }
+    <div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Fecha</th><th>Tema</th><th>Persona</th><th>Puesto</th><th>Instructor</th><th>Sitio</th><th>Vence</th><th>Resultado</th><th class="text-end">Participantes</th><th>Obligatoria</th></tr></thead>
+        <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.TrainingDateUtc.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                <td>@item.Topic</td>
+                <td>@(item.EmployeeName ?? item.Audience)</td>
+                <td>@(item.Position ?? "N/A")</td>
+                <td>@item.Trainer</td>
+                <td>@item.Site</td>
+                <td>@(item.ExpirationDateUtc?.ToLocalTime().ToString("dd/MM/yyyy") ?? "N/A")</td>
+                <td><span class="badge @(item.Result == "Aprobado" ? "text-bg-success" : item.Result == "Reprobado" ? "text-bg-danger" : "text-bg-secondary")">@item.Result</span></td>
+                <td class="text-end">@item.AttendeeCount</td>
+                <td>@(item.RequiredTraining ? "Si" : "No")</td>
+            </tr>
+        }
+        </tbody>
+    </table></div></div>
+</div>

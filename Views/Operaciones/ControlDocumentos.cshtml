@@ -1,0 +1,2731 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.ControlDocumentosViewModel
+@using System.Globalization
+@using System.Linq
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Control de documentos";
+    var conductoresAlDia = 0;
+    var conductoresPorVencer = 0;
+    var conductoresVencidos = 0;
+    var conductoresSinFecha = 0;
+
+    foreach (var filaResumen in Model.Filas)
+    {
+        var estados = filaResumen.Capacitaciones
+            .Select(c => (c.EstadoFiltro ?? string.Empty).Trim().ToLowerInvariant())
+            .ToList();
+
+        var tieneVencida = estados.Contains("vencida");
+        var tieneSinFecha = estados.Contains("sinfecha");
+        var tienePorVencer = estados.Contains("porvencer");
+
+        if (tieneVencida)
+        {
+            conductoresVencidos++;
+        }
+        else if (tieneSinFecha)
+        {
+            conductoresSinFecha++;
+        }
+        else if (tienePorVencer)
+        {
+            conductoresPorVencer++;
+        }
+        else
+        {
+            conductoresAlDia++;
+        }
+    }
+
+    var conductoresNoOpera = conductoresVencidos + conductoresSinFecha;
+    var conductoresOperaConAlerta = conductoresPorVencer;
+    var conductoresPuedeOperar = conductoresAlDia;
+    var maxTendenciaSemanal = Math.Max(1, Model.TendenciaSemanal.Any() ? Model.TendenciaSemanal.Max(x => x.TotalCambios) : 1);
+    var maxTendenciaMensual = Math.Max(1, Model.TendenciaMensual.Any() ? Model.TendenciaMensual.Max(x => x.TotalCambios) : 1);
+    var totalIngresosEquipo = Model.EquiposGondolas.Count(x => string.Equals(x.Tipo, "Ingreso de Equipo", StringComparison.OrdinalIgnoreCase));
+    var totalIngresosGondola = Model.EquiposGondolas.Count(x => string.Equals(x.Tipo, "Ingreso de Gondola", StringComparison.OrdinalIgnoreCase));
+    var totalEquiposConSeguroPorVencer = Model.EquiposGondolas.Count(x => !string.IsNullOrWhiteSpace(x.VencimientoSeguroVehicular) && x.VencimientoSeguroVehicular != "-");
+
+    var drawerRows = Model.Filas
+        .Select((filaDrawer, rowIndex) => new
+        {
+            RowIndex = rowIndex,
+            Conductor = filaDrawer.Conductor,
+            Capacitaciones = Model.EncabezadosCapacitacion
+                .Select((encabezadoDrawer, capIndex) =>
+                {
+                    var capDrawer = capIndex < filaDrawer.Capacitaciones.Count
+                        ? filaDrawer.Capacitaciones[capIndex]
+                        : null;
+                    var fechaDrawer = capDrawer?.Fecha
+                        ?? (capIndex < filaDrawer.FechasCapacitacion.Count ? filaDrawer.FechasCapacitacion[capIndex] : "-");
+                    return new
+                    {
+                        Nombre = encabezadoDrawer,
+                        Fecha = string.IsNullOrWhiteSpace(fechaDrawer) ? "-" : fechaDrawer,
+                        Estado = capDrawer?.EstadoSemaforo ?? "rojo",
+                        EstadoFiltro = capDrawer?.EstadoFiltro ?? "sinfecha",
+                        Etiqueta = capDrawer?.EtiquetaSemaforo ?? "Sin fecha",
+                        Alerta = capDrawer?.MensajeAlerta ?? "No hay fecha registrada."
+                    };
+                })
+                .ToList()
+        })
+        .ToList();
+
+    var drawerRowsJson = JsonSerializer.Serialize(drawerRows);
+}
+
+<style>
+    .doc-shell {
+        border: 1px solid #d6dfeb;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+        padding: 1rem;
+    }
+
+    .doc-shell__header {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.95rem;
+    }
+
+    .doc-shell__header h2 {
+        margin-bottom: 0.22rem;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .doc-shell__header p {
+        margin-bottom: 0;
+        color: #64748b;
+    }
+
+    .doc-actions {
+        margin-bottom: 0.8rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .doc-new-record {
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 0.75rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .doc-new-record__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .doc-new-record__title {
+        margin: 0;
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .doc-new-record__grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+        gap: 0.6rem;
+    }
+
+    .doc-new-record__choice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 0.65rem;
+    }
+
+    .doc-new-record__choice {
+        border: 1px solid #dbe5f2;
+        border-radius: 12px;
+        background: #f8fafc;
+        padding: 0.85rem;
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .doc-new-record__choice h6 {
+        margin: 0;
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .doc-new-record__choice p {
+        margin: 0;
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    .doc-new-record .form-label {
+        margin-bottom: 0.14rem;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #334155;
+    }
+
+    .doc-view-switch {
+        margin-bottom: 0.8rem;
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        padding: 0.25rem;
+        border: 1px solid #dbe5f2;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+
+    .doc-view-switch button {
+        min-height: 34px;
+        border-radius: 9px;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .doc-view-switch button.is-active {
+        background: #0f3d8c;
+        border-color: #0f3d8c;
+        color: #fff;
+    }
+
+    .doc-semaforo-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0;
+        color: #334155;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .doc-semaforo-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.28rem;
+    }
+
+    .doc-status-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0;
+    }
+
+    .doc-status-filters .btn {
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    .doc-status-filters .btn.is-active {
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.18) inset;
+    }
+
+    .doc-operation-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .doc-operation-filters .btn {
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    .doc-operation-filters .btn.is-active {
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.18) inset;
+    }
+
+    .doc-table-controls {
+        display: grid;
+        grid-template-columns: minmax(330px, 1fr) minmax(300px, 1fr);
+        gap: 0.65rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .doc-table-controls__box {
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 0.45rem 0.55rem;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+    }
+
+    .doc-table-controls__box--filters {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.45rem;
+    }
+
+    .doc-semaforo-legend--inbox {
+        font-size: 0.74rem;
+    }
+
+    .doc-table-controls__box--search {
+        justify-content: flex-end;
+    }
+
+    .doc-search-form {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.45rem;
+    }
+
+    .doc-sort-select {
+        width: 190px;
+        flex: 0 0 auto;
+    }
+
+    .doc-search-input {
+        max-width: 360px;
+    }
+
+    .doc-alert-strip {
+        margin-bottom: 0.55rem;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 0.78rem;
+        padding: 0.38rem 0.55rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+    }
+
+    .doc-alert-dispatch {
+        margin-bottom: 0.55rem;
+        border: 1px solid #d6e5ff;
+        border-radius: 10px;
+        background: #eef4ff;
+        color: #1e3a8a;
+        font-size: 0.77rem;
+        padding: 0.36rem 0.58rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+    }
+
+    .doc-is-hidden {
+        display: none !important;
+    }
+
+    .doc-chart {
+        margin-bottom: 0.75rem;
+        border: 1px solid #dce4f0;
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 0.55rem 0.6rem;
+    }
+
+    .doc-chart__title {
+        margin: 0 0 0.28rem;
+        font-size: 0.88rem;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .doc-chart__hint {
+        margin-bottom: 0.4rem;
+        font-size: 0.68rem;
+        color: #64748b;
+    }
+
+    .doc-chart-table-wrap {
+        border: 1px solid #e6edf7;
+        border-radius: 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        background: #fbfdff;
+    }
+
+    .doc-chart-table {
+        margin-bottom: 0;
+        min-width: 940px;
+    }
+
+    .doc-chart-table thead th {
+        font-size: 0.66rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #334155;
+        background: #f1f5f9;
+        border-color: #dbe5f2;
+        padding: 0.32rem 0.42rem;
+        white-space: nowrap;
+    }
+
+    .doc-chart-table tbody td {
+        border-color: #e6edf7;
+        padding: 0.26rem 0.42rem;
+        font-size: 0.72rem;
+        vertical-align: middle;
+    }
+
+    .doc-chart-col-name {
+        min-width: 210px;
+        max-width: 250px;
+        font-weight: 700;
+        color: #334155;
+        line-height: 1.2;
+    }
+
+    .doc-chart-col-sf {
+        text-align: center;
+        font-weight: 700;
+        width: 72px;
+    }
+
+    .doc-chart-col-pct {
+        text-align: right;
+        font-weight: 800;
+        color: #0f172a;
+        width: 86px;
+        white-space: nowrap;
+    }
+
+    .doc-equipo-col-main {
+        min-width: 180px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .doc-equipo-meta {
+        color: #64748b;
+        font-size: 0.66rem;
+        font-weight: 600;
+    }
+
+    .doc-equipo-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0.16rem 0.42rem;
+        border-radius: 999px;
+        background: #eef4ff;
+        color: #1d4ed8;
+        font-size: 0.68rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .doc-metric {
+        display: grid;
+        grid-template-columns: minmax(120px, 1fr) 34px;
+        gap: 0.32rem;
+        align-items: center;
+    }
+
+    .doc-metric-track {
+        width: 100%;
+        height: 0.4rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .doc-metric-fill {
+        height: 100%;
+        border-radius: inherit;
+        transition: width 0.25s ease;
+    }
+
+    .doc-metric-fill--verde {
+        background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .doc-metric-fill--amarillo {
+        background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+    }
+
+    .doc-metric-fill--rojo {
+        background: linear-gradient(90deg, #f87171 0%, #ef4444 100%);
+    }
+
+    .doc-metric-value {
+        text-align: right;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+
+    .doc-source {
+        border: 1px solid #e3e8f2;
+        border-radius: 12px;
+        padding: 0.55rem 0.8rem;
+        background: #ffffff;
+        min-width: 270px;
+    }
+
+    .doc-source__label {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #9a3412;
+        margin-bottom: 0.1rem;
+    }
+
+    .doc-source__name {
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: #1f2937;
+        line-height: 1.2;
+    }
+
+    .doc-source__meta {
+        margin-top: 0.18rem;
+        font-size: 0.76rem;
+        color: #64748b;
+    }
+
+    .doc-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .doc-kpi {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.44rem 0.62rem;
+        background: #ffffff;
+    }
+
+    .doc-kpi__label {
+        color: #64748b;
+        font-size: 0.72rem;
+        margin-bottom: 0.08rem;
+    }
+
+    .doc-kpi__value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1;
+    }
+
+    .doc-kpi--ok {
+        border-top: 3px solid #16a34a;
+        background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+    }
+
+    .doc-kpi--warn {
+        border-top: 3px solid #d97706;
+        background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+    }
+
+    .doc-kpi--danger {
+        border-top: 3px solid #dc2626;
+        background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%);
+    }
+
+    .doc-kpi--muted {
+        border-top: 3px solid #64748b;
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    }
+
+    .doc-kpi--block {
+        border-top: 3px solid #dc2626;
+        background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%);
+    }
+
+    .doc-kpi--hold {
+        border-top: 3px solid #d97706;
+        background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+    }
+
+    .doc-kpi--go {
+        border-top: 3px solid #16a34a;
+        background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+    }
+
+    .doc-table-wrap {
+        border: 1px solid #dce4f0;
+        border-radius: 14px;
+        overflow-x: auto;
+        overflow-y: visible;
+        background: #ffffff;
+    }
+
+    .doc-table {
+        margin-bottom: 0;
+        min-width: 1220px;
+    }
+
+    .doc-row-main--blocked {
+        background: #fff7f7;
+    }
+
+    .doc-row-main--warning {
+        background: #fffcf1;
+    }
+
+    .doc-op-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.28rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-radius: 999px;
+        padding: 0.12rem 0.45rem;
+        border: 1px solid transparent;
+    }
+
+    .doc-op-badge--block {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .doc-op-badge--hold {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .doc-op-badge--go {
+        color: #166534;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .doc-supervisor-block {
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        padding: 0.55rem;
+        background: #f8fbff;
+    }
+
+    .doc-supervisor-block .form-label {
+        margin-bottom: 0.12rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #334155;
+        text-transform: uppercase;
+    }
+
+    .doc-trend-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 0.55rem;
+        margin-bottom: 0.68rem;
+    }
+
+    .doc-trend-card {
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 0.55rem;
+    }
+
+    .doc-trend-card h6 {
+        margin-bottom: 0.35rem;
+        font-size: 0.84rem;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .doc-trend-row {
+        display: grid;
+        grid-template-columns: 78px 1fr 56px;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .doc-trend-label {
+        font-size: 0.72rem;
+        color: #334155;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .doc-trend-track {
+        height: 0.5rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .doc-trend-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    .doc-trend-value {
+        text-align: right;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .doc-shell.is-executive .doc-table {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .doc-shell.is-executive .doc-table thead th:not(.doc-col-conductor),
+    .doc-shell.is-executive .doc-table tbody td:not(.doc-col-conductor) {
+        display: none;
+    }
+
+    .doc-shell.is-executive .doc-col-conductor {
+        min-width: 100%;
+        width: 100%;
+        box-shadow: none;
+    }
+
+    .doc-shell.is-executive .doc-detail-row {
+        display: none;
+    }
+
+    .doc-exec-btn.is-active {
+        border-color: #0f172a;
+        color: #0f172a;
+        background: #e2e8f0;
+    }
+
+    .doc-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #1f2937;
+        color: #f8fafc;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        vertical-align: middle;
+        border-color: #374151;
+        white-space: nowrap;
+    }
+
+    .doc-table thead th:not(.doc-col-conductor) {
+        text-align: center;
+        border-left: 1px solid #334155;
+    }
+
+    .doc-table tbody td {
+        border-color: #edf1f7;
+        font-size: 0.8rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .doc-row-main td:not(.doc-col-conductor) {
+        text-align: center;
+        border-left: 1px solid #eef2f7;
+    }
+
+    .doc-row-main:nth-child(4n+1) td {
+        background: #ffffff;
+    }
+
+    .doc-row-main:nth-child(4n+3) td {
+        background: #fafcff;
+    }
+
+    .doc-col-conductor {
+        position: sticky;
+        left: 0;
+        z-index: 4;
+        min-width: 360px;
+        background: inherit;
+        box-shadow: 5px 0 10px rgba(15, 23, 42, 0.08);
+    }
+
+    .doc-conductor-btn {
+        border: 0;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        font-weight: 700;
+        color: #1f2937;
+        display: grid;
+        grid-template-columns: minmax(170px, 1fr) auto auto;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0;
+        font-size: 0.96rem;
+        min-width: 0;
+    }
+
+    .doc-conductor-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .doc-conductor-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.24rem;
+        border-radius: 999px;
+        padding: 0.1rem 0.4rem;
+        font-size: 0.66rem;
+        font-weight: 800;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .doc-conductor-state--verde {
+        color: #14532d;
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    .doc-conductor-state--amarillo {
+        color: #854d0e;
+        background: #fef3c7;
+        border-color: #fcd34d;
+    }
+
+    .doc-conductor-state--rojo {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .doc-conductor-btn:hover {
+        color: #0f172a;
+    }
+
+    .doc-conductor-cell-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.35rem;
+        width: 100%;
+    }
+
+    .doc-panel-btn {
+        flex: 0 0 auto;
+        padding: 0.17rem 0.32rem;
+        line-height: 1;
+    }
+
+    .doc-chevron {
+        transition: transform 0.2s ease;
+        color: #64748b;
+        justify-self: end;
+    }
+
+    .doc-conductor-btn.is-open .doc-chevron {
+        transform: rotate(180deg);
+    }
+
+    .doc-date-cell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        font-weight: 700;
+        width: 100%;
+    }
+
+    .doc-date-cell--verde {
+        color: #166534;
+    }
+
+    .doc-date-cell--amarillo {
+        color: #92400e;
+    }
+
+    .doc-date-cell--rojo {
+        color: #b91c1c;
+    }
+
+    .doc-empty {
+        color: #94a3b8;
+    }
+
+    .doc-semaforo-dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        display: inline-block;
+        flex: 0 0 auto;
+    }
+
+    .doc-semaforo-dot--verde {
+        background: #22c55e;
+    }
+
+    .doc-semaforo-dot--amarillo {
+        background: #f59e0b;
+    }
+
+    .doc-semaforo-dot--rojo {
+        background: #ef4444;
+    }
+
+    .doc-detail-row td {
+        border-top: 0;
+        padding: 0;
+        background: #f8fbff !important;
+    }
+
+    .doc-detail-panel {
+        border-top: 1px dashed #cfd9e6;
+        padding: 0.75rem 0.95rem 0.9rem;
+    }
+
+    .doc-detail-toolbar {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .doc-detail-toolbar h6 {
+        margin-bottom: 0;
+        color: #1f2937;
+        font-weight: 700;
+    }
+
+    .doc-detail-toolbar .btn {
+        align-self: flex-start;
+    }
+
+    .doc-cap-table-wrap {
+        border: 1px solid #dce4f0;
+        border-radius: 10px;
+        overflow-x: visible;
+        overflow-y: visible;
+        background: #ffffff;
+    }
+
+    .doc-cap-list {
+        display: flex;
+        flex-direction: column;
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    .doc-cap-list__head,
+    .doc-cap-list__row {
+        display: grid;
+        grid-template-columns: minmax(260px, 460px) minmax(160px, 210px);
+        justify-content: start;
+        gap: 0.55rem;
+        align-items: center;
+        padding: 0.45rem 0.65rem;
+        border-bottom: 1px solid #e8edf6;
+    }
+
+    .doc-cap-list__head {
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 0.73rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .doc-cap-list__row:last-child {
+        border-bottom: 0;
+    }
+
+    .doc-cap-list__date {
+        font-weight: 700;
+        color: #0f766e;
+    }
+
+    .doc-cap-list__date--empty {
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .doc-cap-name {
+        font-weight: 700;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .doc-cap-list__date-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+
+    .doc-semaforo-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.12rem 0.45rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+    }
+
+    .doc-semaforo-badge--verde {
+        color: #14532d;
+        background: #dcfce7;
+        border: 1px solid #86efac;
+    }
+
+    .doc-semaforo-badge--amarillo {
+        color: #854d0e;
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+    }
+
+    .doc-semaforo-badge--rojo {
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+    }
+
+    .doc-cap-alert {
+        font-size: 0.74rem;
+        margin-top: 0.1rem;
+    }
+
+    .doc-cap-alert--verde {
+        color: #166534;
+    }
+
+    .doc-cap-alert--amarillo {
+        color: #92400e;
+    }
+
+    .doc-cap-alert--rojo {
+        color: #b91c1c;
+    }
+
+    .doc-edit-panel {
+        display: none;
+        margin-top: 0.72rem;
+        border: 1px solid #d7e3f0;
+        border-radius: 12px;
+        padding: 0.7rem;
+        background: #ffffff;
+    }
+
+    .doc-edit-panel.is-open {
+        display: block;
+    }
+
+    .doc-edit-panel .form-label {
+        margin-bottom: 0.15rem;
+        font-size: 0.73rem;
+        font-weight: 700;
+        color: #334155;
+        text-transform: uppercase;
+    }
+
+    .doc-edit-input {
+        min-width: 170px;
+    }
+
+    .doc-history {
+        margin-top: 0.85rem;
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .doc-history-toggle.is-active {
+        background: #0f172a;
+        border-color: #0f172a;
+        color: #ffffff;
+    }
+
+    .doc-history__head {
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid #e7edf6;
+        background: #f8fbff;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .doc-history__body {
+        max-height: 320px;
+        overflow: auto;
+    }
+
+    .doc-history-table {
+        margin-bottom: 0;
+    }
+
+    .doc-history-table th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #1e293b;
+        color: #f8fafc;
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-color: #334155;
+        white-space: nowrap;
+    }
+
+    .doc-history-table td {
+        border-color: #edf1f7;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .doc-history-old {
+        color: #9f1239;
+        font-weight: 700;
+    }
+
+    .doc-history-new {
+        color: #065f46;
+        font-weight: 700;
+    }
+
+    .doc-drawer {
+        position: fixed;
+        inset: 0;
+        z-index: 2050;
+        display: none;
+    }
+
+    .doc-drawer.is-open {
+        display: block;
+    }
+
+    .doc-drawer__overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.38);
+    }
+
+    .doc-drawer__panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(500px, 96vw);
+        height: 100%;
+        background: #ffffff;
+        box-shadow: -8px 0 26px rgba(15, 23, 42, 0.24);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .doc-drawer__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0.68rem 0.82rem;
+    }
+
+    .doc-drawer__title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .doc-drawer__body {
+        overflow: auto;
+        padding: 0.7rem 0.8rem 0.9rem;
+    }
+
+    .doc-drawer-list {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 0.65rem;
+    }
+
+    .doc-drawer-item {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) auto;
+        gap: 0.35rem 0.5rem;
+        border-bottom: 1px solid #edf1f7;
+        padding: 0.43rem 0.55rem;
+    }
+
+    .doc-drawer-item:last-child {
+        border-bottom: 0;
+    }
+
+    .doc-drawer-item__name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .doc-drawer-item__date {
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-align: right;
+    }
+
+    .doc-drawer-item__meta {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+
+    .doc-drawer-item__alert {
+        font-size: 0.71rem;
+    }
+
+    .doc-bulk-panel {
+        margin-top: -0.08rem;
+        margin-bottom: 0.58rem;
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 0.55rem;
+    }
+
+    .doc-bulk-picker-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: center;
+        margin-bottom: 0.4rem;
+    }
+
+    .doc-bulk-picker-search {
+        min-width: 220px;
+        flex: 1 1 220px;
+    }
+
+    .doc-bulk-picker-count {
+        margin-left: auto;
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .doc-bulk-picker-list {
+        border: 1px solid #dce4f0;
+        border-radius: 10px;
+        background: #f8fbff;
+        max-height: 170px;
+        overflow-y: auto;
+        padding: 0.45rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.35rem 0.55rem;
+    }
+
+    .doc-bulk-picker-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.84rem;
+        color: #1f2937;
+    }
+
+    .doc-bulk-picker-empty {
+        grid-column: 1 / -1;
+        font-size: 0.78rem;
+        color: #64748b;
+        padding: 0.1rem 0;
+    }
+
+    @@media (max-width: 900px) {
+        .doc-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .doc-trend-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .doc-source {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .doc-table-controls {
+            grid-template-columns: 1fr;
+        }
+
+        .doc-table-controls__box--search {
+            justify-content: stretch;
+        }
+
+        .doc-search-form {
+            justify-content: stretch;
+            flex-wrap: wrap;
+        }
+
+        .doc-search-input {
+            max-width: 100%;
+            flex: 1 1 100%;
+        }
+
+        .doc-sort-select {
+            width: 100%;
+            flex: 1 1 100%;
+        }
+
+        .doc-chart-table {
+            min-width: 760px;
+        }
+
+        .doc-cap-list__head,
+        .doc-cap-list__row {
+            grid-template-columns: 1fr;
+            gap: 0.35rem;
+        }
+
+        .doc-conductor-btn {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+        }
+
+        .doc-conductor-state {
+            display: none;
+        }
+
+        .doc-op-badge {
+            font-size: 0.62rem;
+            padding: 0.1rem 0.36rem;
+        }
+
+        .doc-drawer-item {
+            grid-template-columns: 1fr;
+        }
+
+        .doc-drawer-item__date {
+            text-align: left;
+        }
+
+        .doc-bulk-picker-count {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .doc-trend-row {
+            grid-template-columns: 66px 1fr 48px;
+        }
+    }
+</style>
+
+<div class="doc-shell">
+    <div class="doc-shell__header">
+        <div>
+            <h2>Control de documentos</h2>
+            <p>Control documental de personas, camiones y gondolas.</p>
+        </div>
+        <div class="doc-source">
+            <div class="doc-source__label">Fuente de Datos</div>
+            <div class="doc-source__name">@Model.FuenteArchivo</div>
+            <div class="doc-source__meta">
+                Actualizado: @Model.FechaGeneracion.ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture)
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ControlDocumentosOk"] is string okMessage && !string.IsNullOrWhiteSpace(okMessage))
+    {
+        <div class="alert alert-success mb-3">@okMessage</div>
+    }
+
+    @if (TempData["ControlDocumentosError"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger mb-3">@errorMessage</div>
+    }
+
+    <div class="doc-actions">
+        <button type="button"
+                class="btn btn-sm btn-primary"
+                data-bs-toggle="collapse"
+                data-bs-target="#doc-new-record-panel"
+                aria-expanded="false"
+                aria-controls="doc-new-record-panel">
+            <i class="bi bi-plus-circle me-1"></i>
+            Nuevo registro
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary doc-exec-btn js-doc-exec-toggle" aria-pressed="false">
+            Modo ejecutivo
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-dark doc-history-toggle js-doc-history-toggle"
+                aria-expanded="false"
+                aria-controls="doc-history-panel">
+            <i class="bi bi-clock-history me-1"></i>
+            Historial de cambios
+        </button>
+    </div>
+
+    <div class="collapse" id="doc-new-record-panel">
+        <div class="doc-new-record">
+            <div class="doc-new-record__header">
+                <h6 class="doc-new-record__title">Agregar nuevo registro</h6>
+                <span class="badge text-bg-light border">Selecciona el formulario</span>
+            </div>
+
+            <div class="doc-new-record__choice-grid">
+                <div class="doc-new-record__choice">
+                    <h6>Persona</h6>
+                    <p>Usa el formulario completo de Nuevo ingreso de personal que ya existe en el proyecto.</p>
+                    <a class="btn btn-sm btn-primary align-self-start" asp-controller="Operaciones" asp-action="NuevoIngresoPersonal">
+                        <i class="bi bi-person-plus me-1"></i>
+                        Abrir formulario de persona
+                    </a>
+                </div>
+                <div class="doc-new-record__choice">
+                    <h6>Camion / Gondola</h6>
+                    <p>Usa el formulario completo de Nuevo ingreso de equipo y gondola que ya existe en el proyecto.</p>
+                    <a class="btn btn-sm btn-primary align-self-start" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola">
+                        <i class="bi bi-truck me-1"></i>
+                        Abrir formulario de camion / gondola
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (conductoresVencidos > 0 || conductoresPorVencer > 0)
+    {
+        <div class="doc-alert-strip">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>
+                Alertas activas:
+                <strong>@conductoresVencidos</strong> vencido(s) y
+                <strong>@conductoresPorVencer</strong> por vencer.
+            </span>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.AlertasResumen.Mensaje))
+    {
+        <div class="doc-alert-dispatch">
+            <i class="bi bi-bell-fill"></i>
+            <span>
+                Alertas automaticas: @Model.AlertasResumen.Mensaje
+                @if (Model.AlertasResumen.UltimaEjecucion.HasValue)
+                {
+                    <text>(@Model.AlertasResumen.UltimaEjecucion.Value.ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture))</text>
+                }
+            </span>
+        </div>
+    }
+
+    <div class="doc-kpi-grid">
+        <div class="doc-kpi doc-kpi--ok">
+            <div class="doc-kpi__label">Conductores al dia</div>
+            <div class="doc-kpi__value">@conductoresAlDia</div>
+        </div>
+        <div class="doc-kpi doc-kpi--warn">
+            <div class="doc-kpi__label">Por vencer (30 dias)</div>
+            <div class="doc-kpi__value">@conductoresPorVencer</div>
+        </div>
+        <div class="doc-kpi doc-kpi--danger">
+            <div class="doc-kpi__label">Vencidos</div>
+            <div class="doc-kpi__value">@conductoresVencidos</div>
+        </div>
+        <div class="doc-kpi doc-kpi--muted">
+            <div class="doc-kpi__label">Sin fecha</div>
+            <div class="doc-kpi__value">@conductoresSinFecha</div>
+        </div>
+        <div class="doc-kpi doc-kpi--go">
+            <div class="doc-kpi__label">Puede Operar</div>
+            <div class="doc-kpi__value">@conductoresPuedeOperar</div>
+        </div>
+        <div class="doc-kpi doc-kpi--hold">
+            <div class="doc-kpi__label">Opera con alerta</div>
+            <div class="doc-kpi__value">@conductoresOperaConAlerta</div>
+        </div>
+        <div class="doc-kpi doc-kpi--block">
+            <div class="doc-kpi__label">No Puede Operar</div>
+            <div class="doc-kpi__value">@conductoresNoOpera</div>
+        </div>
+        <div class="doc-kpi doc-kpi--muted">
+            <div class="doc-kpi__label">Camiones / Equipos</div>
+            <div class="doc-kpi__value">@totalIngresosEquipo</div>
+        </div>
+        <div class="doc-kpi doc-kpi--muted">
+            <div class="doc-kpi__label">Remolques / Gondolas</div>
+            <div class="doc-kpi__value">@totalIngresosGondola</div>
+        </div>
+        <div class="doc-kpi doc-kpi--warn">
+            <div class="doc-kpi__label">Seguros registrados</div>
+            <div class="doc-kpi__value">@totalEquiposConSeguroPorVencer</div>
+        </div>
+    </div>
+
+    <div class="doc-view-switch" role="group" aria-label="Cambiar vista de control documental">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary js-doc-view-switch is-active"
+                data-doc-view="personas"
+                aria-pressed="true">
+            Personas
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-primary js-doc-view-switch"
+                data-doc-view="camiones"
+                aria-pressed="false">
+            Camiones / Gondolas
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-warning mb-0">@Model.ErrorMessage</div>
+    }
+    else
+    {
+        @if (!Model.Filas.Any())
+        {
+            <div class="alert alert-info mb-3 doc-panel-personas">No hay personas registradas todavia.</div>
+        }
+
+        <div class="doc-trend-grid doc-panel-personas">
+            <div class="doc-trend-card">
+                <h6>Tendencia semanal de cambios</h6>
+                @if (Model.TendenciaSemanal.Any())
+                {
+                    @foreach (var point in Model.TendenciaSemanal)
+                    {
+                        var width = Math.Round((decimal)point.TotalCambios * 100m / maxTendenciaSemanal, 1, MidpointRounding.AwayFromZero);
+                        <div class="doc-trend-row">
+                            <div class="doc-trend-label">@point.Etiqueta</div>
+                            <div class="doc-trend-track">
+                                <div class="doc-trend-fill" style="width:@width.ToString("0.#", CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <div class="doc-trend-value">@point.TotalCambios</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="small text-muted">Sin datos de tendencia semanal.</div>
+                }
+            </div>
+            <div class="doc-trend-card">
+                <h6>Tendencia mensual de cambios</h6>
+                @if (Model.TendenciaMensual.Any())
+                {
+                    @foreach (var point in Model.TendenciaMensual)
+                    {
+                        var width = Math.Round((decimal)point.TotalCambios * 100m / maxTendenciaMensual, 1, MidpointRounding.AwayFromZero);
+                        <div class="doc-trend-row">
+                            <div class="doc-trend-label">@point.Etiqueta</div>
+                            <div class="doc-trend-track">
+                                <div class="doc-trend-fill" style="width:@width.ToString("0.#", CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <div class="doc-trend-value">@point.TotalCambios</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="small text-muted">Sin datos de tendencia mensual.</div>
+                }
+            </div>
+        </div>
+
+        @if (Model.CumplimientoCapacitaciones.Any())
+        {
+            <div class="doc-chart doc-panel-personas">
+                <h6 class="doc-chart__title">Cumplimiento por capacitacion (%)</h6>
+                <div class="doc-chart__hint">Vista compacta: una fila por capacitacion</div>
+                <div class="doc-chart-table-wrap">
+                    <table class="table table-sm align-middle doc-chart-table">
+                        <thead>
+                            <tr>
+                                <th>Capacitacion</th>
+                                <th>Vigentes</th>
+                                <th>Por vencer</th>
+                                <th>Vencidas</th>
+                                <th>Sin fecha</th>
+                                <th>% Cumpl.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.CumplimientoCapacitaciones)
+                            {
+                                var total = item.TotalConductores;
+                                var pctVigente = total > 0 ? (item.Vigentes * 100m / total) : 0m;
+                                var pctPorVencer = total > 0 ? (item.PorVencer * 100m / total) : 0m;
+                                var pctVencida = total > 0 ? (item.Vencidas * 100m / total) : 0m;
+                                <tr>
+                                    <td class="doc-chart-col-name">@item.Capacitacion</td>
+                                    <td>
+                                        <div class="doc-metric">
+                                            <div class="doc-metric-track">
+                                                <div class="doc-metric-fill doc-metric-fill--verde" style="width: @pctVigente.ToString("0.##", CultureInfo.InvariantCulture)%;"></div>
+                                            </div>
+                                            <div class="doc-metric-value">@item.Vigentes</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="doc-metric">
+                                            <div class="doc-metric-track">
+                                                <div class="doc-metric-fill doc-metric-fill--amarillo" style="width: @pctPorVencer.ToString("0.##", CultureInfo.InvariantCulture)%;"></div>
+                                            </div>
+                                            <div class="doc-metric-value">@item.PorVencer</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="doc-metric">
+                                            <div class="doc-metric-track">
+                                                <div class="doc-metric-fill doc-metric-fill--rojo" style="width: @pctVencida.ToString("0.##", CultureInfo.InvariantCulture)%;"></div>
+                                            </div>
+                                            <div class="doc-metric-value">@item.Vencidas</div>
+                                        </div>
+                                    </td>
+                                    <td class="doc-chart-col-sf">@item.SinFecha</td>
+                                    <td class="doc-chart-col-pct">@item.CumplimientoPorcentaje.ToString("0.#", CultureInfo.CurrentCulture)%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="doc-chart doc-panel-camiones doc-is-hidden">
+            <h6 class="doc-chart__title">Control documental de camion y remolque o gondola</h6>
+            <div class="doc-chart__hint">Informacion captada desde Ingreso de Equipo / Ingreso de Gondola.</div>
+            <div class="doc-chart-table-wrap">
+                <table class="table table-sm align-middle doc-chart-table">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Asunto</th>
+                            <th>Tarea padre</th>
+                            <th>Estado</th>
+                            <th>Empresa</th>
+                            <th>Codigo del cabezal</th>
+                            <th>Placa de cabezal</th>
+                            <th>Placa de gondola</th>
+                            <th>Tenencia</th>
+                            <th>Propietario</th>
+                            <th>Venc. emision gases</th>
+                            <th>Venc. insp. mecanica</th>
+                            <th>Venc. seguro vehicular</th>
+                            <th>Fecha inicio</th>
+                            <th>Fecha fin</th>
+                            <th>% Realizado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.EquiposGondolas.Any())
+                        {
+                            @foreach (var item in Model.EquiposGondolas)
+                            {
+                                <tr>
+                                    <td><span class="doc-equipo-badge">@item.Tipo</span></td>
+                                    <td class="doc-equipo-col-main">
+                                        @item.Asunto
+                                        <div class="doc-equipo-meta">Actualizado: @item.UpdatedAt.ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture)</div>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.TareaPadre) ? "-" : item.TareaPadre)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Estado) ? "-" : item.Estado)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Empresa) ? "-" : item.Empresa)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.CodigoCabezal) ? "-" : item.CodigoCabezal)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.PlacaCabezal) ? "-" : item.PlacaCabezal)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.PlacaGondola) ? "-" : item.PlacaGondola)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Tenencia) ? "-" : item.Tenencia)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Propietario) ? "-" : item.Propietario)</td>
+                                    <td>@item.VencimientoEmisionGases</td>
+                                    <td>@item.VencimientoInspeccionMecanica</td>
+                                    <td>@item.VencimientoSeguroVehicular</td>
+                                    <td>@item.FechaInicio</td>
+                                    <td>@item.FechaFin</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.PorcentajeRealizado) ? "-" : $"{item.PorcentajeRealizado}%")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="16" class="text-muted">Sin registros de camion, remolque o gondola todavia.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="doc-table-controls doc-panel-personas">
+            <div class="doc-table-controls__box doc-table-controls__box--filters">
+                <div class="doc-semaforo-legend doc-semaforo-legend--inbox">
+                    <span class="doc-semaforo-legend-item">
+                        <span class="doc-semaforo-dot doc-semaforo-dot--verde"></span>
+                        Verde: vigente
+                    </span>
+                    <span class="doc-semaforo-legend-item">
+                        <span class="doc-semaforo-dot doc-semaforo-dot--amarillo"></span>
+                        Amarillo: vence en 30 dias o menos
+                    </span>
+                    <span class="doc-semaforo-legend-item">
+                        <span class="doc-semaforo-dot doc-semaforo-dot--rojo"></span>
+                        Rojo: vencida o sin fecha
+                    </span>
+                </div>
+                <div class="doc-status-filters" role="group" aria-label="Filtros por estado de vigencia">
+                    <button type="button" class="btn btn-sm btn-outline-success js-doc-filter" data-filter="vigente" aria-pressed="false">
+                        Vigente
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning js-doc-filter" data-filter="porvencer" aria-pressed="false">
+                        Por vencer
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger js-doc-filter" data-filter="vencida" aria-pressed="false">
+                        Vencidas
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-doc-filter" data-filter="sinfecha" aria-pressed="false">
+                        Sin Fecha
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-dark js-doc-filter" data-filter="critico" aria-pressed="false">
+                        Solo criticos
+                    </button>
+                </div>
+                <div class="doc-operation-filters" role="group" aria-label="Filtros por estado operativo">
+                    <button type="button" class="btn btn-sm btn-outline-success js-doc-oper-filter" data-oper-filter="puedeoperar" aria-pressed="false">
+                        Puede Operar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning js-doc-oper-filter" data-oper-filter="operaalerta" aria-pressed="false">
+                        Opera con alerta
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger js-doc-oper-filter" data-oper-filter="noopera" aria-pressed="false">
+                        No Puede Operar
+                    </button>
+                </div>
+            </div>
+            <div class="doc-table-controls__box doc-table-controls__box--search">
+                <form class="doc-search-form js-doc-search-form" role="search">
+                    <select class="form-select form-select-sm doc-sort-select js-doc-sort-select" aria-label="Ordenar conductores">
+                        <option value="">Orden: original</option>
+                        <option value="vencidas_desc">Mas vencidas</option>
+                        <option value="porvencer_desc">Mas por vencer</option>
+                        <option value="cumplimiento_asc">Menor % cumplimiento</option>
+                    </select>
+                    <input type="search"
+                           class="form-control form-control-sm doc-search-input js-doc-search-input"
+                           list="doc-conductores-list"
+                           placeholder="Buscar conductor por nombre y presiona Enter"
+                           aria-label="Buscar conductor por nombre" />
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-doc-search-reset">Limpiar</button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-dark"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#doc-bulk-panel"
+                            aria-expanded="false"
+                            aria-controls="doc-bulk-panel">
+                        Accion masiva
+                    </button>
+                </form>
+                <datalist id="doc-conductores-list">
+                    @foreach (var conductorNombre in Model.Filas.Select(f => f.Conductor).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x))
+                    {
+                        <option value="@conductorNombre"></option>
+                    }
+                </datalist>
+            </div>
+        </div>
+
+        <div class="collapse doc-panel-personas" id="doc-bulk-panel">
+            <div class="doc-bulk-panel">
+                <form asp-controller="Operaciones"
+                      asp-action="ActualizarControlDocumentosMasivo"
+                      method="post"
+                      class="row g-2 align-items-end js-doc-bulk-form">
+                    @Html.AntiForgeryToken()
+                    <div class="col-lg-4 col-md-6">
+                        <label class="form-label small fw-bold text-uppercase mb-1">Capacitacion</label>
+                        <select class="form-select form-select-sm" name="Capacitacion" required>
+                            @foreach (var encabezado in Model.EncabezadosCapacitacion)
+                            {
+                                <option value="@encabezado">@encabezado</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label small fw-bold text-uppercase mb-1">Fecha a aplicar</label>
+                        <input type="date" class="form-control form-control-sm" name="Fecha" required />
+                    </div>
+                    <div class="col-lg-5 col-md-12">
+                        <div class="small text-muted mb-1">
+                            Se aplicara solo a los conductores que selecciones.
+                        </div>
+                        <div class="doc-supervisor-block mb-2">
+                            <label class="form-label">Supervisor que autoriza</label>
+                            <input type="text"
+                                   class="form-control form-control-sm"
+                                   name="SupervisorNombre"
+                                   placeholder="Nombre del supervisor" />
+                            <div class="form-check mt-1">
+                                <input class="form-check-input" type="checkbox" name="ConfirmacionSupervisor" value="true" id="bulk-supervisor-check" />
+                                <label class="form-check-label small" for="bulk-supervisor-check">
+                                    Confirmo aprobacion de supervisor para cambios criticos.
+                                </label>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                Aplicar a seleccionados
+                            </button>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#doc-bulk-panel">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-uppercase mb-1">Conductores a actualizar</label>
+                        <div class="doc-bulk-picker-toolbar">
+                            <input type="search"
+                                   class="form-control form-control-sm doc-bulk-picker-search js-doc-bulk-picker-search"
+                                   placeholder="Filtrar nombres en la lista..."
+                                   aria-label="Filtrar lista de conductores para accion masiva" />
+                            <button type="button" class="btn btn-sm btn-outline-primary js-doc-bulk-select-all">
+                                Seleccionar visibles
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary js-doc-bulk-clear">
+                                Limpiar seleccion
+                            </button>
+                            <span class="doc-bulk-picker-count js-doc-bulk-picker-count">Seleccionados: 0</span>
+                        </div>
+                        <div class="doc-bulk-picker-list js-doc-bulk-picker-list" role="listbox" aria-label="Lista de conductores para accion masiva"></div>
+                        <div class="form-text">
+                            La lista usa los conductores visibles segun filtros y buscador principal.
+                        </div>
+                    </div>
+                    <div class="js-doc-bulk-conductores"></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="doc-table-wrap doc-panel-personas">
+            <table class="table table-sm align-middle doc-table">
+                <thead>
+                    <tr>
+                        <th class="doc-col-conductor">Conductor</th>
+                        @foreach (var encabezado in Model.EncabezadosCapacitacion)
+                        {
+                            <th>@encabezado</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var rowIndex = 0; rowIndex < Model.Filas.Count; rowIndex++)
+                    {
+                        var fila = Model.Filas[rowIndex];
+                        var detailId = $"doc-detalle-{rowIndex}";
+                        var editId = $"doc-edit-{rowIndex}";
+                        var filtrosFila = fila.Capacitaciones.Any()
+                            ? string.Join(
+                                " ",
+                                fila.Capacitaciones
+                                    .Select(c => c.EstadoFiltro)
+                                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                            : string.Empty;
+                        var estadosFila = fila.Capacitaciones
+                            .Select(c => (c.EstadoFiltro ?? string.Empty).Trim().ToLowerInvariant())
+                            .ToList();
+                        var filaTieneVencida = estadosFila.Contains("vencida");
+                        var filaTieneSinFecha = estadosFila.Contains("sinfecha");
+                        var filaTienePorVencer = estadosFila.Contains("porvencer");
+                        var conductorEstadoClass = "verde";
+                        var conductorEstadoLabel = "Al dia";
+                        var filaOperacionFiltro = "puedeoperar";
+                        var filaVisualClass = string.Empty;
+                        var filaVigentes = estadosFila.Count(x => x == "vigente");
+                        var filaPorVencer = estadosFila.Count(x => x == "porvencer");
+                        var filaVencidas = estadosFila.Count(x => x == "vencida");
+                        var filaSinFecha = estadosFila.Count(x => x == "sinfecha");
+                        var filaTotalEvaluable = filaVigentes + filaPorVencer + filaVencidas;
+                        var filaCumplimiento = filaTotalEvaluable > 0
+                            ? Math.Round(((decimal)(filaVigentes + filaPorVencer) / filaTotalEvaluable) * 100m, 1, MidpointRounding.AwayFromZero)
+                            : 100m;
+                        if (filaTieneVencida)
+                        {
+                            conductorEstadoClass = "rojo";
+                            conductorEstadoLabel = "Vencido";
+                            filaOperacionFiltro = "noopera";
+                            filaVisualClass = "doc-row-main--blocked";
+                        }
+                        else if (filaTieneSinFecha)
+                        {
+                            conductorEstadoClass = "rojo";
+                            conductorEstadoLabel = "Sin fecha";
+                            filaOperacionFiltro = "noopera";
+                            filaVisualClass = "doc-row-main--blocked";
+                        }
+                        else if (filaTienePorVencer)
+                        {
+                            conductorEstadoClass = "amarillo";
+                            conductorEstadoLabel = "Por vencer";
+                            filaOperacionFiltro = "operaalerta";
+                            filaVisualClass = "doc-row-main--warning";
+                        }
+
+                        <tr class="doc-row-main js-doc-row @filaVisualClass"
+                            data-row-index="@rowIndex"
+                            data-filtros="@filtrosFila"
+                            data-operacion="@filaOperacionFiltro"
+                            data-conductor="@fila.Conductor"
+                            data-vigentes="@filaVigentes"
+                            data-porvencer="@filaPorVencer"
+                            data-vencidas="@filaVencidas"
+                            data-sinfecha="@filaSinFecha"
+                            data-cumplimiento="@filaCumplimiento.ToString("0.##", CultureInfo.InvariantCulture)">
+                            <td class="doc-col-conductor">
+                                <div class="doc-conductor-cell-actions">
+                                    <button type="button"
+                                            class="doc-conductor-btn"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#@detailId"
+                                            aria-expanded="false"
+                                            aria-controls="@detailId">
+                                        <span class="doc-conductor-name">@fila.Conductor</span>
+                                        <span class="doc-conductor-state doc-conductor-state--@conductorEstadoClass">
+                                            <span class="doc-semaforo-dot doc-semaforo-dot--@conductorEstadoClass"></span>
+                                            <span>@conductorEstadoLabel</span>
+                                        </span>
+                                        <i class="bi bi-chevron-down doc-chevron"></i>
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-dark doc-panel-btn js-open-drawer"
+                                            data-row-index="@rowIndex"
+                                            title="Detalle lateral">
+                                        <i class="bi bi-layout-sidebar-inset-reverse"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            @for (var capIndex = 0; capIndex < Model.EncabezadosCapacitacion.Count; capIndex++)
+                            {
+                                var capData = capIndex < fila.Capacitaciones.Count
+                                    ? fila.Capacitaciones[capIndex]
+                                    : null;
+                                var fecha = capData?.Fecha
+                                    ?? (capIndex < fila.FechasCapacitacion.Count ? fila.FechasCapacitacion[capIndex] : "-");
+                                var estado = capData?.EstadoSemaforo ?? "rojo";
+                                var isEmpty = string.IsNullOrWhiteSpace(fecha) || fecha == "-";
+                                <td class="@(isEmpty ? "doc-empty" : string.Empty)">
+                                    <span class="doc-date-cell doc-date-cell--@estado">
+                                        <span class="doc-semaforo-dot doc-semaforo-dot--@estado"></span>
+                                        <span>@(isEmpty ? "Sin fecha" : fecha)</span>
+                                    </span>
+                                </td>
+                            }
+                        </tr>
+                        <tr class="doc-detail-row js-doc-detail-row" data-row-index="@rowIndex">
+                            <td colspan="@(Model.TotalCapacitaciones + 1)">
+                                <div class="collapse doc-detail-collapse" id="@detailId">
+                                    <div class="doc-detail-panel">
+                                        <div class="doc-detail-toolbar">
+                                            <h6>
+                                                Detalle de capacitaciones:
+                                                <strong>@fila.Conductor</strong> (@Model.TotalCapacitaciones)
+                                            </h6>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary js-open-edit"
+                                                    data-target="#@editId">
+                                                Editar
+                                            </button>
+                                        </div>
+
+                                        <div class="doc-cap-table-wrap">
+                                            <div class="doc-cap-list">
+                                                <div class="doc-cap-list__head">
+                                                    <div>Capacitacion</div>
+                                                    <div>Fecha recibida</div>
+                                                </div>
+                                                @for (var capIndex = 0; capIndex < Model.EncabezadosCapacitacion.Count; capIndex++)
+                                                {
+                                                    var tituloCap = Model.EncabezadosCapacitacion[capIndex];
+                                                    var capData = capIndex < fila.Capacitaciones.Count
+                                                        ? fila.Capacitaciones[capIndex]
+                                                        : null;
+                                                    var fechaCap = capData?.Fecha
+                                                        ?? (capIndex < fila.FechasCapacitacion.Count ? fila.FechasCapacitacion[capIndex] : "-");
+                                                    var emptyCap = string.IsNullOrWhiteSpace(fechaCap) || fechaCap == "-";
+                                                    var estado = capData?.EstadoSemaforo ?? "rojo";
+                                                    var statusFilter = capData?.EstadoFiltro ?? "sinfecha";
+                                                    var etiqueta = capData?.EtiquetaSemaforo ?? "Sin fecha";
+                                                    var alerta = capData?.MensajeAlerta ?? "No hay fecha registrada.";
+                                                    <div class="doc-cap-list__row js-cap-row" data-status="@statusFilter">
+                                                        <div class="doc-cap-name">@tituloCap</div>
+                                                        <div>
+                                                            <div class="doc-cap-list__date-line">
+                                                                <span class="doc-semaforo-dot doc-semaforo-dot--@estado"></span>
+                                                                <span class="@(emptyCap ? "doc-cap-list__date doc-cap-list__date--empty" : "doc-cap-list__date")">
+                                                                    @(emptyCap ? "Sin fecha" : fechaCap)
+                                                                </span>
+                                                                <span class="doc-semaforo-badge doc-semaforo-badge--@estado">@etiqueta</span>
+                                                            </div>
+                                                            <div class="doc-cap-alert doc-cap-alert--@estado">@alerta</div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div id="@editId" class="doc-edit-panel">
+                                            <form asp-controller="Operaciones"
+                                                  asp-action="ActualizarControlDocumentos"
+                                                  method="post"
+                                                  class="row g-2">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="Conductor" value="@fila.Conductor" />
+
+                                                <div class="col-12">
+                                                    <div class="doc-cap-table-wrap">
+                                                        <div class="doc-cap-list">
+                                                            <div class="doc-cap-list__head">
+                                                                <div>Capacitacion</div>
+                                                                <div>Editar fecha</div>
+                                                            </div>
+                                                            @for (var capIndex = 0; capIndex < Model.EncabezadosCapacitacion.Count; capIndex++)
+                                                            {
+                                                                var tituloCap = Model.EncabezadosCapacitacion[capIndex];
+                                                                var capData = capIndex < fila.Capacitaciones.Count
+                                                                    ? fila.Capacitaciones[capIndex]
+                                                                    : null;
+                                                                var fechaIso = capData?.FechaIso
+                                                                    ?? (capIndex < fila.FechasCapacitacionIso.Count ? fila.FechasCapacitacionIso[capIndex] : string.Empty);
+                                                                var estado = capData?.EstadoSemaforo ?? "rojo";
+                                                                var statusFilter = capData?.EstadoFiltro ?? "sinfecha";
+                                                                var alerta = capData?.MensajeAlerta ?? "No hay fecha registrada.";
+                                                                <div class="doc-cap-list__row js-cap-row" data-status="@statusFilter">
+                                                                    <div class="doc-cap-name">@tituloCap</div>
+                                                                    <div>
+                                                                        <input type="hidden" name="Encabezados[@capIndex]" value="@tituloCap" />
+                                                                        <input type="date"
+                                                                               class="form-control form-control-sm doc-edit-input"
+                                                                               name="Fechas[@capIndex]"
+                                                                               value="@fechaIso" />
+                                                                        <div class="doc-cap-alert doc-cap-alert--@estado mt-1">@alerta</div>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 d-flex gap-2 mt-3">
+                                                    <div class="doc-supervisor-block w-100 mb-2">
+                                                        <label class="form-label">Supervisor que autoriza</label>
+                                                        <input type="text"
+                                                               class="form-control form-control-sm"
+                                                               name="SupervisorNombre"
+                                                               placeholder="Nombre del supervisor" />
+                                                        <div class="form-check mt-1">
+                                                            <input class="form-check-input" type="checkbox" name="ConfirmacionSupervisor" value="true" id="sup-check-@rowIndex" />
+                                                            <label class="form-check-label small" for="sup-check-@rowIndex">
+                                                                Confirmo aprobacion de supervisor para cambios criticos.
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 d-flex gap-2 mt-1">
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        Guardar cambios
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary js-cancel-edit"
+                                                            data-target="#@editId">
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Filas.Any())
+                    {
+                        <tr>
+                            <td colspan="@(Model.TotalCapacitaciones + 1)" class="text-muted">
+                                Usa Nuevo registro para agregar la primera persona.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="doc-drawer js-doc-drawer doc-panel-personas" aria-hidden="true">
+            <div class="doc-drawer__overlay js-doc-drawer-close"></div>
+            <aside class="doc-drawer__panel" role="dialog" aria-modal="true" aria-label="Detalle de capacitaciones">
+                <div class="doc-drawer__head">
+                    <h6 class="doc-drawer__title js-doc-drawer-title">Detalle</h6>
+                    <button type="button" class="btn-close js-doc-drawer-close" aria-label="Cerrar"></button>
+                </div>
+                <div class="doc-drawer__body js-doc-drawer-body"></div>
+            </aside>
+        </div>
+    }
+
+    <div class="collapse doc-panel-personas" id="doc-history-panel">
+        <div class="doc-history">
+            <div class="doc-history__head">
+                Ultimos cambios registrados (@Model.HistorialCambios.Count)
+            </div>
+            @if (Model.HistorialCambios.Any())
+            {
+                <div class="doc-history__body">
+                    <table class="table table-sm doc-history-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Usuario</th>
+                                <th>Supervisor</th>
+                                <th>Conductor</th>
+                                <th>Capacitacion</th>
+                                <th>Antes</th>
+                                <th>Nuevo</th>
+                                <th>Critico</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.HistorialCambios)
+                            {
+                                <tr>
+                                    <td>@item.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.CurrentCulture)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Usuario) ? "Sistema" : item.Usuario)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Supervisor) ? "-" : item.Supervisor)</td>
+                                    <td>@item.Conductor</td>
+                                    <td>@item.Capacitacion</td>
+                                    <td class="doc-history-old">@item.ValorAnterior</td>
+                                    <td class="doc-history-new">@item.ValorNuevo</td>
+                                    <td>@(item.RequiereAprobacionCritica ? "Si" : "No")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="p-3 text-muted small">Aun no hay cambios registrados.</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var drawerRows = @Html.Raw(drawerRowsJson);
+            var drawerMap = new Map((drawerRows || []).map(function (item) { return [String(item.RowIndex), item]; }));
+            var exportConductorPdfUrlBase = '@Url.Action("ExportControlDocumentosConductorPdf", "Operaciones")';
+            var controlDocumentosQrCardUrlBase = '@Url.Action("ControlDocumentosQrCard", "Operaciones")';
+            var docShell = document.querySelector(".doc-shell");
+            var execToggleButton = document.querySelector(".js-doc-exec-toggle");
+            var filterButtons = Array.from(document.querySelectorAll(".js-doc-filter"));
+            var operationFilterButtons = Array.from(document.querySelectorAll(".js-doc-oper-filter"));
+            var activeFilter = "";
+            var activeOperationFilter = "";
+            var activeSearchTerm = "";
+            var searchForm = document.querySelector(".js-doc-search-form");
+            var searchInput = document.querySelector(".js-doc-search-input");
+            var searchResetButton = document.querySelector(".js-doc-search-reset");
+            var sortSelect = document.querySelector(".js-doc-sort-select");
+            var bulkForm = document.querySelector(".js-doc-bulk-form");
+            var bulkConductoresContainer = document.querySelector(".js-doc-bulk-conductores");
+            var bulkPickerList = document.querySelector(".js-doc-bulk-picker-list");
+            var bulkPickerSearchInput = document.querySelector(".js-doc-bulk-picker-search");
+            var bulkPickerSelectAllButton = document.querySelector(".js-doc-bulk-select-all");
+            var bulkPickerClearButton = document.querySelector(".js-doc-bulk-clear");
+            var bulkPickerCount = document.querySelector(".js-doc-bulk-picker-count");
+            var selectedBulkConductores = new Set();
+            var historyToggleButton = document.querySelector(".js-doc-history-toggle");
+            var historyPanel = document.getElementById("doc-history-panel");
+            var drawerRoot = document.querySelector(".js-doc-drawer");
+            var drawerTitle = drawerRoot ? drawerRoot.querySelector(".js-doc-drawer-title") : null;
+            var drawerBody = drawerRoot ? drawerRoot.querySelector(".js-doc-drawer-body") : null;
+            var viewSwitchButtons = Array.from(document.querySelectorAll(".js-doc-view-switch"));
+            var personasPanels = Array.from(document.querySelectorAll(".doc-panel-personas"));
+            var camionesPanels = Array.from(document.querySelectorAll(".doc-panel-camiones"));
+            var newRecordTypeSelect = document.querySelector(".js-doc-new-record-type");
+            var newPersonaFields = document.querySelector(".js-doc-new-persona-fields");
+            var newCamionFields = document.querySelector(".js-doc-new-camion-fields");
+
+            function normalizeText(value) {
+                return (value || "")
+                    .toString()
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .trim();
+            }
+
+            function escapeHtml(value) {
+                return (value || "")
+                    .toString()
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
+            function parseNumber(value) {
+                var parsed = Number(value);
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            function syncHistoryToggleButton(isOpen) {
+                if (!historyToggleButton) return;
+                historyToggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+                historyToggleButton.classList.toggle("is-active", isOpen);
+            }
+
+            function setDocumentView(view) {
+                var showCamiones = view === "camiones";
+                personasPanels.forEach(function (panel) {
+                    panel.classList.toggle("doc-is-hidden", showCamiones);
+                });
+                camionesPanels.forEach(function (panel) {
+                    panel.classList.toggle("doc-is-hidden", !showCamiones);
+                });
+                viewSwitchButtons.forEach(function (button) {
+                    var selected = (button.getAttribute("data-doc-view") || "") === view;
+                    button.classList.toggle("is-active", selected);
+                    button.setAttribute("aria-pressed", selected ? "true" : "false");
+                });
+                if (showCamiones) {
+                    closeDrawer();
+                    if (historyPanel && historyPanel.classList.contains("show")) {
+                        if (window.bootstrap && window.bootstrap.Collapse) {
+                            window.bootstrap.Collapse.getOrCreateInstance(historyPanel, { toggle: false }).hide();
+                        } else {
+                            historyPanel.classList.remove("show");
+                        }
+                    }
+                }
+            }
+
+            function syncNewRecordFields() {
+                if (!newRecordTypeSelect || !newPersonaFields || !newCamionFields) return;
+                var isCamion = (newRecordTypeSelect.value || "") === "camion";
+                newPersonaFields.classList.toggle("doc-is-hidden", isCamion);
+                newCamionFields.classList.toggle("doc-is-hidden", !isCamion);
+            }
+
+            function getVisibleConductores() {
+                var values = Array.from(document.querySelectorAll(".js-doc-row"))
+                    .filter(function (row) { return !row.classList.contains("doc-is-hidden"); })
+                    .map(function (row) { return (row.getAttribute("data-conductor") || "").trim(); })
+                    .filter(function (value) { return value.length > 0; });
+
+                var uniqueValues = Array.from(new Set(values));
+                uniqueValues.sort(function (a, b) { return a.localeCompare(b, "es", { sensitivity: "base" }); });
+                return uniqueValues;
+            }
+
+            function syncBulkHiddenInputs() {
+                if (!bulkConductoresContainer) return;
+                bulkConductoresContainer.innerHTML = "";
+                var selectedValues = Array.from(selectedBulkConductores);
+                selectedValues.sort(function (a, b) { return a.localeCompare(b, "es", { sensitivity: "base" }); });
+
+                selectedValues.forEach(function (conductor, index) {
+                    var input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "Conductores[" + index + "]";
+                    input.value = conductor;
+                    bulkConductoresContainer.appendChild(input);
+                });
+            }
+
+            function updateBulkPickerCount(totalVisible) {
+                if (!bulkPickerCount) return;
+                bulkPickerCount.textContent = "Seleccionados: " + selectedBulkConductores.size + " de " + totalVisible + " visibles";
+            }
+
+            function renderBulkConductorPicker() {
+                if (!bulkPickerList) return;
+
+                var visibleConductores = getVisibleConductores();
+                var visibleSet = new Set(visibleConductores.map(function (name) { return normalizeText(name); }));
+                Array.from(selectedBulkConductores).forEach(function (conductor) {
+                    if (!visibleSet.has(normalizeText(conductor))) {
+                        selectedBulkConductores.delete(conductor);
+                    }
+                });
+
+                var query = bulkPickerSearchInput ? normalizeText(bulkPickerSearchInput.value) : "";
+                var filteredConductores = query
+                    ? visibleConductores.filter(function (name) { return normalizeText(name).includes(query); })
+                    : visibleConductores;
+
+                if (filteredConductores.length === 0) {
+                    var message = visibleConductores.length === 0
+                        ? "No hay conductores visibles con los filtros actuales."
+                        : "No hay coincidencias para la busqueda en la lista.";
+                    bulkPickerList.innerHTML = '<div class="doc-bulk-picker-empty">' + escapeHtml(message) + '</div>';
+                    syncBulkHiddenInputs();
+                    updateBulkPickerCount(visibleConductores.length);
+                    return;
+                }
+
+                bulkPickerList.innerHTML = filteredConductores.map(function (conductor) {
+                    var checked = selectedBulkConductores.has(conductor) ? " checked" : "";
+                    return [
+                        '<label class="doc-bulk-picker-item">',
+                        '<input type="checkbox" class="form-check-input js-doc-bulk-pick" data-conductor="', escapeHtml(conductor), '"', checked, ' />',
+                        '<span>', escapeHtml(conductor), '</span>',
+                        '</label>'
+                    ].join("");
+                }).join("");
+
+                syncBulkHiddenInputs();
+                updateBulkPickerCount(visibleConductores.length);
+            }
+
+            function syncFilterButtons() {
+                filterButtons.forEach(function (btn) {
+                    var selected = (btn.getAttribute("data-filter") || "").toLowerCase() === activeFilter;
+                    btn.classList.toggle("is-active", selected);
+                    btn.setAttribute("aria-pressed", selected ? "true" : "false");
+                });
+            }
+
+            function syncOperationFilterButtons() {
+                operationFilterButtons.forEach(function (btn) {
+                    var selected = (btn.getAttribute("data-oper-filter") || "").toLowerCase() === activeOperationFilter;
+                    btn.classList.toggle("is-active", selected);
+                    btn.setAttribute("aria-pressed", selected ? "true" : "false");
+                });
+            }
+
+            function syncExecutiveMode() {
+                if (!docShell || !execToggleButton) return;
+                var isExecutive = docShell.classList.contains("is-executive");
+                execToggleButton.classList.toggle("is-active", isExecutive);
+                execToggleButton.setAttribute("aria-pressed", isExecutive ? "true" : "false");
+                execToggleButton.textContent = isExecutive ? "Vista completa" : "Modo ejecutivo";
+            }
+
+            function sortRows() {
+                var tbody = document.querySelector(".doc-table tbody");
+                if (!tbody) return;
+
+                var criteria = (sortSelect && sortSelect.value) ? sortSelect.value : "";
+                var rows = Array.from(tbody.querySelectorAll(".js-doc-row"));
+                rows.sort(function (a, b) {
+                    var aIdx = parseNumber(a.getAttribute("data-row-index"));
+                    var bIdx = parseNumber(b.getAttribute("data-row-index"));
+                    var aVencidas = parseNumber(a.getAttribute("data-vencidas"));
+                    var bVencidas = parseNumber(b.getAttribute("data-vencidas"));
+                    var aPorVencer = parseNumber(a.getAttribute("data-porvencer"));
+                    var bPorVencer = parseNumber(b.getAttribute("data-porvencer"));
+                    var aCumpl = parseNumber(a.getAttribute("data-cumplimiento"));
+                    var bCumpl = parseNumber(b.getAttribute("data-cumplimiento"));
+
+                    if (criteria === "vencidas_desc") {
+                        if (bVencidas !== aVencidas) return bVencidas - aVencidas;
+                        if (bPorVencer !== aPorVencer) return bPorVencer - aPorVencer;
+                        return aIdx - bIdx;
+                    }
+
+                    if (criteria === "porvencer_desc") {
+                        if (bPorVencer !== aPorVencer) return bPorVencer - aPorVencer;
+                        if (bVencidas !== aVencidas) return bVencidas - aVencidas;
+                        return aIdx - bIdx;
+                    }
+
+                    if (criteria === "cumplimiento_asc") {
+                        if (aCumpl !== bCumpl) return aCumpl - bCumpl;
+                        if (bVencidas !== aVencidas) return bVencidas - aVencidas;
+                        return aIdx - bIdx;
+                    }
+
+                    return aIdx - bIdx;
+                });
+
+                rows.forEach(function (row) {
+                    var rowIndex = row.getAttribute("data-row-index") || "";
+                    tbody.appendChild(row);
+                    var detail = tbody.querySelector('.js-doc-detail-row[data-row-index="' + rowIndex + '"]');
+                    if (detail) {
+                        tbody.appendChild(detail);
+                    }
+                });
+            }
+
+            function applyFilters() {
+                sortRows();
+                var hasFilter = activeFilter.length > 0;
+                var hasOperationFilter = activeOperationFilter.length > 0;
+                var hasSearch = activeSearchTerm.length > 0;
+
+                document.querySelectorAll(".js-doc-row").forEach(function (mainRow) {
+                    var rowIndex = mainRow.getAttribute("data-row-index") || "";
+                    var filtros = (mainRow.getAttribute("data-filtros") || "")
+                        .toLowerCase()
+                        .split(" ")
+                        .map(function (s) { return s.trim(); })
+                        .filter(function (s) { return s.length > 0; });
+                    var conductor = normalizeText(mainRow.getAttribute("data-conductor") || "");
+                    var operacion = (mainRow.getAttribute("data-operacion") || "").toLowerCase();
+                    var rowMatchesStatus = true;
+                    if (hasFilter) {
+                        if (activeFilter === "critico") {
+                            rowMatchesStatus = filtros.includes("porvencer") || filtros.includes("vencida");
+                        } else {
+                            rowMatchesStatus = filtros.includes(activeFilter);
+                        }
+                    }
+                    var rowMatchesOperation = !hasOperationFilter || operacion === activeOperationFilter;
+                    var rowMatchesSearch = !hasSearch || conductor.includes(activeSearchTerm);
+                    var rowVisible = rowMatchesStatus && rowMatchesOperation && rowMatchesSearch;
+                    mainRow.classList.toggle("doc-is-hidden", !rowVisible);
+
+                    var detailRow = document.querySelector('.js-doc-detail-row[data-row-index="' + rowIndex + '"]');
+                    if (detailRow) {
+                        detailRow.classList.toggle("doc-is-hidden", !rowVisible);
+
+                        if (!rowVisible) {
+                            detailRow.querySelectorAll(".doc-detail-collapse.show").forEach(function (openPanel) {
+                                if (window.bootstrap && window.bootstrap.Collapse) {
+                                    var collapseInstance = window.bootstrap.Collapse.getOrCreateInstance(openPanel, { toggle: false });
+                                    collapseInstance.hide();
+                                } else {
+                                    openPanel.classList.remove("show");
+                                }
+                            });
+                        }
+                    }
+                });
+
+                document.querySelectorAll(".js-cap-row").forEach(function (capRow) {
+                    var status = (capRow.getAttribute("data-status") || "").toLowerCase();
+                    var visible = !hasFilter
+                        || status === activeFilter
+                        || (activeFilter === "critico" && (status === "porvencer" || status === "vencida"));
+                    capRow.classList.toggle("doc-is-hidden", !visible);
+                });
+
+                syncFilterButtons();
+                syncOperationFilterButtons();
+                renderBulkConductorPicker();
+            }
+
+            function closeDrawer() {
+                if (!drawerRoot) return;
+                drawerRoot.classList.remove("is-open");
+                drawerRoot.setAttribute("aria-hidden", "true");
+                document.body.classList.remove("overflow-hidden");
+            }
+
+            function renderDrawerRow(cap) {
+                var estado = (cap.Estado || "rojo").toLowerCase();
+                var fecha = cap.Fecha || "-";
+                var etiqueta = cap.Etiqueta || "Sin fecha";
+                var alerta = cap.Alerta || "";
+                var dateClass = "doc-date-cell--" + escapeHtml(estado);
+                return [
+                    '<div class="doc-drawer-item">',
+                    '<div class="doc-drawer-item__name">', escapeHtml(cap.Nombre), '</div>',
+                    '<div class="doc-drawer-item__date ', dateClass, '">', escapeHtml(fecha), '</div>',
+                    '<div class="doc-drawer-item__meta">',
+                    '<span class="doc-semaforo-dot doc-semaforo-dot--', escapeHtml(estado), '"></span>',
+                    '<span class="doc-semaforo-badge doc-semaforo-badge--', escapeHtml(estado), '">', escapeHtml(etiqueta), '</span>',
+                    '<span class="doc-drawer-item__alert doc-cap-alert--', escapeHtml(estado), '">', escapeHtml(alerta), '</span>',
+                    '</div>',
+                    '</div>'
+                ].join("");
+            }
+
+            function openDrawer(rowIndex) {
+                if (!drawerRoot || !drawerBody || !drawerTitle) return;
+                var item = drawerMap.get(String(rowIndex));
+                if (!item) return;
+
+                drawerTitle.textContent = "Detalle: " + (item.Conductor || "");
+                var caps = Array.isArray(item.Capacitaciones) ? item.Capacitaciones : [];
+                var htmlRows = caps.map(renderDrawerRow).join("");
+                var pdfUrl = exportConductorPdfUrlBase + "?conductor=" + encodeURIComponent(item.Conductor || "") + "&inline=true";
+                var qrCardUrl = controlDocumentosQrCardUrlBase + "?conductor=" + encodeURIComponent(item.Conductor || "");
+                drawerBody.innerHTML = [
+                    '<div class="doc-drawer-list">', htmlRows, '</div>',
+                    '<div class="d-flex gap-2">',
+                    '<a class="btn btn-sm btn-outline-success" target="_blank" rel="noopener" href="', escapeHtml(qrCardUrl), '">QR</a>',
+                                '<a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="', escapeHtml(pdfUrl), '">PDF</a>',
+                    '<button type="button" class="btn btn-sm btn-primary js-drawer-edit" data-row-index="', escapeHtml(item.RowIndex), '">Editar este conductor</button>',
+                    '<button type="button" class="btn btn-sm btn-outline-secondary js-doc-drawer-close">Cerrar</button>',
+                    '</div>'
+                ].join("");
+                drawerRoot.classList.add("is-open");
+                drawerRoot.setAttribute("aria-hidden", "false");
+                document.body.classList.add("overflow-hidden");
+            }
+
+            function openInlineEdit(rowIndex) {
+                var detailId = "doc-detalle-" + rowIndex;
+                var editId = "doc-edit-" + rowIndex;
+                var collapseEl = document.getElementById(detailId);
+                if (collapseEl) {
+                    if (window.bootstrap && window.bootstrap.Collapse) {
+                        var collapseInstance = window.bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+                        collapseInstance.show();
+                    } else {
+                        collapseEl.classList.add("show");
+                    }
+                    var editPanel = document.getElementById(editId);
+                    if (editPanel) {
+                        editPanel.classList.add("is-open");
+                    }
+                    setTimeout(function () {
+                        collapseEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 120);
+                }
+            }
+
+            viewSwitchButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    setDocumentView(button.getAttribute("data-doc-view") || "personas");
+                });
+            });
+
+            if (newRecordTypeSelect) {
+                newRecordTypeSelect.addEventListener("change", syncNewRecordFields);
+            }
+
+            filterButtons.forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var selectedFilter = (btn.getAttribute("data-filter") || "").toLowerCase();
+                    activeFilter = activeFilter === selectedFilter ? "" : selectedFilter;
+                    applyFilters();
+                });
+            });
+
+            operationFilterButtons.forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var selectedFilter = (btn.getAttribute("data-oper-filter") || "").toLowerCase();
+                    activeOperationFilter = activeOperationFilter === selectedFilter ? "" : selectedFilter;
+                    applyFilters();
+                });
+            });
+
+            if (sortSelect) {
+                sortSelect.addEventListener("change", function () {
+                    applyFilters();
+                });
+            }
+
+            if (execToggleButton && docShell) {
+                execToggleButton.addEventListener("click", function () {
+                    docShell.classList.toggle("is-executive");
+                    if (docShell.classList.contains("is-executive")) {
+                        document.querySelectorAll(".doc-detail-collapse.show").forEach(function (openPanel) {
+                            if (window.bootstrap && window.bootstrap.Collapse) {
+                                var collapseInstance = window.bootstrap.Collapse.getOrCreateInstance(openPanel, { toggle: false });
+                                collapseInstance.hide();
+                            } else {
+                                openPanel.classList.remove("show");
+                            }
+                        });
+                    }
+                    syncExecutiveMode();
+                });
+            }
+
+            if (searchForm && searchInput) {
+                searchForm.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    activeSearchTerm = normalizeText(searchInput.value);
+                    applyFilters();
+                });
+            }
+
+            if (searchResetButton && searchInput) {
+                searchResetButton.addEventListener("click", function () {
+                    searchInput.value = "";
+                    activeSearchTerm = "";
+                    applyFilters();
+                    searchInput.focus();
+                });
+            }
+
+            if (historyToggleButton && historyPanel) {
+                if (window.bootstrap && window.bootstrap.Collapse) {
+                    var historyCollapse = window.bootstrap.Collapse.getOrCreateInstance(historyPanel, { toggle: false });
+
+                    historyToggleButton.addEventListener("click", function () {
+                        var isOpen = historyPanel.classList.contains("show");
+                        if (isOpen) {
+                            historyCollapse.hide();
+                        } else {
+                            historyCollapse.show();
+                        }
+                    });
+
+                    historyPanel.addEventListener("shown.bs.collapse", function () {
+                        syncHistoryToggleButton(true);
+                        historyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+
+                    historyPanel.addEventListener("hidden.bs.collapse", function () {
+                        syncHistoryToggleButton(false);
+                    });
+                } else {
+                    historyToggleButton.addEventListener("click", function () {
+                        var isOpen = historyPanel.classList.contains("show");
+                        historyPanel.classList.toggle("show", !isOpen);
+                        syncHistoryToggleButton(!isOpen);
+                        if (!isOpen) {
+                            historyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                    });
+                }
+
+                syncHistoryToggleButton(historyPanel.classList.contains("show"));
+            }
+
+            if (bulkPickerSearchInput) {
+                bulkPickerSearchInput.addEventListener("input", function () {
+                    renderBulkConductorPicker();
+                });
+            }
+
+            if (bulkPickerSelectAllButton) {
+                bulkPickerSelectAllButton.addEventListener("click", function () {
+                    if (!bulkPickerList) return;
+                    var checkboxes = Array.from(bulkPickerList.querySelectorAll(".js-doc-bulk-pick"));
+                    checkboxes.forEach(function (checkbox) {
+                        var conductor = (checkbox.getAttribute("data-conductor") || "").trim();
+                        if (!conductor) return;
+                        selectedBulkConductores.add(conductor);
+                    });
+                    renderBulkConductorPicker();
+                });
+            }
+
+            if (bulkPickerClearButton) {
+                bulkPickerClearButton.addEventListener("click", function () {
+                    selectedBulkConductores.clear();
+                    renderBulkConductorPicker();
+                });
+            }
+
+            if (bulkPickerList) {
+                bulkPickerList.addEventListener("change", function (event) {
+                    var checkbox = event.target.closest(".js-doc-bulk-pick");
+                    if (!checkbox) return;
+
+                    var conductor = (checkbox.getAttribute("data-conductor") || "").trim();
+                    if (!conductor) return;
+
+                    if (checkbox.checked) {
+                        selectedBulkConductores.add(conductor);
+                    } else {
+                        selectedBulkConductores.delete(conductor);
+                    }
+
+                    syncBulkHiddenInputs();
+                    updateBulkPickerCount(getVisibleConductores().length);
+                });
+            }
+
+            if (bulkForm && bulkConductoresContainer) {
+                bulkForm.addEventListener("submit", function (event) {
+                    syncBulkHiddenInputs();
+                    if (selectedBulkConductores.size === 0) {
+                        event.preventDefault();
+                        alert("Selecciona al menos un conductor para aplicar la accion masiva.");
+                    }
+                });
+            }
+
+            document.querySelectorAll(".doc-detail-collapse").forEach(function (collapseEl) {
+                collapseEl.addEventListener("show.bs.collapse", function () {
+                    var toggle = document.querySelector('[data-bs-target="#' + collapseEl.id + '"]');
+                    if (toggle) {
+                        toggle.classList.add("is-open");
+                    }
+                });
+
+                collapseEl.addEventListener("hide.bs.collapse", function () {
+                    var toggle = document.querySelector('[data-bs-target="#' + collapseEl.id + '"]');
+                    if (toggle) {
+                        toggle.classList.remove("is-open");
+                    }
+
+                    collapseEl.querySelectorAll(".doc-edit-panel").forEach(function (panel) {
+                        panel.classList.remove("is-open");
+                    });
+                });
+            });
+
+            document.addEventListener("click", function (event) {
+                var openDrawerBtn = event.target.closest(".js-open-drawer");
+                if (openDrawerBtn) {
+                    var drawerIndex = openDrawerBtn.getAttribute("data-row-index");
+                    openDrawer(drawerIndex);
+                    return;
+                }
+
+                if (event.target.closest(".js-doc-drawer-close")) {
+                    closeDrawer();
+                    return;
+                }
+
+                var drawerEditBtn = event.target.closest(".js-drawer-edit");
+                if (drawerEditBtn) {
+                    var editIndex = drawerEditBtn.getAttribute("data-row-index");
+                    closeDrawer();
+                    openInlineEdit(editIndex);
+                    return;
+                }
+
+                var openEditBtn = event.target.closest(".js-open-edit");
+                if (openEditBtn) {
+                    var selector = openEditBtn.getAttribute("data-target");
+                    if (!selector) return;
+                    var panel = document.querySelector(selector);
+                    if (!panel) return;
+                    panel.classList.add("is-open");
+                    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    return;
+                }
+
+                var cancelEditBtn = event.target.closest(".js-cancel-edit");
+                if (cancelEditBtn) {
+                    var cancelSelector = cancelEditBtn.getAttribute("data-target");
+                    if (!cancelSelector) return;
+                    var cancelPanel = document.querySelector(cancelSelector);
+                    if (!cancelPanel) return;
+                    cancelPanel.classList.remove("is-open");
+                }
+            });
+
+            syncExecutiveMode();
+            syncNewRecordFields();
+            applyFilters();
+            setDocumentView("personas");
+        });
+    </script>
+}

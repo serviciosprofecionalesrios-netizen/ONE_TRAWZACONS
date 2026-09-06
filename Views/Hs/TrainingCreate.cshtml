@@ -1,0 +1,36 @@
+@model ITServiceDeskApp.ViewModels.Hs.HsTrainingEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Nueva capacitacion H&S";
+    var sites = new SelectList(ViewBag.SiteOptions as string[] ?? Array.Empty<string>(), Model.Site);
+}
+
+<div class="container mt-4" style="max-width:900px;">
+    <h3>@ViewData["Title"]</h3>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="TrainingCreate" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-4"><label asp-for="TrainingDate" class="form-label fw-semibold"></label><input asp-for="TrainingDate" type="date" class="form-control" /></div>
+                <div class="col-md-8"><label asp-for="Topic" class="form-label fw-semibold"></label><input asp-for="Topic" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Trainer" class="form-label fw-semibold"></label><input asp-for="Trainer" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Site" class="form-label fw-semibold"></label><select asp-for="Site" class="form-select" asp-items="sites"><option value="">Seleccionar</option></select></div>
+                <div class="col-md-4"><label asp-for="Audience" class="form-label fw-semibold"></label><input asp-for="Audience" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="EmployeeName" class="form-label fw-semibold"></label><input asp-for="EmployeeName" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="EmployeeCode" class="form-label fw-semibold"></label><input asp-for="EmployeeCode" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Position" class="form-label fw-semibold"></label><input asp-for="Position" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="AttendeeCount" class="form-label fw-semibold"></label><input asp-for="AttendeeCount" type="number" min="0" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="ExpirationDate" class="form-label fw-semibold"></label><input asp-for="ExpirationDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="Result" class="form-label fw-semibold"></label><select asp-for="Result" class="form-select"><option>Aprobado</option><option>Reprobado</option><option>Asistio</option><option>Pendiente evaluacion</option></select></div>
+                <div class="col-md-4"><div class="form-check mt-4"><input asp-for="RequiredTraining" class="form-check-input" /><label asp-for="RequiredTraining" class="form-check-label"></label></div></div>
+                <div class="col-md-8"><label asp-for="EvidenceFile" class="form-label fw-semibold"></label><input asp-for="EvidenceFile" type="file" class="form-control" /></div>
+                <div class="col-12"><label asp-for="Notes" class="form-label fw-semibold"></label><textarea asp-for="Notes" class="form-control" rows="4"></textarea></div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Trainings" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button></div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

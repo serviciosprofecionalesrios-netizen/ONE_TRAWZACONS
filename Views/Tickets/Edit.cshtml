@@ -4,14 +4,26 @@
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
-    ViewData["Title"] = "Editar Incidencia";
+    var isMaintenance = string.Equals(Model.Department, "Mantenimiento", StringComparison.OrdinalIgnoreCase);
+    ViewData["Title"] = isMaintenance ? "Editar Orden de Mantenimiento" : "Editar Incidencia";
+    var returnDepartment = ViewBag.ReturnDepartment as string;
 
     var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var tenenciaOptions = ViewBag.TenenciaOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceFailureCategoryOptions = ViewBag.MaintenanceFailureCategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceStageOptions = ViewBag.MaintenanceStageOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var departmentOptions = ViewBag.DepartmentOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var incidentTypeOptions = ViewBag.IncidentTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var technicianOptions = ViewBag.TechnicianOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var maintenanceTechnicianCategoryOptions = ViewBag.MaintenanceTechnicianCategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var requestingUserOptions = ViewBag.RequestingUserOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var ticketCostCenterOptions = ViewBag.TicketCostCenterOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var sparePartsCatalogJson = ViewBag.MaintenanceSparePartsCatalogJson as string ?? "[]";
+    var maintenanceTechnicianCatalogJson = ViewBag.MaintenanceTechnicianCatalogJson as string ?? "[]";
+    var selectedSparePartsJson = ViewBag.SelectedSparePartsJson as string ?? "[]";
+    var canSetPriority = ViewBag.CanSetPriority is bool canSet && canSet;
     var canEditSolutionForm = ViewBag.CanEditSolutionForm is bool allowed && allowed;
+    var canApproveCost = ViewBag.CanApproveCost is bool canApprove && canApprove;
 }
 <style>
     .section-divider {
@@ -39,12 +51,23 @@
         padding: 0.2rem 0.75rem;
         letter-spacing: 0.02em;
     }
+    .multi-dd{position:relative}
+    .multi-dd-toggle{width:100%;height:calc(2.5rem + 2px);border:1px solid #cfd7e3;border-radius:.5rem;background:#fff;padding:.52rem 2.2rem .52rem .78rem;text-align:left;color:#0f172a;font-weight:500}
+    .multi-dd-toggle:focus{outline:0;border-color:#86b7fe;box-shadow:0 0 0 .2rem rgba(13,110,253,.15)}
+    .multi-dd-toggle::after{content:"";position:absolute;right:.85rem;top:50%;margin-top:-.15rem;border-left:.28rem solid transparent;border-right:.28rem solid transparent;border-top:.38rem solid #667085;pointer-events:none}
+    .multi-dd-toggle-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:.25rem}
+    .multi-dd-menu{display:none;position:absolute;top:calc(100% + .3rem);left:0;right:0;z-index:1050;max-height:230px;overflow:auto;background:#fff;border:1px solid #d5dde9;border-radius:.65rem;box-shadow:0 12px 22px rgba(15,23,42,.14);padding:.45rem}
+    .multi-dd-menu.show{display:block}
+    .multi-dd-option{display:flex;align-items:flex-start;gap:.45rem;padding:.3rem .35rem;border-radius:.4rem}
+    .multi-dd-option:hover{background:#f1f5f9}
+    .multi-dd-option input{margin-top:.2rem}
+    .multi-dd-empty{color:#94a3b8;font-size:.86rem;padding:.35rem}
 </style>
 
 <div class="container mt-4">
     <div class="card shadow-lg">
         <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">Editar Incidencia - @Model.TicketNumber</h4>
+            <h4 class="mb-0">@(isMaintenance ? "Editar Orden de Mantenimiento" : "Editar Incidencia") - @Model.TicketNumber</h4>
         </div>
 
         <div class="card-body">
@@ -58,23 +81,27 @@
                 <input type="hidden" asp-for="AfterEvidencePath" />
                 <input type="hidden" asp-for="TechnicalSheetPath" />
                 <input type="hidden" asp-for="ExitOrderPath" />
+                @if (isMaintenance)
+                {
+                    <input type="hidden" id="sparePartsJson" name="sparePartsJson" value="@selectedSparePartsJson" />
+                }
 
                 <div class="section-divider">
-                    <span>Formulario de Usuario</span>
+                    <span>@(isMaintenance ? "Formulario de Orden de Mantenimiento" : "Formulario de Usuario")</span>
                 </div>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label asp-for="TicketNumber" class="form-label fw-semibold"></label>
+                        <label asp-for="TicketNumber" class="form-label fw-semibold">@(isMaintenance ? "Numero de orden" : "TicketNumber")</label>
                         <input asp-for="TicketNumber" class="form-control" readonly />
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="CreatedDate" class="form-label fw-semibold"></label>
+                        <label asp-for="CreatedDate" class="form-label fw-semibold">@(isMaintenance ? "Fecha de creacion" : "CreatedDate")</label>
                         <input asp-for="CreatedDate" class="form-control" readonly />
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="RequestingUser" class="form-label fw-semibold"></label>
+                        <label asp-for="RequestingUser" class="form-label fw-semibold">@(isMaintenance ? "Solicitante" : "RequestingUser")</label>
                         <select asp-for="RequestingUser" class="form-select" asp-items="requestingUserOptions">
                             <option value="">Seleccionar usuario</option>
                         </select>
@@ -82,53 +109,396 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Site" class="form-label fw-semibold"></label>
+                        <label asp-for="Site" class="form-label fw-semibold">@(isMaintenance ? "Sitio / Ubicacion" : "Site")</label>
                         <select asp-for="Site" class="form-select" asp-items="siteOptions">
                             <option value="">Seleccionar sitio</option>
                         </select>
                         <span asp-validation-for="Site" class="text-danger small"></span>
                     </div>
 
+                    @if (isMaintenance)
+                    {
+                        <div class="col-md-6">
+                            <label asp-for="Department" class="form-label fw-semibold">Departamento</label>
+                            <input asp-for="Department" class="form-control" readonly />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-6">
+                            <label asp-for="Department" class="form-label fw-semibold"></label>
+                            <select asp-for="Department" class="form-select" asp-items="departmentOptions">
+                                <option value="">Seleccionar area</option>
+                            </select>
+                            <span asp-validation-for="Department" class="text-danger small"></span>
+                        </div>
+                    }
+
                     <div class="col-md-6">
-                        <label asp-for="Department" class="form-label fw-semibold"></label>
-                        <select asp-for="Department" class="form-select" asp-items="departmentOptions">
-                            <option value="">Seleccionar area</option>
+                        <label asp-for="CostCenterCode" class="form-label fw-semibold">#CC del area</label>
+                        <select asp-for="CostCenterCode" class="form-select" asp-items="ticketCostCenterOptions">
+                            <option value="">Seleccionar #CC</option>
                         </select>
-                        <span asp-validation-for="Department" class="text-danger small"></span>
+                        <span asp-validation-for="CostCenterCode" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="IncidentType" class="form-label fw-semibold"></label>
+                        <label asp-for="IncidentType" class="form-label fw-semibold">@(isMaintenance ? "Tipo de orden" : "IncidentType")</label>
                         <select asp-for="IncidentType" class="form-select" asp-items="incidentTypeOptions">
                             <option value="">Seleccionar tipo</option>
                         </select>
                         <span asp-validation-for="IncidentType" class="text-danger small"></span>
                     </div>
 
+                    @if (isMaintenance)
+                    {
+                        <div class="col-md-4">
+                            <label asp-for="Tenencia" class="form-label fw-semibold">Tenencia</label>
+                            <select asp-for="Tenencia" class="form-select" asp-items="tenenciaOptions">
+                                <option value="">Seleccionar tenencia</option>
+                            </select>
+                            <span asp-validation-for="Tenencia" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="UnitCode" class="form-label fw-semibold">Unidad / Equipo</label>
+                            <input asp-for="UnitCode" class="form-control" />
+                            <span asp-validation-for="UnitCode" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="FailureCategory" class="form-label fw-semibold">Categoria de falla</label>
+                            <select asp-for="FailureCategory" class="form-select" asp-items="maintenanceFailureCategoryOptions">
+                                <option value="">Seleccionar categoria</option>
+                            </select>
+                            <span asp-validation-for="FailureCategory" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="DamagedElement" class="form-label fw-semibold">Elemento danado</label>
+                            <input asp-for="DamagedElement" class="form-control" />
+                            <span asp-validation-for="DamagedElement" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label asp-for="FailureOdometerKm" class="form-label fw-semibold">KM ingreso falla</label>
+                            <input asp-for="FailureOdometerKm" class="form-control" type="number" step="0.01" min="0" />
+                            <span asp-validation-for="FailureOdometerKm" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label asp-for="ExitOdometerKm" class="form-label fw-semibold">KM salida taller</label>
+                            <input asp-for="ExitOdometerKm" class="form-control" type="number" step="0.01" min="0" />
+                            <span asp-validation-for="ExitOdometerKm" class="text-danger small"></span>
+                        </div>
+                    }
+
                     <div class="col-md-4">
-                        <label asp-for="Priority" class="form-label fw-semibold"></label>
-                        <select asp-for="Priority" class="form-select" asp-items="Html.GetEnumSelectList<PriorityLevel>()"></select>
+                        <label asp-for="Priority" class="form-label fw-semibold">@(isMaintenance ? "Prioridad" : "Priority")</label>
+                        @if (canSetPriority)
+                        {
+                            <select asp-for="Priority" class="form-select" asp-items="Html.GetEnumSelectList<PriorityLevel>()"></select>
+                        }
+                        else
+                        {
+                            <input class="form-control" value="@Model.Priority" readonly />
+                            <input type="hidden" asp-for="Priority" />
+                        }
                         <span asp-validation-for="Priority" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="Status" class="form-label fw-semibold"></label>
+                        <label asp-for="Status" class="form-label fw-semibold">@(isMaintenance ? "Estado" : "Status")</label>
                         <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<TicketStatus>()"></select>
                         <span asp-validation-for="Status" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-md-4">
-                        <label asp-for="AssignedTechnician" class="form-label fw-semibold"></label>
-                        <select asp-for="AssignedTechnician" class="form-select" asp-items="technicianOptions">
-                            <option value="">Seleccionar tecnico</option>
-                        </select>
-                    </div>
+                    @if (isMaintenance)
+                    {
+                        <div class="col-md-4">
+                            <label asp-for="MaintenanceStage" class="form-label fw-semibold">Etapa de taller</label>
+                            <select asp-for="MaintenanceStage" class="form-select" asp-items="maintenanceStageOptions">
+                                <option value="">Seleccionar etapa</option>
+                            </select>
+                            <span asp-validation-for="MaintenanceStage" class="text-danger small"></span>
+                        </div>
+                    }
+
+                    @if (isMaintenance)
+                    {
+                        <div class="col-md-4">
+                            <label for="TechnicianCategoryMulti" class="form-label fw-semibold">Categoria tecnica</label>
+                            <input asp-for="TechnicianCategory" type="hidden" />
+                            <select id="TechnicianCategoryMulti" class="d-none" multiple>
+                                @foreach (var option in maintenanceTechnicianCategoryOptions)
+                                {
+                                    <option value="@option.Value">@option.Text</option>
+                                }
+                            </select>
+                            <div class="multi-dd">
+                                <button type="button" class="multi-dd-toggle" data-dropdown-toggle="EditTechnicianCategoryMenu">
+                                    <span id="editTechnicianCategorySummary" class="multi-dd-toggle-text">Seleccionar categoria(s)</span>
+                                </button>
+                                <div id="EditTechnicianCategoryMenu" class="multi-dd-menu">
+                                    <div id="EditTechnicianCategoryOptions"></div>
+                                </div>
+                            </div>
+                            <div class="form-text">Seleccion multiple en desplegable.</div>
+                            <span asp-validation-for="TechnicianCategory" class="text-danger small"></span>
+                        </div>
+                    }
+
+                    @if (isMaintenance)
+                    {
+                        <div class="col-md-4">
+                            <label for="AssignedTechnicianMulti" class="form-label fw-semibold">Tecnico asignado</label>
+                            <input asp-for="AssignedTechnician" type="hidden" />
+                            <select id="AssignedTechnicianMulti" class="d-none" multiple>
+                                @foreach (var option in technicianOptions)
+                                {
+                                    <option value="@option.Value">@option.Text</option>
+                                }
+                            </select>
+                            <div class="multi-dd">
+                                <button type="button" class="multi-dd-toggle" data-dropdown-toggle="EditAssignedTechnicianMenu">
+                                    <span id="editAssignedTechnicianSummary" class="multi-dd-toggle-text">Seleccionar tecnico(s)</span>
+                                </button>
+                                <div id="EditAssignedTechnicianMenu" class="multi-dd-menu">
+                                    <div id="EditAssignedTechnicianOptions"></div>
+                                </div>
+                            </div>
+                            <div class="form-text">Puedes escoger dos o mas tecnicos.</div>
+                            <span asp-validation-for="AssignedTechnician" class="text-danger small"></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-4">
+                            <label asp-for="AssignedTechnician" class="form-label fw-semibold">AssignedTechnician</label>
+                            <select asp-for="AssignedTechnician" class="form-select" asp-items="technicianOptions">
+                                <option value="">Seleccionar tecnico</option>
+                            </select>
+                        </div>
+                    }
 
                     <div class="col-12">
-                        <label asp-for="Description" class="form-label fw-semibold"></label>
+                        <label asp-for="Description" class="form-label fw-semibold">@(isMaintenance ? "Descripcion del trabajo" : "Description")</label>
                         <textarea asp-for="Description" class="form-control" rows="3"></textarea>
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
+
+                    @if (isMaintenance)
+                    {
+                        var orderedDispatches = (Model.SparePartDispatches ?? Enumerable.Empty<TicketSparePartDispatch>())
+                            .OrderBy(x => x.PartName)
+                            .ToList();
+                        var totalCordobaHist = orderedDispatches.Sum(x => x.TotalCostCordoba ?? 0m);
+                        var totalUsdHist = orderedDispatches.Sum(x => x.TotalCostUsd ?? 0m);
+
+                        <div class="col-12">
+                            <h5 class="fw-bold mb-2">Repuestos despachados (acumulado)</h5>
+                            @if (!orderedDispatches.Any())
+                            {
+                                <div class="text-muted">No hay repuestos despachados todavía.</div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Articulo</th>
+                                                <th>N° Parte</th>
+                                                <th class="text-end">Cantidad</th>
+                                                <th class="text-end">Unitario C$</th>
+                                                <th class="text-end">Total C$</th>
+                                                <th class="text-end">Unitario $</th>
+                                                <th class="text-end">Total $</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var line in orderedDispatches)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-semibold">@line.PartName</div>
+                                                        <div class="text-muted small">@line.PartCode @(string.IsNullOrWhiteSpace(line.UnitOfMeasure) ? string.Empty : $"| {line.UnitOfMeasure}") @(string.IsNullOrWhiteSpace(line.ItemCode) ? string.Empty : $"| ITEM: {line.ItemCode}")</div>
+                                                    </td>
+                                                    <td>@(string.IsNullOrWhiteSpace(line.PartNumber) ? "-" : line.PartNumber)</td>
+                                                    <td class="text-end">@line.QuantityDispatched</td>
+                                                    <td class="text-end">@((line.UnitCostCordoba ?? 0m).ToString("N2"))</td>
+                                                    <td class="text-end">@((line.TotalCostCordoba ?? 0m).ToString("N2"))</td>
+                                                    <td class="text-end">@((line.UnitCostUsd ?? 0m).ToString("N2"))</td>
+                                                    <td class="text-end">@((line.TotalCostUsd ?? 0m).ToString("N2"))</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="4" class="text-end">Total acumulado</th>
+                                                <th class="text-end">C$ @totalCordobaHist.ToString("N2")</th>
+                                                <th></th>
+                                                <th class="text-end">$ @totalUsdHist.ToString("N2")</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="col-12">
+                            <h5 class="fw-bold mb-2">Agregar repuestos a esta orden</h5>
+                            <div class="border rounded-3 p-3 bg-light-subtle">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-7">
+                                        <label class="form-label mb-1 fw-semibold">Articulo</label>
+                                        <input id="sparePartSearchInput" type="text" class="form-control mb-2" placeholder="Buscar por codigo, ITEM, N° Parte o descripcion..." autocomplete="off" />
+                                        <select id="sparePartSelect" class="form-select">
+                                            <option value="">Seleccionar repuesto</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label mb-1 fw-semibold">Cantidad</label>
+                                        <input id="sparePartQty" type="number" class="form-control" min="1" step="1" value="1" />
+                                    </div>
+                                    <div class="col-md-3 d-grid">
+                                        <button type="button" id="addSparePartBtn" class="btn btn-outline-primary">Agregar repuesto</button>
+                                    </div>
+                                </div>
+
+                                @if (ViewData.ModelState.TryGetValue("SparePartsJson", out var sparePartsErrors) && sparePartsErrors.Errors.Any())
+                                {
+                                    foreach (var err in sparePartsErrors.Errors)
+                                    {
+                                        <div class="text-danger small mt-2">@err.ErrorMessage</div>
+                                    }
+                                }
+
+                                <div class="table-responsive mt-3">
+                                    <table class="table table-sm table-bordered mb-1">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Articulo</th>
+                                                <th>N° Parte</th>
+                                                <th class="text-end">Stock</th>
+                                                <th class="text-end">Cant.</th>
+                                                <th class="text-end">Unit C$</th>
+                                                <th class="text-end">Total C$</th>
+                                                <th class="text-end">Unit $</th>
+                                                <th class="text-end">Total $</th>
+                                                <th style="width: 90px;">Accion</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sparePartsTableBody">
+                                            <tr id="sparePartsEmptyRow">
+                                                <td colspan="9" class="text-center text-muted">Sin repuestos agregados.</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="5" class="text-end">Totales nuevos</th>
+                                                <th class="text-end" id="totalCordobaCell">C$ 0.00</th>
+                                                <th></th>
+                                                <th class="text-end" id="totalUsdCell">$ 0.00</th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (isMaintenance)
+                    {
+                        <div class="col-12">
+                            <h5 class="fw-bold mb-2">Costos y aprobacion</h5>
+                            <div class="border rounded-3 p-3 bg-light-subtle">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label asp-for="LaborCostCordoba" class="form-label fw-semibold">Mano de obra (C$)</label>
+                                        <input asp-for="LaborCostCordoba" class="form-control" type="number" min="0" step="0.01" />
+                                        <span asp-validation-for="LaborCostCordoba" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="LaborCostUsd" class="form-label fw-semibold">Mano de obra ($)</label>
+                                        <input asp-for="LaborCostUsd" class="form-control" type="number" min="0" step="0.01" />
+                                        <span asp-validation-for="LaborCostUsd" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="ExternalCostCordoba" class="form-label fw-semibold">Servicio externo (C$)</label>
+                                        <input asp-for="ExternalCostCordoba" class="form-control" type="number" min="0" step="0.01" />
+                                        <span asp-validation-for="ExternalCostCordoba" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="ExternalCostUsd" class="form-label fw-semibold">Servicio externo ($)</label>
+                                        <input asp-for="ExternalCostUsd" class="form-control" type="number" min="0" step="0.01" />
+                                        <span asp-validation-for="ExternalCostUsd" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-4 d-flex align-items-center">
+                                        <div>
+                                            <div class="small text-muted">Aprobacion requerida</div>
+                                            @if (Model.RequiresCostApproval)
+                                            {
+                                                <span class="badge bg-warning text-dark">Si</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">No</span>
+                                            }
+                                        </div>
+                                        <input asp-for="RequiresCostApproval" type="hidden" />
+                                    </div>
+
+                                    <div class="col-md-4 d-flex align-items-center">
+                                        @if (canApproveCost)
+                                        {
+                                            <div class="form-check mt-2">
+                                                <input asp-for="CostApproved" class="form-check-input" />
+                                                <label asp-for="CostApproved" class="form-check-label">Costo aprobado</label>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div>
+                                                <div class="small text-muted">Estado aprobacion</div>
+                                                @if (Model.CostApproved)
+                                                {
+                                                    <span class="badge bg-success">Aprobado</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                                }
+                                            </div>
+                                            <input asp-for="CostApproved" type="hidden" />
+                                        }
+                                        <span asp-validation-for="CostApproved" class="text-danger small d-block"></span>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="CostApprovedBy" class="form-label fw-semibold">Aprobado por</label>
+                                        <input asp-for="CostApprovedBy" class="form-control" readonly />
+                                        <input asp-for="CostApprovedAtUtc" type="hidden" />
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label asp-for="CostApprovalNotes" class="form-label fw-semibold">Notas de aprobacion</label>
+                                        @if (canApproveCost)
+                                        {
+                                            <textarea asp-for="CostApprovalNotes" class="form-control" rows="2"></textarea>
+                                        }
+                                        else
+                                        {
+                                            <textarea asp-for="CostApprovalNotes" class="form-control" rows="2" readonly></textarea>
+                                        }
+                                        <span asp-validation-for="CostApprovalNotes" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 
@@ -281,8 +651,18 @@
                 </div>
 
                 <div class="text-end mt-4">
-                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    <a asp-action="Index" asp-route-department="@returnDepartment" class="btn btn-secondary">Cancelar</a>
+                    @if (isMaintenance)
+                    {
+                        <button type="submit" name="submitAction" value="save" class="btn btn-primary">Guardar orden</button>
+                        <button type="submit" name="submitAction" value="save_pdf" class="btn btn-danger">
+                            <i class="bi bi-file-earmark-pdf"></i> Guardar y descargar PDF
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    }
                 </div>
             </form>
         </div>
@@ -295,6 +675,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const canEditSolutionForm = @(canEditSolutionForm ? "true" : "false");
+            const isMaintenance = @(isMaintenance ? "true" : "false");
             const sparePartRequired = document.getElementById("sparePartRequired");
             const purchasedWrap = document.getElementById("sparePartPurchasedWrap");
             const detailsWrap = document.getElementById("sparePartDetailsWrap");
@@ -313,22 +694,533 @@
             }
 
             function toggleSparePart() {
+                if (!sparePartRequired || !purchasedWrap || !detailsWrap) {
+                    return;
+                }
+
                 const visible = sparePartRequired.checked;
                 purchasedWrap.style.display = visible ? "flex" : "none";
                 detailsWrap.style.display = visible ? "block" : "none";
             }
 
             function toggleChangedComponent() {
+                if (!componentChanged || !changedComponentNameWrap || !changedComponentCostCordobaWrap || !changedComponentCostUsdWrap) {
+                    return;
+                }
+
                 const visible = componentChanged.checked;
                 changedComponentNameWrap.style.display = visible ? "block" : "none";
                 changedComponentCostCordobaWrap.style.display = visible ? "block" : "none";
                 changedComponentCostUsdWrap.style.display = visible ? "block" : "none";
             }
 
-            sparePartRequired.addEventListener("change", toggleSparePart);
-            componentChanged.addEventListener("change", toggleChangedComponent);
+            if (sparePartRequired) {
+                sparePartRequired.addEventListener("change", toggleSparePart);
+            }
+
+            if (componentChanged) {
+                componentChanged.addEventListener("change", toggleChangedComponent);
+            }
+
             toggleSparePart();
             toggleChangedComponent();
+
+            if (!isMaintenance) {
+                return;
+            }
+
+            const siteSelect = document.getElementById("Site");
+            const tenenciaSelect = document.getElementById("Tenencia");
+            const technicianCategorySelect = document.getElementById("TechnicianCategoryMulti");
+            const technicianSelect = document.getElementById("AssignedTechnicianMulti");
+            const technicianCategoryInput = document.getElementById("TechnicianCategory");
+            const technicianInput = document.getElementById("AssignedTechnician");
+            const technicianCategoryOptionsWrap = document.getElementById("EditTechnicianCategoryOptions");
+            const technicianOptionsWrap = document.getElementById("EditAssignedTechnicianOptions");
+            const technicianCategorySummary = document.getElementById("editTechnicianCategorySummary");
+            const assignedTechnicianSummary = document.getElementById("editAssignedTechnicianSummary");
+            const sparePartSelect = document.getElementById("sparePartSelect");
+            const sparePartSearchInput = document.getElementById("sparePartSearchInput");
+            const sparePartQty = document.getElementById("sparePartQty");
+            const addSparePartBtn = document.getElementById("addSparePartBtn");
+            const sparePartsTableBody = document.getElementById("sparePartsTableBody");
+            const sparePartsJsonInput = document.getElementById("sparePartsJson");
+            const totalCordobaCell = document.getElementById("totalCordobaCell");
+            const totalUsdCell = document.getElementById("totalUsdCell");
+            const editForm = document.querySelector(".card-body form");
+
+            const sparePartsCatalog = (() => {
+                try {
+                    return @Html.Raw(sparePartsCatalogJson);
+                } catch {
+                    return [];
+                }
+            })();
+
+            const initialSpareParts = (() => {
+                try {
+                    return @Html.Raw(selectedSparePartsJson);
+                } catch {
+                    return [];
+                }
+            })();
+            const maintenanceTechnicianCatalog = (() => {
+                try {
+                    return @Html.Raw(maintenanceTechnicianCatalogJson);
+                } catch {
+                    return [];
+                }
+            })();
+
+            const selectedLines = new Map();
+
+            function normalizeText(value) {
+                return (value || "").toString().trim().toUpperCase();
+            }
+
+            function normalizeSite(value) {
+                const site = normalizeText(value);
+                if (site === "ACT" || site === "PCT") return "PCT";
+                if (site === "ASB" || site === "PSB") return "PSB";
+                if (site === "AOZ" || site === "POZ") return "POZ";
+                return site;
+            }
+
+            function normalizeSearch(value) {
+                return (value || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+            }
+
+            function parseMulti(value) {
+                return (value || "").toString().split(",").map(x => x.trim()).filter(Boolean);
+            }
+
+            function joinMulti(values) {
+                return (values || []).filter(Boolean).join(", ");
+            }
+
+            function selectedValues(selectElement) {
+                if (!selectElement) return [];
+                return [...selectElement.selectedOptions].map(option => option.value).filter(Boolean);
+            }
+
+            function applySelectedValues(selectElement, values) {
+                if (!selectElement) return;
+                const selectedSet = new Set((values || []).map(normalizeText));
+                [...selectElement.options].forEach(option => {
+                    option.selected = selectedSet.has(normalizeText(option.value));
+                });
+            }
+
+            function setDropdownSummary(summaryElement, values, placeholder) {
+                if (!summaryElement) return;
+                if (!values || values.length === 0) {
+                    summaryElement.textContent = placeholder;
+                    return;
+                }
+
+                if (values.length <= 2) {
+                    summaryElement.textContent = values.join(", ");
+                    return;
+                }
+
+                summaryElement.textContent = `${values.slice(0, 2).join(", ")} +${values.length - 2}`;
+            }
+
+            function closeAllDropdowns(exceptMenuId) {
+                document.querySelectorAll(".multi-dd-menu.show").forEach(menu => {
+                    if (!exceptMenuId || menu.id !== exceptMenuId) {
+                        menu.classList.remove("show");
+                    }
+                });
+            }
+
+            function wireDropdownToggles() {
+                document.querySelectorAll("[data-dropdown-toggle]").forEach(toggle => {
+                    toggle.addEventListener("click", function () {
+                        const menuId = toggle.getAttribute("data-dropdown-toggle");
+                        if (!menuId) return;
+                        const menu = document.getElementById(menuId);
+                        if (!menu) return;
+
+                        const willOpen = !menu.classList.contains("show");
+                        closeAllDropdowns(menuId);
+                        if (willOpen) menu.classList.add("show");
+                    });
+                });
+
+                document.addEventListener("click", function (event) {
+                    const target = event.target;
+                    if (!(target instanceof Node)) return;
+                    if (target instanceof Element && target.closest(".multi-dd")) return;
+                    closeAllDropdowns();
+                });
+            }
+
+            function renderMultiDropdownOptions(selectElement, optionsWrap, summaryElement, placeholder, onChanged) {
+                if (!selectElement || !optionsWrap) return;
+
+                const selectedSet = new Set(selectedValues(selectElement).map(normalizeText));
+                optionsWrap.innerHTML = "";
+                const options = [...selectElement.options].filter(option => (option.value || "").trim().length > 0);
+
+                if (options.length === 0) {
+                    optionsWrap.innerHTML = "<div class=\"multi-dd-empty\">Sin opciones disponibles.</div>";
+                    setDropdownSummary(summaryElement, [], placeholder);
+                    return;
+                }
+
+                options.forEach((option, index) => {
+                    const optionId = `${selectElement.id}_chk_${index}`;
+                    const row = document.createElement("label");
+                    row.className = "multi-dd-option";
+                    row.htmlFor = optionId;
+
+                    const check = document.createElement("input");
+                    check.type = "checkbox";
+                    check.id = optionId;
+                    check.value = option.value;
+                    check.checked = selectedSet.has(normalizeText(option.value));
+                    check.className = "form-check-input";
+                    check.addEventListener("change", function () {
+                        option.selected = check.checked;
+                        setDropdownSummary(summaryElement, selectedValues(selectElement), placeholder);
+                        if (typeof onChanged === "function") onChanged();
+                    });
+
+                    const text = document.createElement("span");
+                    text.textContent = option.textContent || option.value;
+
+                    row.appendChild(check);
+                    row.appendChild(text);
+                    optionsWrap.appendChild(row);
+                });
+
+                setDropdownSummary(summaryElement, selectedValues(selectElement), placeholder);
+            }
+
+            function renderCategoryDropdown() {
+                renderMultiDropdownOptions(
+                    technicianCategorySelect,
+                    technicianCategoryOptionsWrap,
+                    technicianCategorySummary,
+                    "Seleccionar categoria(s)",
+                    function () {
+                        syncTechnicianInputs();
+                        syncTechnicianOptions();
+                        renderCategoryDropdown();
+                    });
+            }
+
+            function renderTechnicianDropdown() {
+                renderMultiDropdownOptions(
+                    technicianSelect,
+                    technicianOptionsWrap,
+                    assignedTechnicianSummary,
+                    "Seleccionar tecnico(s)",
+                    syncTechnicianInputs);
+            }
+
+            function syncTechnicianInputs() {
+                if (technicianCategoryInput) technicianCategoryInput.value = joinMulti(selectedValues(technicianCategorySelect));
+                if (technicianInput) technicianInput.value = joinMulti(selectedValues(technicianSelect));
+            }
+
+            function lineMatchesFilters(part) {
+                if (!part) return false;
+                const selectedSite = normalizeSite(siteSelect?.value);
+                const selectedTenencia = normalizeText(tenenciaSelect?.value);
+                const partSite = normalizeSite(part.site);
+                const partTenencia = normalizeText(part.tenencia);
+
+                const siteOk = !selectedSite || selectedSite === partSite;
+                const tenenciaOk = !selectedTenencia || selectedTenencia === partTenencia;
+                return siteOk && tenenciaOk;
+            }
+
+            function partMatchesSearch(part, searchTerm) {
+                if (!part) return false;
+                if (!searchTerm) return true;
+                const haystack = normalizeSearch(`${part.label || ""} ${part.item || ""} ${part.partNumber || ""}`);
+                return haystack.includes(searchTerm);
+            }
+
+            function syncTechnicianOptions() {
+                if (!technicianSelect) return;
+
+                const previousValues = selectedValues(technicianSelect);
+                const selectedCategories = new Set(selectedValues(technicianCategorySelect).map(normalizeText));
+                technicianSelect.innerHTML = "";
+
+                maintenanceTechnicianCatalog
+                    .filter(item => item && item.isActive && item.isAvailable && !item.isOverCapacity)
+                    .filter(item => selectedCategories.size === 0 || selectedCategories.has(normalizeText(item.category)))
+                    .sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || "")))
+                    .forEach(item => {
+                        const load = `${Number(item.currentActiveOrders || 0)}/${Number(item.maxActiveOrders || 1)}`;
+                        const shift = item.shift ? ` - ${item.shift}` : "";
+                        const option = document.createElement("option");
+                        option.value = item.fullName || "";
+                        option.textContent = `${item.fullName || ""} (${load})${shift}`;
+                        technicianSelect.appendChild(option);
+                    });
+
+                previousValues.forEach(previousValue => {
+                    const existingOption = [...technicianSelect.options]
+                        .find(opt => normalizeText(opt.value) === normalizeText(previousValue));
+                    if (existingOption) {
+                        existingOption.selected = true;
+                        return;
+                    }
+
+                    const option = document.createElement("option");
+                    option.value = previousValue;
+                    option.textContent = `${previousValue} (No disponible)`;
+                    option.selected = true;
+                    technicianSelect.appendChild(option);
+                });
+
+                renderTechnicianDropdown();
+                syncTechnicianInputs();
+            }
+
+            function getPartById(id) {
+                return sparePartsCatalog.find(x => Number(x.id) === Number(id));
+            }
+
+            function formatNumber(value) {
+                return Number(value || 0).toLocaleString("es-NI", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            function syncSparePartOptions() {
+                if (!sparePartSelect) return;
+
+                const currentValue = sparePartSelect.value;
+                const searchTerm = normalizeSearch(sparePartSearchInput?.value);
+                sparePartSelect.innerHTML = "<option value=\"\">Seleccionar repuesto</option>";
+
+                const filtered = sparePartsCatalog
+                    .filter(part => lineMatchesFilters(part) && partMatchesSearch(part, searchTerm))
+                    .sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+
+                filtered.forEach(part => {
+                    const option = document.createElement("option");
+                    option.value = String(part.id);
+                    const itemText = part.item ? ` | ITEM: ${part.item}` : "";
+                    const partNumberText = part.partNumber ? ` | N° Parte: ${part.partNumber}` : "";
+                    option.textContent = `${part.label}${itemText}${partNumberText} | Stock: ${part.stock}`;
+                    sparePartSelect.appendChild(option);
+                });
+
+                if (filtered.length === 0) {
+                    const empty = document.createElement("option");
+                    empty.value = "";
+                    empty.textContent = "Sin resultados para la busqueda";
+                    empty.disabled = true;
+                    sparePartSelect.appendChild(empty);
+                }
+
+                if ([...sparePartSelect.options].some(opt => opt.value === currentValue)) {
+                    sparePartSelect.value = currentValue;
+                }
+            }
+
+            function syncJsonInput() {
+                if (!sparePartsJsonInput) return;
+                const payload = [...selectedLines.entries()].map(([partId, quantity]) => ({
+                    partId: Number(partId),
+                    quantity: Number(quantity)
+                }));
+                sparePartsJsonInput.value = JSON.stringify(payload);
+            }
+
+            function renderSparePartsTable() {
+                if (!sparePartsTableBody) return;
+                sparePartsTableBody.innerHTML = "";
+
+                if (selectedLines.size === 0) {
+                    sparePartsTableBody.innerHTML = "<tr id=\"sparePartsEmptyRow\"><td colspan=\"9\" class=\"text-center text-muted\">Sin repuestos agregados.</td></tr>";
+                    if (totalCordobaCell) totalCordobaCell.textContent = "C$ 0.00";
+                    if (totalUsdCell) totalUsdCell.textContent = "$ 0.00";
+                    syncJsonInput();
+                    return;
+                }
+
+                let totalCordoba = 0;
+                let totalUsd = 0;
+
+                [...selectedLines.entries()]
+                    .sort((a, b) => {
+                        const partA = getPartById(a[0]);
+                        const partB = getPartById(b[0]);
+                        return (partA?.label || "").localeCompare(partB?.label || "");
+                    })
+                    .forEach(([partId, quantity]) => {
+                        const part = getPartById(partId);
+                        if (!part) return;
+
+                        const unitC = Number(part.unitCostCordoba || 0);
+                        const unitU = Number(part.unitCostUsd || 0);
+                        const lineC = unitC * Number(quantity);
+                        const lineU = unitU * Number(quantity);
+                        const itemText = part.item ? ` | ITEM: ${part.item}` : "";
+                        const partNumberText = part.partNumber || "-";
+
+                        totalCordoba += lineC;
+                        totalUsd += lineU;
+
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>
+                                <div class="fw-semibold">${part.label}</div>
+                                <div class="small text-muted">${part.unitOfMeasure || "Unidad"}${itemText}</div>
+                            </td>
+                            <td>${partNumberText}</td>
+                            <td class="text-end">${part.stock}</td>
+                            <td class="text-end">${quantity}</td>
+                            <td class="text-end">${formatNumber(unitC)}</td>
+                            <td class="text-end">${formatNumber(lineC)}</td>
+                            <td class="text-end">${formatNumber(unitU)}</td>
+                            <td class="text-end">${formatNumber(lineU)}</td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger remove-part-btn" data-part-id="${partId}">Quitar</button></td>
+                        `;
+
+                        sparePartsTableBody.appendChild(row);
+                    });
+
+                if (totalCordobaCell) totalCordobaCell.textContent = `C$ ${formatNumber(totalCordoba)}`;
+                if (totalUsdCell) totalUsdCell.textContent = `$ ${formatNumber(totalUsd)}`;
+                syncJsonInput();
+            }
+
+            function addSparePartLine() {
+                const partId = Number(sparePartSelect?.value || 0);
+                const quantity = Number(sparePartQty?.value || 0);
+
+                if (!partId) {
+                    alert("Selecciona un repuesto.");
+                    return;
+                }
+
+                if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
+                    alert("La cantidad debe ser un numero entero mayor a 0.");
+                    return;
+                }
+
+                const part = getPartById(partId);
+                if (!part) {
+                    alert("No se encontro el repuesto seleccionado.");
+                    return;
+                }
+
+                if (!lineMatchesFilters(part)) {
+                    alert("El repuesto no coincide con el sitio o la tenencia seleccionada.");
+                    return;
+                }
+
+                const previousQty = Number(selectedLines.get(partId) || 0);
+                const newQty = previousQty + quantity;
+
+                if (newQty > Number(part.stock || 0)) {
+                    alert(`No hay suficiente stock. Disponible: ${part.stock}.`);
+                    return;
+                }
+
+                selectedLines.set(partId, newQty);
+                if (sparePartQty) sparePartQty.value = "1";
+                renderSparePartsTable();
+            }
+
+            function loadInitialSpareParts() {
+                if (!Array.isArray(initialSpareParts)) return;
+
+                initialSpareParts.forEach(line => {
+                    const partId = Number(line.partId || 0);
+                    const qty = Number(line.quantity || 0);
+                    const part = getPartById(partId);
+
+                    if (!part || qty <= 0) return;
+                    if (!lineMatchesFilters(part)) return;
+                    if (qty > Number(part.stock || 0)) return;
+
+                    selectedLines.set(partId, qty);
+                });
+
+                renderSparePartsTable();
+            }
+
+            function pruneLinesByFilters() {
+                let removed = 0;
+
+                [...selectedLines.keys()].forEach(partId => {
+                    const part = getPartById(partId);
+                    if (!lineMatchesFilters(part)) {
+                        selectedLines.delete(partId);
+                        removed += 1;
+                    }
+                });
+
+                if (removed > 0) {
+                    alert("Se removieron repuestos que no coinciden con el sitio/tenencia seleccionados.");
+                }
+
+                renderSparePartsTable();
+            }
+
+            if (addSparePartBtn) {
+                addSparePartBtn.addEventListener("click", addSparePartLine);
+            }
+
+            if (sparePartsTableBody) {
+                sparePartsTableBody.addEventListener("click", function (event) {
+                    const target = event.target;
+                    if (!(target instanceof HTMLElement)) return;
+                    if (!target.classList.contains("remove-part-btn")) return;
+
+                    const partId = Number(target.getAttribute("data-part-id") || 0);
+                    if (!partId) return;
+                    selectedLines.delete(partId);
+                    renderSparePartsTable();
+                });
+            }
+
+            if (siteSelect) {
+                siteSelect.addEventListener("change", function () {
+                    syncSparePartOptions();
+                    pruneLinesByFilters();
+                });
+            }
+
+            if (tenenciaSelect) {
+                tenenciaSelect.addEventListener("change", function () {
+                    syncSparePartOptions();
+                    pruneLinesByFilters();
+                });
+            }
+
+            if (sparePartSearchInput) {
+                sparePartSearchInput.addEventListener("input", function () {
+                    if (sparePartSelect) sparePartSelect.value = "";
+                    syncSparePartOptions();
+                });
+            }
+
+            if (editForm) {
+                editForm.addEventListener("submit", function () {
+                    syncTechnicianInputs();
+                });
+            }
+
+            applySelectedValues(technicianCategorySelect, parseMulti(technicianCategoryInput?.value));
+            applySelectedValues(technicianSelect, parseMulti(technicianInput?.value));
+            wireDropdownToggles();
+            syncTechnicianOptions();
+            renderCategoryDropdown();
+            syncSparePartOptions();
+            loadInitialSpareParts();
+            renderSparePartsTable();
         });
     </script>
 }

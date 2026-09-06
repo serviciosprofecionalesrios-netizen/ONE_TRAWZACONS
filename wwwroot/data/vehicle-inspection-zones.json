@@ -1,0 +1,117 @@
+[
+  {
+    "id": "cabina",
+    "label": "Cabina",
+    "components": [
+      "Puertas",
+      "Retrovisores",
+      "Parabrisas",
+      "Luces de cabina",
+      "Asientos",
+      "Tablero",
+      "Cinturon de seguridad"
+    ]
+  },
+  {
+    "id": "motor",
+    "label": "Motor",
+    "components": [
+      "Aceite de motor",
+      "Filtro de aceite",
+      "Filtro de aire",
+      "Radiador",
+      "Mangueras",
+      "Correas",
+      "Bateria"
+    ]
+  },
+  {
+    "id": "lado_izquierdo",
+    "label": "Lado Izquierdo (Chofer)",
+    "components": [
+      "Luces laterales",
+      "Escalones",
+      "Tanque de combustible",
+      "Guardafangos",
+      "Suspension",
+      "Lineas de aire"
+    ]
+  },
+  {
+    "id": "lado_derecho",
+    "label": "Lado Derecho (Acompañante)",
+    "components": [
+      "Luces laterales",
+      "Escalones",
+      "Tanque de combustible",
+      "Guardafangos",
+      "Suspension",
+      "Lineas electricas"
+    ]
+  },
+  {
+    "id": "llantas_ejes",
+    "label": "Llantas y ejes",
+    "components": [
+      "EJE DELANTERO",
+      "EJE DEL DIFERENCIAL DEL BLOQUEO",
+      "EJE TRASERO",
+      "Eje 1 (Delantero)",
+      "Eje 2 (Central)",
+      "Eje 3 (Trasero)",
+      "Llanta Ext / Llanta Int",
+      "Rin / aro",
+      "Tuercas",
+      "Frenos",
+      "Amortiguadores"
+    ]
+  },
+  {
+    "id": "chasis",
+    "label": "Chasis",
+    "components": [
+      "Quinta rueda",
+      "Bastidor",
+      "Soportes",
+      "Crucetas",
+      "Cardan",
+      "Conexiones de remolque"
+    ]
+  },
+  {
+    "id": "hidraulico",
+    "label": "Hidráulico",
+    "components": [
+      "Cilindro hidraulico",
+      "Bomba hidraulica",
+      "Mangueras hidraulicas",
+      "Valvulas",
+      "Deposito de aceite",
+      "Pines y bujes"
+    ]
+  },
+  {
+    "id": "tolva",
+    "label": "Tolva",
+    "components": [
+      "Piso de tolva",
+      "Paredes laterales",
+      "Compuerta",
+      "Bisagras",
+      "Seguro de compuerta",
+      "Soldaduras"
+    ]
+  },
+  {
+    "id": "parte_trasera",
+    "label": "Parte trasera",
+    "components": [
+      "Luces traseras",
+      "Bumper",
+      "Guardafangos traseros",
+      "Reflectivos",
+      "Placa",
+      "Compuerta trasera"
+    ]
+  }
+]

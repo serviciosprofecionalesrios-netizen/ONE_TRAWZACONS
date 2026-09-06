@@ -1,0 +1,410 @@
+@model IEnumerable<ITServiceDeskApp.Models.MaintenanceInventoryPart>
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Globalization
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Detalle de Inventario";
+
+    var rows = Model ?? Enumerable.Empty<MaintenanceInventoryPart>();
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var systemTypeOptions = ViewBag.SystemTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var stockStatusOptions = ViewBag.StockStatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+
+    var canManage =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
+
+    string search = ViewBag.Search as string ?? string.Empty;
+    bool includeInactive = ViewBag.IncludeInactive is bool b && b;
+
+    int totalPartes = ViewBag.TotalPartes is int t1 ? t1 : 0;
+    int totalStock = ViewBag.TotalStock is int t2 ? t2 : 0;
+    int totalSalidas = ViewBag.TotalSalidas is int t3 ? t3 : 0;
+    int totalTransito = ViewBag.TotalTransito is int t4 ? t4 : 0;
+    int totalProyectado = ViewBag.TotalProyectado is int t5 ? t5 : 0;
+    int totalAgotados = ViewBag.TotalAgotados is int t6 ? t6 : 0;
+    int totalBajoStock = ViewBag.TotalBajoStock is int t7 ? t7 : 0;
+    decimal valorCordoba = ViewBag.ValorInventarioCordoba is decimal c1 ? c1 : 0m;
+    decimal valorUsd = ViewBag.ValorInventarioUsd is decimal c2 ? c2 : 0m;
+    decimal valorTransitoCordoba = ViewBag.ValorTransitoCordoba is decimal c3 ? c3 : 0m;
+    decimal valorTransitoUsd = ViewBag.ValorTransitoUsd is decimal c4 ? c4 : 0m;
+
+    var ni = new CultureInfo("es-NI");
+    string C(decimal value) => $"C$ {value.ToString("N2", ni)}";
+    string D(decimal value) => $"$ {value.ToString("N2", ni)}";
+
+    const int coberturaBaseDias = 30;
+
+    decimal CoberturaDias(MaintenanceInventoryPart row, bool incluirTransito)
+    {
+        if (row.QuantityIssued <= 0)
+        {
+            return decimal.MaxValue;
+        }
+
+        var stock = incluirTransito
+            ? row.QuantityOnHand + row.QuantityInTransit
+            : row.QuantityOnHand;
+
+        if (stock <= 0)
+        {
+            return 0m;
+        }
+
+        return decimal.Round((decimal)stock * coberturaBaseDias / row.QuantityIssued, 1, MidpointRounding.AwayFromZero);
+    }
+
+    string CoberturaLabel(decimal dias)
+    {
+        return dias == decimal.MaxValue ? "Sin consumo" : $"{dias:N1} dias";
+    }
+
+    string RiesgoQuiebre(MaintenanceInventoryPart row)
+    {
+        if (row.QuantityOnHand <= 0)
+        {
+            return "Critico";
+        }
+
+        var cobertura = CoberturaDias(row, false);
+        if (cobertura == decimal.MaxValue)
+        {
+            return "Bajo";
+        }
+
+        if (cobertura <= 7m)
+        {
+            return "Alto";
+        }
+
+        if (cobertura <= 15m)
+        {
+            return "Medio";
+        }
+
+        return "Bajo";
+    }
+
+    var coberturasFinitas = rows
+        .Select(x => CoberturaDias(x, false))
+        .Where(x => x != decimal.MaxValue)
+        .ToList();
+    decimal coberturaPromedio = coberturasFinitas.Any()
+        ? decimal.Round(coberturasFinitas.Average(), 1, MidpointRounding.AwayFromZero)
+        : 0m;
+
+    int riesgoCritico = rows.Count(x => RiesgoQuiebre(x) == "Critico");
+    int riesgoAlto = rows.Count(x => RiesgoQuiebre(x) == "Alto");
+    int riesgoMedio = rows.Count(x => RiesgoQuiebre(x) == "Medio");
+}
+
+<style>
+    .detail-kpi {
+        border-radius: 12px;
+        border: 1px solid #dce4ee;
+    }
+
+    .detail-kpi .label {
+        font-size: .79rem;
+        color: #6a7280;
+    }
+
+    .detail-kpi .value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f274a;
+        line-height: 1.1;
+    }
+
+    .detail-table-wrap {
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .detail-table thead th {
+        background: #112742;
+        color: #fff;
+        text-transform: uppercase;
+        font-size: .72rem;
+        letter-spacing: .05em;
+        border: 0;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    .detail-table tbody td {
+        border-color: #ebeff5;
+        vertical-align: middle;
+    }
+
+    .detail-table tbody tr.row-stockout {
+        background: #fff2f3;
+    }
+
+    .detail-table tbody tr.row-low {
+        background: #fff9e9;
+    }
+
+    .detail-table tbody tr.row-inactive {
+        background: #f3f6fa;
+    }
+
+    .detail-price {
+        font-weight: 700;
+        color: #123f67;
+        white-space: nowrap;
+    }
+
+    .detail-price-muted {
+        color: #8a95a7;
+        font-size: .81rem;
+    }
+
+    .detail-state {
+        border-radius: 999px;
+        padding: .2rem .55rem;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .detail-state-ok {
+        background: #e6f7ee;
+        color: #0f7a45;
+    }
+
+    .detail-state-low {
+        background: #fff3cd;
+        color: #8b6a00;
+    }
+
+    .detail-state-out {
+        background: #fde7ea;
+        color: #b42337;
+    }
+
+    .detail-table tfoot td {
+        background: #f0f4fa;
+        font-weight: 700;
+        border-top: 2px solid #d8e2f0;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-1">Detalle de Inventario de Repuestos</h2>
+            <small class="text-muted">Análisis por artículo con cobertura y valorización en C$ y $.</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+            @if (canManage)
+            {
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Nuevo Repuesto
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-action="Index" class="btn btn-outline-dark">
+                    <i class="bi bi-grid-1x2"></i> Resumen
+                </a>
+                <a asp-action="Detalle" class="btn btn-dark">
+                    <i class="bi bi-table"></i> Tabla detalle
+                </a>
+                <a asp-action="Transito" class="btn btn-outline-dark">
+                    <i class="bi bi-truck"></i> Articulos en transito
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Repuestos</div><div class="value">@totalPartes</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Stock actual</div><div class="value">@totalStock</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Salidas acumuladas</div><div class="value">@totalSalidas</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">En transito</div><div class="value text-primary">@totalTransito</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Stock proyectado</div><div class="value">@totalProyectado</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Bajo stock / Agotados</div><div class="fw-bold fs-5 text-warning">@totalBajoStock <span class="text-muted fw-normal">/</span> <span class="text-danger">@totalAgotados</span></div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Valor stock</div><div class="fw-bold fs-5">@C(valorCordoba)</div><div class="small text-muted">@D(valorUsd)</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Valor transito</div><div class="fw-bold fs-5">@C(valorTransitoCordoba)</div><div class="small text-muted">@D(valorTransitoUsd)</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Cobertura promedio</div><div class="value">@(coberturaPromedio > 0 ? $"{coberturaPromedio:N1}" : "N/A")</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Riesgo alto</div><div class="value text-danger">@riesgoAlto</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Riesgo critico</div><div class="value text-danger">@riesgoCritico</div></div></div></div>
+        <div class="col-md-3"><div class="card detail-kpi shadow-sm"><div class="card-body"><div class="label">Riesgo medio</div><div class="value text-warning">@riesgoMedio</div></div></div></div>
+    </div>
+
+    <form method="get" asp-action="Detalle" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Buscar</label>
+                    <input type="text" class="form-control" name="search" value="@search" placeholder="Codigo, nombre, marca, no. parte..." />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Categoria</label>
+                    <select class="form-select" name="category" asp-items="categoryOptions">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sistema</label>
+                    <select class="form-select" name="systemType" asp-items="systemTypeOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Estado</label>
+                    <select class="form-select" name="stockStatus" asp-items="stockStatusOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sitio</label>
+                    <select class="form-select" name="site" asp-items="siteOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" id="includeInactiveDetalle" @(includeInactive ? "checked" : "")>
+                        <label class="form-check-label" for="includeInactiveDetalle">Inact.</label>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">Filtrar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow detail-table-wrap">
+        <div class="card-body p-0">
+            @if (!rows.Any())
+            {
+                <div class="p-4">
+                    <div class="alert alert-info mb-0">No hay registros para los filtros aplicados.</div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 detail-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Repuesto</th>
+                                <th>Categoria</th>
+                                <th>Sistema</th>
+                                <th>Sitio</th>
+                                <th>Stock</th>
+                                <th>Salidas</th>
+                                <th>Transito</th>
+                                <th>Proyectado</th>
+                                <th>Unit C$</th>
+                                <th>Total C$</th>
+                                <th>Unit $</th>
+                                <th>Total $</th>
+                                <th>Cobertura</th>
+                                <th>Cobertura + transito</th>
+                                <th>Riesgo</th>
+                                <th>Ultima salida</th>
+                                <th>Estado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in rows)
+                            {
+                                var projected = row.QuantityOnHand + row.QuantityInTransit;
+                                var rowClass = !row.IsActive
+                                    ? "row-inactive"
+                                    : row.QuantityOnHand <= 0
+                                        ? "row-stockout"
+                                        : row.QuantityOnHand <= row.MinimumStock
+                                            ? "row-low"
+                                            : string.Empty;
+                                var cobertura = CoberturaDias(row, false);
+                                var coberturaConTransito = CoberturaDias(row, true);
+                                var riesgo = RiesgoQuiebre(row);
+                                var riesgoCss = riesgo switch
+                                {
+                                    "Critico" => "bg-danger",
+                                    "Alto" => "bg-danger-subtle text-danger-emphasis",
+                                    "Medio" => "bg-warning text-dark",
+                                    _ => "bg-success"
+                                };
+                                var stateCss = row.StockStatus.Equals("Agotado", StringComparison.OrdinalIgnoreCase)
+                                    ? "detail-state detail-state-out"
+                                    : row.StockStatus.Equals("Bajo stock", StringComparison.OrdinalIgnoreCase)
+                                        ? "detail-state detail-state-low"
+                                        : "detail-state detail-state-ok";
+                                var unitC = row.UnitCostCordoba ?? 0m;
+                                var unitD = row.UnitCostUsd ?? 0m;
+                                var totalC = unitC * row.QuantityOnHand;
+                                var totalD = unitD * row.QuantityOnHand;
+
+                                <tr class="@rowClass">
+                                    <td class="fw-semibold">@row.PartCode</td>
+                                    <td>
+                                        <div class="fw-semibold">@row.PartName</div>
+                                        <small class="text-muted">@(string.IsNullOrWhiteSpace(row.ManufacturerPartNumber) ? "-" : row.ManufacturerPartNumber)</small>
+                                    </td>
+                                    <td>@row.Category</td>
+                                    <td>@row.SystemType</td>
+                                    <td>@row.Site</td>
+                                    <td>
+                                        <div class="fw-bold">@row.QuantityOnHand</div>
+                                        <small class="text-muted d-block">Min: @row.MinimumStock</small>
+                                    </td>
+                                    <td>@row.QuantityIssued</td>
+                                    <td>@row.QuantityInTransit</td>
+                                    <td class="fw-semibold">@projected</td>
+                                    <td><span class="detail-price">@(unitC > 0m ? C(unitC) : "N/D")</span></td>
+                                    <td><span class="detail-price">@(totalC > 0m ? C(totalC) : "N/D")</span></td>
+                                    <td><span class="detail-price">@(unitD > 0m ? D(unitD) : "N/D")</span></td>
+                                    <td><span class="detail-price">@(totalD > 0m ? D(totalD) : "N/D")</span></td>
+                                    <td>@CoberturaLabel(cobertura)</td>
+                                    <td>@CoberturaLabel(coberturaConTransito)</td>
+                                    <td><span class="badge @riesgoCss">@riesgo</span></td>
+                                    <td>@(row.LastIssueDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                    <td><span class="@stateCss">@row.StockStatus</span></td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@row.Id" class="btn btn-sm btn-outline-info">Ver</a>
+                                        @if (canManage)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary">Editar</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="9" class="text-end">Totales visibles:</td>
+                                <td class="detail-price">-</td>
+                                <td class="detail-price">@C(rows.Sum(x => (x.UnitCostCordoba ?? 0m) * x.QuantityOnHand))</td>
+                                <td class="detail-price">-</td>
+                                <td class="detail-price">@D(rows.Sum(x => (x.UnitCostUsd ?? 0m) * x.QuantityOnHand))</td>
+                                <td colspan="6" class="detail-price-muted">Base: stock actual con filtros aplicados.</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

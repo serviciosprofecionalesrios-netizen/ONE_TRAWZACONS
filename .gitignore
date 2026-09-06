@@ -1,6 +1,8 @@
 # Build output
 bin/
 obj/
+out_temp/
+tmp_login/
 
 # Visual Studio / VS Code
 .vs/
@@ -16,6 +18,14 @@ obj/
 .env
 appsettings.Local.json
 
+# Runtime and internal business data (kept outside source control)
+Data/Operaciones/*.json
+wwwroot/uploads/
+Entregables/
+
 # Nested tool outputs
 scripts/**/bin/
 scripts/**/obj/
+
+# Generated document QA renders
+Entregables/**/qa_*/

@@ -1,0 +1,2205 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.SeguimientoToneladasViewModel
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Seguimiento de Toneladas";
+    var rowsBase = Model.FechaOperativa.HasValue
+        ? Model.Rows.Where(r => r.FechaEvento.HasValue && r.FechaEvento.Value.Date == Model.FechaOperativa.Value).ToList()
+        : Model.Rows.ToList();
+    var mesReferencia = Model.FechaOperativa
+        ?? Model.Rows
+            .Where(r => r.FechaEvento.HasValue)
+            .Select(r => r.FechaEvento!.Value.Date)
+            .DefaultIfEmpty(DateTime.Now.Date)
+            .Max();
+    var rowsMesAcumuladas = Model.Rows
+        .Where(r =>
+            r.FechaEvento.HasValue &&
+            r.FechaEvento.Value.Year == mesReferencia.Year &&
+            r.FechaEvento.Value.Month == mesReferencia.Month)
+        .ToList();
+    if (!rowsMesAcumuladas.Any())
+    {
+        rowsMesAcumuladas = Model.Rows.ToList();
+    }
+    var hasFechaValida = Model.FechaOperativa.HasValue;
+    var fechaOperativaLabel = Model.FechaOperativa?.ToString("dd/MM/yyyy", CultureInfo.CurrentCulture) ?? "Sin fecha";
+    var metaDiariaTriton = Model.MetaDiariaTritonObjetivo > 0m ? Model.MetaDiariaTritonObjetivo : 0m;
+    var metaDiaria = Model.MetaDiariaObjetivo > 0m ? Model.MetaDiariaObjetivo : metaDiariaTriton;
+    var metaMesLabel = new DateTime(Model.MetaAnio > 0 ? Model.MetaAnio : mesReferencia.Year, Model.MetaMes > 0 ? Model.MetaMes : mesReferencia.Month, 1)
+        .ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+
+    bool IsFinalizado(string? estado) =>
+        !string.IsNullOrWhiteSpace(estado) &&
+        (estado.Contains("FINALIZAD", StringComparison.OrdinalIgnoreCase) ||
+         estado.Contains("DESCARGAD", StringComparison.OrdinalIgnoreCase) ||
+         estado.Contains("COMPLETAD", StringComparison.OrdinalIgnoreCase));
+
+    bool IsEnRuta(string? estado) =>
+        !string.IsNullOrWhiteSpace(estado) &&
+        (estado.Contains("EN RUTA", StringComparison.OrdinalIgnoreCase) ||
+         estado.Contains("ENRUTA", StringComparison.OrdinalIgnoreCase) ||
+         estado.Contains("ENTRADA", StringComparison.OrdinalIgnoreCase) ||
+         estado.Contains("TRANSITO", StringComparison.OrdinalIgnoreCase) ||
+         estado.Contains("PENDIENTE", StringComparison.OrdinalIgnoreCase));
+
+    string ResolveEstadoCategoria(string? estado)
+    {
+        if (IsFinalizado(estado))
+        {
+            return "FINALIZADO";
+        }
+
+        if (IsEnRuta(estado))
+        {
+            return "EN RUTA";
+        }
+
+        return "OTRO";
+    }
+
+    bool IsRegistroIncompleto(ITServiceDeskApp.ViewModels.Operaciones.SeguimientoToneladasRowViewModel row)
+    {
+        return string.IsNullOrWhiteSpace(row.Equipo) ||
+               string.IsNullOrWhiteSpace(row.Conductor) ||
+               string.IsNullOrWhiteSpace(row.Estado) ||
+               string.IsNullOrWhiteSpace(row.Ruta);
+    }
+
+    string NormalizeProcedencia(string? procedencia)
+    {
+        if (string.IsNullOrWhiteSpace(procedencia))
+        {
+            return string.Empty;
+        }
+
+        var tokens = procedencia
+            .Trim()
+            .ToUpperInvariant()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var normalized = string.Join(" ", tokens);
+        return normalized == "PAVON ASM" ? "TRITON" : normalized;
+    }
+
+    string ResolveProcedencia(ITServiceDeskApp.ViewModels.Operaciones.SeguimientoToneladasRowViewModel row)
+    {
+        if (!string.IsNullOrWhiteSpace(row.Procedencia))
+        {
+            return row.Procedencia;
+        }
+
+        var ruta = row.Ruta ?? string.Empty;
+        var separatorIndex = ruta.IndexOf(" - ", StringComparison.Ordinal);
+        return separatorIndex > 0 ? ruta[..separatorIndex] : ruta;
+    }
+
+    var resumenDescargados = Model.EstadoResumen.FirstOrDefault(x => x.Estado == "FINALIZADO");
+    var resumenEnRuta = Model.EstadoResumen.FirstOrDefault(x => x.Estado == "EN RUTA");
+    var toneladasTritonMes = rowsMesAcumuladas
+        .Where(r => NormalizeProcedencia(ResolveProcedencia(r)) == "TRITON")
+        .Sum(r => r.Toneladas);
+    var toneladasTritonHoy = rowsBase
+        .Where(r => IsFinalizado(r.Estado) && NormalizeProcedencia(ResolveProcedencia(r)) == "TRITON")
+        .Sum(r => r.Toneladas);
+    var toneladasFinalizadasHoy = rowsBase
+        .Where(r => IsFinalizado(r.Estado))
+        .Sum(r => r.Toneladas);
+    var toneladasTotalMes = rowsMesAcumuladas
+        .Where(r => IsFinalizado(r.Estado))
+        .Sum(r => r.Toneladas);
+    var metaMensualTriton = Model.MetaMensualTriton;
+    var metaMensualTotal = Model.MetaMensualTotal > 0m ? Model.MetaMensualTotal : metaMensualTriton;
+    var cumplimientoMetaTriton = metaMensualTriton > 0m
+        ? Math.Round((toneladasTritonMes / metaMensualTriton) * 100m, 1)
+        : 0m;
+    var cumplimientoMetaTotal = metaMensualTotal > 0m
+        ? Math.Round((toneladasTotalMes / metaMensualTotal) * 100m, 1)
+        : 0m;
+    (string SemaforoCss, string SemaforoIcon, string BarraMetaCss, string SemaforoTitle, decimal ProgresoMeta, decimal ProgresoMetaVisual) ResolveMetaVisual(decimal toneladasActuales, decimal metaObjetivo)
+    {
+        var faltante = Math.Max(0m, metaObjetivo - toneladasActuales);
+        var faltanteRatioLocal = metaObjetivo > 0m ? faltante / metaObjetivo : 0m;
+        var faltantePctLocal = Math.Round(faltanteRatioLocal * 100m, 1);
+        var progreso = metaObjetivo > 0m
+            ? Math.Round((toneladasActuales / metaObjetivo) * 100m, 1)
+            : 0m;
+        var progresoVisual = Math.Clamp(progreso, 0m, 100m);
+
+        var semaforoCssLocal = "meta-semaforo--danger";
+        var semaforoIconLocal = "bi-x-octagon-fill";
+        var barraCssLocal = "barra-meta__value--danger";
+        var titleLocal = $"Lejos de meta: faltan {faltante.ToString("N1", CultureInfo.CurrentCulture)} Tn ({faltantePctLocal.ToString("N1", CultureInfo.CurrentCulture)}%).";
+
+        if (toneladasActuales >= metaObjetivo && metaObjetivo > 0m)
+        {
+            semaforoCssLocal = "meta-semaforo--ok";
+            semaforoIconLocal = "bi-check2-circle";
+            barraCssLocal = "barra-meta__value--ok";
+            titleLocal = "Meta diaria cumplida o superada.";
+        }
+        else if (faltanteRatioLocal <= 0.20m && metaObjetivo > 0m)
+        {
+            semaforoCssLocal = "meta-semaforo--warn";
+            semaforoIconLocal = "bi-exclamation-triangle-fill";
+            barraCssLocal = "barra-meta__value--warn";
+            titleLocal = $"Advertencia: estas a menos del 20% de la meta. Faltan {faltante.ToString("N1", CultureInfo.CurrentCulture)} Tn.";
+        }
+
+        return (semaforoCssLocal, semaforoIconLocal, barraCssLocal, titleLocal, progreso, progresoVisual);
+    }
+
+    var tritonMetaVisual = ResolveMetaVisual(toneladasTritonHoy, metaDiariaTriton);
+    var totalMetaVisual = ResolveMetaVisual(toneladasFinalizadasHoy, metaDiaria);
+
+    var equiposDescargadosDetalle = rowsBase
+        .Where(r => IsFinalizado(r.Estado))
+        .GroupBy(r => (r.Equipo ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+        .Where(g => !string.IsNullOrWhiteSpace(g.Key))
+        .Select(g => new
+        {
+            Equipo = g.Key,
+            Conductor = g.Select(x => (x.Conductor ?? string.Empty).Trim())
+                .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "Sin conductor",
+            Toneladas = g.Sum(x => x.Toneladas),
+            Combustible = g.Sum(x => x.CombustibleLitros),
+            Procedencia = g.Select(x => NormalizeProcedencia(ResolveProcedencia(x)))
+                .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "OTROS"
+        })
+        .OrderBy(x => x.Equipo)
+        .ToList();
+
+    var equiposEnRutaDetalle = rowsBase
+        .Where(r => IsEnRuta(r.Estado))
+        .GroupBy(r => (r.Equipo ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+        .Where(g => !string.IsNullOrWhiteSpace(g.Key))
+        .Select(g => new
+        {
+            Equipo = g.Key,
+            Conductor = g.Select(x => (x.Conductor ?? string.Empty).Trim())
+                .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "Sin conductor",
+            ToneladasRuta = g.Sum(x => x.PesoSugerido > 0 ? x.PesoSugerido : x.Toneladas),
+            Procedencia = g.Select(x => NormalizeProcedencia(ResolveProcedencia(x)))
+                .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "OTROS"
+        })
+        .OrderBy(x => x.Equipo)
+        .ToList();
+
+    var descargadosPavon = equiposDescargadosDetalle.Where(x => x.Procedencia == "PAVON ASM").ToList();
+    var descargadosTriton = equiposDescargadosDetalle.Where(x => x.Procedencia == "TRITON").ToList();
+    var descargadosOtros = equiposDescargadosDetalle
+        .Where(x => x.Procedencia != "PAVON ASM" && x.Procedencia != "TRITON")
+        .ToList();
+    var rutaPavon = equiposEnRutaDetalle.Where(x => x.Procedencia == "PAVON ASM").ToList();
+    var rutaTriton = equiposEnRutaDetalle.Where(x => x.Procedencia == "TRITON").ToList();
+    var rutaOtros = equiposEnRutaDetalle
+        .Where(x => x.Procedencia != "PAVON ASM" && x.Procedencia != "TRITON")
+        .ToList();
+
+    var analyticsRowsPayload = Model.Rows.Select(r =>
+    {
+        var fecha = r.FechaEvento?.Date;
+        var procedencia = NormalizeProcedencia(ResolveProcedencia(r));
+        var equipo = (r.Equipo ?? string.Empty).Trim();
+        var conductor = (r.Conductor ?? string.Empty).Trim();
+        var ruta = (r.Ruta ?? string.Empty).Trim();
+
+        return new
+        {
+            fecha = fecha?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            procedencia,
+            estado = ResolveEstadoCategoria(r.Estado),
+            equipo,
+            conductor,
+            ruta,
+            toneladas = r.Toneladas,
+            toneladasRuta = r.PesoSugerido > 0m ? r.PesoSugerido : r.Toneladas,
+            viajes = r.Viajes,
+            incompleto = IsRegistroIncompleto(r)
+        };
+    }).ToList();
+
+    var analyticsSeed = new
+    {
+        fechaCorte = mesReferencia.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        fechaOperativa = Model.FechaOperativa?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        metaDiariaTriton,
+        metaDiariaPavonAsm = 0m,
+        metaMensualTriton,
+        metaMensualPavonAsm = 0m,
+        sourceFileName = Model.SourceFileName ?? "Datos operativos",
+        rows = analyticsRowsPayload
+    };
+    var analyticsSeedJson = JsonSerializer.Serialize(analyticsSeed);
+}
+
+<style>
+    .ops-shell {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .ops-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .ops-header__title p {
+        margin-bottom: 0;
+    }
+
+    .ops-header__actions {
+        flex: 0 0 auto;
+    }
+
+    .meta-config {
+        border: 1px solid #d7e3f3;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
+        padding: 0.9rem;
+        margin-bottom: 0.95rem;
+    }
+
+    .meta-config__title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .meta-config__hint {
+        font-size: 0.82rem;
+        color: #64748b;
+    }
+
+    .meta-config .form-check-label {
+        font-size: 0.84rem;
+    }
+
+    .upload-panel {
+        border: 1px dashed #9fb2ca;
+        border-radius: 14px;
+        background: #f8fbff;
+        padding: 0.75rem;
+        margin-bottom: 0;
+    }
+
+    .upload-panel__form {
+        max-width: 1040px;
+    }
+
+    .upload-panel__input-wrap {
+        min-width: 360px;
+        flex: 1 1 620px;
+    }
+
+    .upload-panel__actions {
+        flex: 0 0 auto;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .upload-panel .btn {
+        min-width: 220px;
+    }
+    .upload-zone {
+        margin-top: 1.25rem;
+        border: 1px solid #e3e8f1;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .upload-zone__header {
+        border-bottom: 1px solid #e5ebf5;
+        padding: 0.7rem 0.95rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .upload-zone__title {
+        font-weight: 700;
+        font-size: 0.98rem;
+        color: #1f2937;
+    }
+
+    .upload-zone__subtitle {
+        font-size: 0.82rem;
+        color: #64748b;
+    }
+
+    .upload-zone__body {
+        padding: 0.8rem;
+    }
+
+    .kpi-grid.row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-left: 0;
+        margin-right: 0;
+        align-items: stretch;
+    }
+
+    .kpi-grid > [class*="col-"] {
+        display: block;
+        min-width: 0;
+        padding-left: 0;
+        padding-right: 0;
+        margin-top: 0;
+        width: auto;
+        max-width: none;
+        flex: unset;
+    }
+
+    .kpi-grid .card {
+        width: 100%;
+        height: 100%;
+        min-height: 172px;
+        border: 1px solid #9bbdea !important;
+        box-shadow: none !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%);
+        border-radius: 10px;
+    }
+
+    .kpi-grid .card-body {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        padding: 0.65rem 0.8rem;
+        min-height: 172px;
+    }
+
+    .kpi-grid .card-body > .text-muted {
+        width: 100%;
+        margin-bottom: 0.35rem;
+        color: #5f6f85 !important;
+        font-size: 0.88rem;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .kpi-grid .card-body .display-6 {
+        width: 100%;
+        margin-bottom: 0;
+        font-size: clamp(1.45rem, 1.65vw, 2rem);
+        line-height: 1.08;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .kpi-grid .metric-with-status > div > .text-muted:first-child {
+        font-size: 0.88rem;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+        color: #5f6f85 !important;
+        font-weight: 600;
+    }
+
+    .kpi-grid .metric-with-status {
+        width: 100%;
+        position: relative;
+        padding-right: 2.25rem;
+    }
+
+    .kpi-grid .metric-with-status > div {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+
+    .kpi-grid .barra-meta {
+        max-width: 200px;
+        margin: 0.4rem auto 0;
+    }
+
+    .kpi-grid .barra-meta__legend {
+        justify-content: center;
+        gap: 1rem;
+        font-size: 0.82rem;
+    }
+
+    .kpi-grid #kpiTritonComparativo,
+    .kpi-grid #kpiTotalComparativo {
+        margin-top: 0.22rem !important;
+        font-size: 0.76rem !important;
+        line-height: 1.15;
+        min-height: 0;
+        display: block;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .kpi-grid .card-body .small.text-muted {
+        font-size: 0.78rem;
+        line-height: 1.18;
+    }
+
+    .kpi-grid .kpi-meta-line {
+        margin-top: 0.2rem;
+    }
+
+    .kpi-grid .kpi-meta-line span {
+        display: inline;
+        white-space: normal;
+    }
+
+    .kpi-grid .kpi-meta-line .kpi-meta-sep {
+        margin-inline: 0.12rem;
+        color: #94a3b8;
+    }
+
+    .estado-grid-table td {
+        vertical-align: top;
+    }
+
+    .estado-grid-responsive {
+        overflow-x: auto;
+        overflow-y: visible;
+        position: relative;
+    }
+
+    .estado-grid-table th:first-child,
+    .estado-grid-table td:first-child {
+        border-right: 5px solid #2563eb;
+    }
+
+    .equipos-chip-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .equipo-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.22rem 0.55rem;
+        margin: 0;
+        border-radius: 999px;
+        border: 1px solid #d5deea;
+        background: #f8fafc;
+        font-weight: 600;
+        font-size: 0.86rem;
+        color: #1f2937;
+        cursor: pointer;
+        transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .equipo-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+    }
+
+    .equipo-chip:focus-visible {
+        outline: 2px solid #1d4ed8;
+        outline-offset: 1px;
+    }
+
+    .equipo-chip.dropdown-toggle::after {
+        display: none;
+    }
+
+    .equipo-chip-dropdown .dropdown-menu {
+        border-radius: 10px;
+        padding: 0.28rem 0;
+        min-width: 190px;
+        border: 1px solid #dce4f0;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+        z-index: 1100;
+    }
+
+    .equipo-chip-dropdown .dropdown-item {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #1f2937;
+        padding: 0.38rem 0.72rem;
+    }
+
+    .equipo-chip-dropdown .dropdown-item:active {
+        background: #e2e8f0;
+        color: #111827;
+    }
+
+    .equipo-chip--descargado {
+        border: 2px solid #2563eb;
+        background: #edf4ff;
+        color: #1e3a8a;
+    }
+
+    .equipo-chip--descargado i {
+        color: #1d4ed8;
+        font-size: 0.95rem;
+    }
+
+    .equipo-chip--ruta {
+        border: 2px solid #c8a24a;
+        background: #fff9ec;
+        color: #7a5a12;
+    }
+
+    .equipo-chip--ruta i {
+        color: #b88917;
+        font-size: 0.95rem;
+    }
+
+    .metric-with-status {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .meta-semaforo {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        transform-style: preserve-3d;
+        transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .meta-semaforo i {
+        font-size: 0.8rem;
+        color: #fff;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+    }
+
+    .meta-semaforo:hover {
+        transform: translateY(-1px) scale(1.03);
+        filter: saturate(1.1);
+    }
+
+    .meta-semaforo--ok {
+        background: linear-gradient(145deg, #48d27a 0%, #15803d 100%);
+        box-shadow: 0 8px 16px rgba(22, 163, 74, 0.35), inset 0 2px 5px rgba(255, 255, 255, 0.35);
+    }
+
+    .meta-semaforo--warn {
+        background: linear-gradient(145deg, #ffd866 0%, #d97706 100%);
+        box-shadow: 0 8px 16px rgba(245, 158, 11, 0.35), inset 0 2px 5px rgba(255, 255, 255, 0.35);
+    }
+
+    .meta-semaforo--danger {
+        background: linear-gradient(145deg, #ff6b6b 0%, #b91c1c 100%);
+        box-shadow: 0 8px 16px rgba(220, 38, 38, 0.35), inset 0 2px 5px rgba(255, 255, 255, 0.35);
+    }
+
+    .barra-meta {
+        margin-top: 0.5rem;
+    }
+
+    .barra-meta__track {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.18);
+    }
+
+    .barra-meta__value {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.35s ease;
+    }
+
+    .barra-meta__value--ok {
+        background: linear-gradient(90deg, #22c55e 0%, #15803d 100%);
+    }
+
+    .barra-meta__value--warn {
+        background: linear-gradient(90deg, #fbbf24 0%, #d97706 100%);
+    }
+
+    .barra-meta__value--danger {
+        background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%);
+    }
+
+    .barra-meta__legend {
+        margin-top: 0.35rem;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .procedencia-block {
+        margin-bottom: 0.65rem;
+    }
+
+    .procedencia-block:last-child {
+        margin-bottom: 0;
+    }
+
+    .procedencia-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: #667085;
+        text-transform: uppercase;
+        margin-bottom: 0.3rem;
+    }
+
+    .varado-grid {
+        margin-top: 0.65rem;
+    }
+
+    .varado-panel {
+        height: 100%;
+        border: 1px solid #d9e3ef;
+        border-radius: 14px;
+        padding: 0.7rem;
+        background: #f8fafc;
+    }
+
+    .varado-panel__title {
+        font-size: 1rem;
+        font-weight: 800;
+        margin-bottom: 0.45rem;
+    }
+
+    .varado-panel--carretera .varado-panel__title {
+        color: #9a3412;
+    }
+
+    .varado-panel--taller .varado-panel__title {
+        color: #1e3a8a;
+    }
+
+    .varado-panel--carretera {
+        border-top: 4px solid #f97316;
+        background: linear-gradient(180deg, #fff7ed 0%, #fffaf5 100%);
+    }
+
+    .varado-panel--taller {
+        border-top: 4px solid #2563eb;
+        background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+    }
+
+    .varado-subgrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.55rem;
+    }
+
+    .varado-subpanel {
+        border: 1px solid #d7e4f5;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 0.5rem;
+        min-height: 92px;
+    }
+
+    .varado-subpanel__title {
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #1e40af;
+        margin-bottom: 0.35rem;
+    }
+
+    .varado-subpanel__empty {
+        margin-top: 0.35rem !important;
+        font-size: 0.76rem;
+    }
+
+    .ops-enhanced {
+        border: 1px solid #d9e3ef;
+        border-radius: 16px;
+        padding: 0.95rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #f3f8ff 100%);
+    }
+
+    .ops-enhanced__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .ops-enhanced__left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        min-width: 320px;
+        flex: 1 1 520px;
+    }
+
+    .ops-enhanced__title {
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 0.2rem;
+    }
+
+    .ops-enhanced__subtitle {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.84rem;
+    }
+
+    .quick-filter-group {
+        display: inline-flex;
+        background: #ffffff;
+        border: 1px solid #d5e1ee;
+        border-radius: 999px;
+        padding: 0.2rem;
+        gap: 0.2rem;
+    }
+
+    .quick-filter-btn {
+        border: 0;
+        background: transparent;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 0.38rem 0.7rem;
+        border-radius: 999px;
+        transition: all 0.2s ease;
+    }
+
+    .quick-filter-btn.is-active {
+        background: linear-gradient(90deg, #0f4aa3 0%, #2563eb 100%);
+        color: #fff;
+        box-shadow: 0 8px 14px rgba(37, 99, 235, 0.24);
+    }
+
+    .ops-enhanced__filters {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.45rem;
+    }
+
+    .quick-filter-custom {
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-start;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .quick-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.18rem;
+    }
+
+    .quick-filter-field label {
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.1;
+    }
+
+    .quick-filter-input {
+        width: 168px;
+        height: 34px;
+        padding-top: 0.2rem;
+        padding-bottom: 0.2rem;
+        font-size: 0.8rem;
+    }
+
+    .quick-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .quick-filter-actions .btn {
+        height: 34px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.26rem 0.62rem;
+    }
+
+    .exec-kpi-grid .card {
+        border: 1px solid #d6e2f0;
+        border-radius: 14px;
+        box-shadow: none;
+    }
+
+    .exec-kpi-grid .card-body {
+        padding: 0.85rem 0.9rem;
+    }
+
+    .exec-kpi-label {
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #64748b;
+        margin-bottom: 0.2rem;
+    }
+
+    .exec-kpi-value {
+        font-size: clamp(1.55rem, 2.2vw, 2rem);
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.08;
+    }
+
+    .exec-kpi-help {
+        font-size: 0.79rem;
+        color: #64748b;
+        margin-top: 0.24rem;
+    }
+
+    .exec-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.76rem;
+        font-weight: 800;
+    }
+
+    .exec-status--ok {
+        color: #166534;
+        background: #dcfce7;
+        border: 1px solid #86efac;
+    }
+
+    .exec-status--warn {
+        color: #9a3412;
+        background: #ffedd5;
+        border: 1px solid #fdba74;
+    }
+
+    .exec-status--danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+    }
+
+    .ops-panel {
+        border: 1px solid #d6e2f0;
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 0.85rem;
+        height: 100%;
+    }
+
+    .ops-panel__title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 0.55rem;
+    }
+
+    .trend-legend {
+        display: flex;
+        gap: 0.8rem;
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+
+    .trend-legend i {
+        margin-right: 0.25rem;
+    }
+
+    .trend-list {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .trend-row {
+        display: grid;
+        grid-template-columns: 52px 1fr 74px;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .trend-row__date {
+        font-size: 0.77rem;
+        font-weight: 700;
+        color: #475569;
+    }
+
+    .trend-row__bars {
+        display: grid;
+        gap: 0.16rem;
+    }
+
+    .trend-track-mini {
+        width: 100%;
+        height: 7px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .trend-value {
+        font-size: 0.76rem;
+        text-align: right;
+        color: #334155;
+        font-weight: 700;
+    }
+
+    .trend-bar-triton {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%);
+    }
+
+    .trend-bar-pavon {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #0ea5e9 0%, #0369a1 100%);
+    }
+
+    .progress-group {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .progress-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.55rem;
+        background: #f8fbff;
+    }
+
+    .progress-item__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.45rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .progress-item__name {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .progress-item__meta {
+        font-size: 0.74rem;
+        color: #64748b;
+    }
+
+    .progress-item__help {
+        margin-top: 0.24rem;
+        font-size: 0.74rem;
+        color: #64748b;
+    }
+
+    .progress-track {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%);
+    }
+
+    .progress-bar--warn {
+        background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    }
+
+    .progress-bar--danger {
+        background: linear-gradient(90deg, #1e40af 0%, #1d4ed8 100%);
+    }
+
+    .mini-table th,
+    .mini-table td {
+        font-size: 0.8rem;
+        vertical-align: middle;
+    }
+
+    .mini-table thead th {
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.7rem;
+        color: #64748b;
+    }
+
+    .alerts-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .alerts-list li {
+        border: 1px solid #d6e2f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        padding: 0.5rem 0.55rem;
+    }
+
+    .alert-tag {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        font-size: 0.67rem;
+        font-weight: 800;
+        padding: 0.15rem 0.45rem;
+        margin-right: 0.35rem;
+    }
+
+    .alert-tag--high {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .alert-tag--medium {
+        background: #ffedd5;
+        color: #9a3412;
+    }
+
+    .alert-tag--low {
+        background: #dbeafe;
+        color: #1e3a8a;
+    }
+
+    .quality-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+    }
+
+    .quality-metric {
+        border: 1px solid #dce6f3;
+        border-radius: 10px;
+        background: #f8fbff;
+        padding: 0.45rem;
+    }
+
+    .quality-metric__label {
+        font-size: 0.71rem;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+
+    .quality-metric__value {
+        font-size: 1.05rem;
+        line-height: 1.15;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 0.15rem;
+    }
+
+    .ops-note {
+        margin-top: 0.55rem;
+        font-size: 0.76rem;
+        color: #64748b;
+    }
+
+    @@media (max-width: 1399.98px) {
+        .kpi-grid.row {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 1199.98px) {
+        .kpi-grid.row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .trend-row {
+            grid-template-columns: 46px 1fr 65px;
+        }
+
+        .kpi-grid.row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ops-enhanced__filters {
+            width: 100%;
+            align-items: flex-start;
+        }
+
+        .ops-enhanced__left {
+            width: 100%;
+            min-width: 0;
+            flex-basis: auto;
+        }
+
+        .quick-filter-custom {
+            justify-content: flex-start;
+        }
+
+        .quick-filter-input {
+            width: 150px;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .ops-enhanced {
+            padding: 0.75rem;
+        }
+
+        .quality-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-grid.row {
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-grid .card,
+        .kpi-grid .card-body {
+            min-height: 158px;
+        }
+
+        .quick-filter-field {
+            width: 100%;
+        }
+
+        .quick-filter-input {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="ops-shell">
+    <div class="ops-header">
+        <div class="ops-header__title">
+            <h2 class="fw-bold mb-2">Seguimiento de toneladas</h2>
+            <p class="text-muted mb-0">Control diario de volumen movilizado en operaciones.</p>
+        </div>
+        <div class="ops-header__actions">
+            <a asp-controller="Operaciones"
+               asp-action="ExportSeguimientoToneladasPdf"
+               id="descargar-seguimiento-pdf"
+               class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-pdf me-1"></i>
+                Descargar PDF
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SeguimientoToneladasMetaOk"] is string metaOk && !string.IsNullOrWhiteSpace(metaOk))
+    {
+        <div class="alert alert-success mb-3" role="alert">@metaOk</div>
+    }
+    @if (TempData["SeguimientoToneladasMetaError"] is string metaError && !string.IsNullOrWhiteSpace(metaError))
+    {
+        <div class="alert alert-danger mb-3" role="alert">@metaError</div>
+    }
+
+    <div class="meta-config">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+            <div>
+                <div class="meta-config__title">Meta mensual de producción</div>
+                <div class="meta-config__hint">
+                    Periodo: <strong>@metaMesLabel</strong> |
+                    Estado: <strong>@(Model.MetaMensualPersonalizada ? "Personalizada" : "Base")</strong>
+                </div>
+            </div>
+            <div class="small text-muted">
+                Meta diaria definida por usuario:
+                <strong>Total @metaDiaria.ToString("N1", CultureInfo.CurrentCulture) Tn</strong>
+                (TRITON @metaDiariaTriton.ToString("N1", CultureInfo.CurrentCulture))
+            </div>
+        </div>
+
+        <form asp-controller="Operaciones"
+              asp-action="ActualizarMetaProduccionMensual"
+              method="post"
+              class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="metaAnio" value="@Model.MetaAnio" />
+            <input type="hidden" name="metaMes" value="@Model.MetaMes" />
+            <input type="hidden" name="metaMensualPavonAsm" value="0" />
+            <input type="hidden" name="metaDiariaPavonAsmObjetivo" value="0" />
+
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label fw-semibold mb-1">Meta TRITON (mes)</label>
+                <input type="number"
+                       name="metaMensualTriton"
+                       class="form-control"
+                       min="0"
+                       step="0.1"
+                       value="@Model.MetaMensualTriton.ToString("0.0", CultureInfo.InvariantCulture)"
+                       required />
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-semibold mb-1">Meta diaria TRITON</label>
+                <input type="number"
+                       name="metaDiariaTritonObjetivo"
+                       class="form-control"
+                       min="0.1"
+                       step="0.1"
+                       value="@Model.MetaDiariaTritonObjetivo.ToString("0.0", CultureInfo.InvariantCulture)"
+                       required />
+            </div>
+            <div class="col-lg-2 col-md-8">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" value="true" id="confirmarCambioMeta" name="confirmarCambioMeta" required>
+                    <label class="form-check-label" for="confirmarCambioMeta">
+                        Confirmo actualizar la meta operativa.
+                    </label>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-save2 me-1"></i>Guardar meta
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="ops-enhanced mb-4"
+         id="ops-enhanced-report">
+        <div class="ops-enhanced__header">
+            <div class="ops-enhanced__left">
+                <div class="quick-filter-custom">
+                    <div class="quick-filter-field">
+                        <label for="customRangeFrom">Desde</label>
+                        <input type="date" id="customRangeFrom" class="form-control form-control-sm quick-filter-input" />
+                    </div>
+                    <div class="quick-filter-field">
+                        <label for="customRangeTo">Hasta</label>
+                        <input type="date" id="customRangeTo" class="form-control form-control-sm quick-filter-input" />
+                    </div>
+                    <div class="quick-filter-actions">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="applyCustomRange">Aplicar rango</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="resetCustomRange">Limpiar</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="ops-enhanced__title">Resumen ejecutivo operativo</div>
+                    <p class="ops-enhanced__subtitle">
+                        Periodo activo: <strong id="execRangeLabel">Hoy</strong> |
+                        Fecha de corte: <strong id="execFechaCorte">@fechaOperativaLabel</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="ops-enhanced__filters">
+                <div class="quick-filter-group" role="group" aria-label="Filtros rapidos de periodo">
+                    <button type="button" class="quick-filter-btn is-active" data-range="hoy">Hoy</button>
+                    <button type="button" class="quick-filter-btn" data-range="ayer">Ayer</button>
+                    <button type="button" class="quick-filter-btn" data-range="semana">Semana</button>
+                    <button type="button" class="quick-filter-btn" data-range="mes">Mes</button>
+                    <button type="button" class="quick-filter-btn" data-range="equinox">Corte Equinox</button>
+                    <button type="button" class="quick-filter-btn" data-range="custom">Rango</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 exec-kpi-grid mb-3">
+            <div class="col-lg col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="exec-kpi-label">Toneladas periodo</div>
+                        <div class="exec-kpi-value" id="execToneladasPeriodo">0.0</div>
+                        <div class="exec-kpi-help" id="execToneladasDetalle">TRITON 0.0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="exec-kpi-label">Cumplimiento</div>
+                        <div class="exec-kpi-value" id="execCumplimiento">0.0%</div>
+                        <div class="exec-kpi-help" id="execMetaDetalle">Meta periodo 0.0 Tn</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="exec-kpi-label">Brecha</div>
+                        <div class="exec-kpi-value" id="execBrecha">0.0 Tn</div>
+                        <div class="exec-kpi-help" id="execBrechaDetalle">Meta cubierta</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="exec-kpi-label">Estado general</div>
+                        <div class="exec-kpi-value">
+                            <span class="exec-status exec-status--ok" id="execEstadoGeneral">Cumplida</span>
+                        </div>
+                        <div class="exec-kpi-help">Semaforo operativo consolidado</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="exec-kpi-label">Registros del periodo</div>
+                        <div class="exec-kpi-value" id="execRegistrosPeriodo">0</div>
+                        <div class="exec-kpi-help" id="execEstadosDetalle">Finalizados 0 | En ruta 0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-xl-4">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Comparativo vs ayer</div>
+                    <div class="small text-muted" id="cmpTotalVsAyer">Total: 0.0 Tn (0.0%)</div>
+                    <div class="small text-muted mt-1" id="cmpTritonVsAyer">TRITON: 0.0 Tn</div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Comparativo vs promedio 7 dias</div>
+                    <div class="small text-muted" id="cmpTotalVsProm7">Total: 0.0 Tn (0.0%)</div>
+                    <div class="small text-muted mt-1" id="cmpTritonVsProm7">TRITON: 0.0 Tn</div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Filtro activo</div>
+                    <div class="small text-muted" id="execRangoDetalle">Del --/-- al --/--</div>
+                    <div class="small text-muted mt-1">Las alertas, top/bottom y KPIs ejecutivos responden al filtro rapido.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-xl-7">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Tendencia de 7 dias (toneladas finalizadas)</div>
+                    <div class="trend-legend">
+                        <span><i class="bi bi-dash-lg text-primary"></i>TRITON</span>
+                    </div>
+                    <div class="trend-list" id="trend7Rows"></div>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Proyeccion de cierre mensual</div>
+                    <div class="progress-group" id="monthlyProgressWrap"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-xl-6">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Top 5 equipos</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Equipo</th>
+                                    <th class="text-end">Toneladas</th>
+                                    <th class="text-end">Viajes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topEquiposBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Bottom 5 equipos</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Equipo</th>
+                                    <th class="text-end">Toneladas</th>
+                                    <th class="text-end">Viajes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bottomEquiposBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-7">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Alertas operativas accionables</div>
+                    <ul class="alerts-list" id="actionableAlertsList"></ul>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                <div class="ops-panel">
+                    <div class="ops-panel__title">Calidad y trazabilidad de datos</div>
+                    <div class="quality-grid">
+                        <div class="quality-metric">
+                            <div class="quality-metric__label">Ultima fecha en datos</div>
+                            <div class="quality-metric__value" id="qualityFecha">--</div>
+                        </div>
+                        <div class="quality-metric">
+                            <div class="quality-metric__label">Registros cargados</div>
+                            <div class="quality-metric__value" id="qualityTotalRegistros">0</div>
+                        </div>
+                        <div class="quality-metric">
+                            <div class="quality-metric__label">Registros incompletos</div>
+                            <div class="quality-metric__value" id="qualityIncompletos">0</div>
+                        </div>
+                        <div class="quality-metric">
+                            <div class="quality-metric__label">Completitud</div>
+                            <div class="quality-metric__value" id="qualityCompletitud">0.0%</div>
+                        </div>
+                    </div>
+                    <div class="ops-note" id="qualityFuente"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="application/json" id="ops-analytics-seed">@Html.Raw(analyticsSeedJson)</script>
+
+    <div class="row g-3 mb-4 kpi-grid">
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="metric-with-status">
+                        <div>
+                            <div class="text-muted">Toneladas al dia TRITON</div>
+                            <div class="display-6 fw-bold">@toneladasTritonHoy.ToString("N1", CultureInfo.CurrentCulture)</div>
+                            <div class="barra-meta">
+                                <div class="barra-meta__track" title="@($"{tritonMetaVisual.ProgresoMeta.ToString("N1", CultureInfo.CurrentCulture)}% de la meta")">
+                                    <div class="barra-meta__value @tritonMetaVisual.BarraMetaCss" style="width:@tritonMetaVisual.ProgresoMetaVisual.ToString(CultureInfo.InvariantCulture)%"></div>
+                                </div>
+                                <div class="barra-meta__legend">
+                                    <span>@tritonMetaVisual.ProgresoMeta.ToString("N1", CultureInfo.CurrentCulture)%</span>
+                                    <span>Meta @metaDiariaTriton.ToString("N0", CultureInfo.CurrentCulture)</span>
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-2" id="kpiTritonComparativo">
+                                Hoy vs ayer: 0.0 Tn | vs promedio 7 dias: 0.0 Tn
+                            </div>
+                        </div>
+                        <span class="meta-semaforo @tritonMetaVisual.SemaforoCss" title="@tritonMetaVisual.SemaforoTitle" aria-label="@tritonMetaVisual.SemaforoTitle">
+                            <i class="bi @tritonMetaVisual.SemaforoIcon"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="metric-with-status">
+                        <div>
+                            <div class="text-muted">Toneladas al dia (total finalizado)</div>
+                            <div class="display-6 fw-bold">@toneladasFinalizadasHoy.ToString("N1", CultureInfo.CurrentCulture)</div>
+                            <div class="barra-meta">
+                                <div class="barra-meta__track" title="@($"{totalMetaVisual.ProgresoMeta.ToString("N1", CultureInfo.CurrentCulture)}% de la meta")">
+                                    <div class="barra-meta__value @totalMetaVisual.BarraMetaCss" style="width:@totalMetaVisual.ProgresoMetaVisual.ToString(CultureInfo.InvariantCulture)%"></div>
+                                </div>
+                                <div class="barra-meta__legend">
+                                    <span>@totalMetaVisual.ProgresoMeta.ToString("N1", CultureInfo.CurrentCulture)%</span>
+                                    <span>Meta @metaDiaria.ToString("N0", CultureInfo.CurrentCulture)</span>
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-2" id="kpiTotalComparativo">
+                                Hoy vs ayer: 0.0 Tn | vs promedio 7 dias: 0.0 Tn
+                            </div>
+                        </div>
+                        <span class="meta-semaforo @totalMetaVisual.SemaforoCss" title="@totalMetaVisual.SemaforoTitle" aria-label="@totalMetaVisual.SemaforoTitle">
+                            <i class="bi @totalMetaVisual.SemaforoIcon"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Equipos descargados</div>
+                    <div class="display-6 fw-bold">@Model.EquiposDescargados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Equipos en ruta</div>
+                    <div class="display-6 fw-bold">@Model.EquiposEnRuta</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Toneladas en ruta</div>
+                    <div class="display-6 fw-bold">@Model.ToneladasEnRuta.ToString("N1", CultureInfo.CurrentCulture)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Toneladas TRITON (mes)</div>
+                    <div class="display-6 fw-bold">@toneladasTritonMes.ToString("N1", CultureInfo.CurrentCulture)</div>
+                    <div class="small text-muted kpi-meta-line">
+                        <span>Meta @metaMensualTriton.ToString("N1", CultureInfo.CurrentCulture)</span>
+                        <span class="kpi-meta-sep">|</span>
+                        <span>Diaria @metaDiariaTriton.ToString("N1", CultureInfo.CurrentCulture)</span>
+                        <span class="kpi-meta-sep">|</span>
+                        <span>Cumplimiento @cumplimientoMetaTriton.ToString("N1", CultureInfo.CurrentCulture)%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Toneladas totales finalizadas (mes)</div>
+                    <div class="display-6 fw-bold">@toneladasTotalMes.ToString("N1", CultureInfo.CurrentCulture)</div>
+                    <div class="small text-muted kpi-meta-line">
+                        <span>Meta @metaMensualTotal.ToString("N1", CultureInfo.CurrentCulture)</span>
+                        <span class="kpi-meta-sep">|</span>
+                        <span>Diaria @metaDiaria.ToString("N1", CultureInfo.CurrentCulture)</span>
+                        <span class="kpi-meta-sep">|</span>
+                        <span>Cumplimiento @cumplimientoMetaTotal.ToString("N1", CultureInfo.CurrentCulture)%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Toneladas promedio por viaje</div>
+                    <div class="display-6 fw-bold">@Model.PromedioPorViaje.ToString("N1", CultureInfo.CurrentCulture)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg col-md-6">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Toneladas acumuladas del mes</div>
+                    <div class="display-6 fw-bold">@Model.ToneladasAcumuladasMes.ToString("N1", CultureInfo.CurrentCulture)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@if (resumenDescargados is not null || resumenEnRuta is not null)
+{
+        <div class="table-responsive estado-grid-responsive">
+            <table class="table table-hover align-middle estado-grid-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Equipos descargados (<span id="equipos-descargados-count">@(resumenDescargados?.Equipos ?? 0)</span>)</th>
+                        <th>Equipos en ruta (<span id="equipos-ruta-count">@(resumenEnRuta?.Equipos ?? 0)</span>)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="equipos-descargados-cell">
+                            @if (equiposDescargadosDetalle.Any())
+                            {
+                                @if (descargadosPavon.Any())
+                                {
+                                    <div class="procedencia-block">
+                                        <div class="procedencia-title">PAVON ASM (@descargadosPavon.Count)</div>
+                                        <div class="equipos-chip-wrap">
+                                            @foreach (var equipo in descargadosPavon)
+                                            {
+                                                <div class="dropdown equipo-chip-dropdown">
+                                                    <button class="equipo-chip equipo-chip--descargado dropdown-toggle"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-auto-close="true"
+                                                            aria-expanded="false"
+                                                            title="@($"Conductor: {equipo.Conductor} | Toneladas: {equipo.Toneladas.ToString("N1", CultureInfo.CurrentCulture)} | Combustible: {equipo.Combustible.ToString("N1", CultureInfo.CurrentCulture)} L")">
+                                                        <i class="bi bi-truck-front-fill"></i>
+                                                        @equipo.Equipo
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-poz">En Taller - POZ</button></li>
+                                                        <li><button class="dropdown-item js-activar-equipo d-none" type="button">Activo</button></li>
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                @if (descargadosTriton.Any())
+                                {
+                                    <div class="procedencia-block">
+                                        <div class="procedencia-title">TRITON (@descargadosTriton.Count)</div>
+                                        <div class="equipos-chip-wrap">
+                                            @foreach (var equipo in descargadosTriton)
+                                            {
+                                                <div class="dropdown equipo-chip-dropdown">
+                                                    <button class="equipo-chip equipo-chip--descargado dropdown-toggle"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-auto-close="true"
+                                                            aria-expanded="false"
+                                                            title="@($"Conductor: {equipo.Conductor} | Toneladas: {equipo.Toneladas.ToString("N1", CultureInfo.CurrentCulture)} | Combustible: {equipo.Combustible.ToString("N1", CultureInfo.CurrentCulture)} L")">
+                                                        <i class="bi bi-truck-front-fill"></i>
+                                                        @equipo.Equipo
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-poz">En Taller - POZ</button></li>
+                                                        <li><button class="dropdown-item js-activar-equipo d-none" type="button">Activo</button></li>
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                @if (descargadosOtros.Any())
+                                {
+                                    <div class="procedencia-block">
+                                        <div class="procedencia-title">OTROS (@descargadosOtros.Count)</div>
+                                        <div class="equipos-chip-wrap">
+                                            @foreach (var equipo in descargadosOtros)
+                                            {
+                                                <div class="dropdown equipo-chip-dropdown">
+                                                    <button class="equipo-chip equipo-chip--descargado dropdown-toggle"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-auto-close="true"
+                                                            aria-expanded="false"
+                                                            title="@($"Conductor: {equipo.Conductor} | Toneladas: {equipo.Toneladas.ToString("N1", CultureInfo.CurrentCulture)} | Combustible: {equipo.Combustible.ToString("N1", CultureInfo.CurrentCulture)} L")">
+                                                        <i class="bi bi-truck-front-fill"></i>
+                                                        @equipo.Equipo
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-poz">En Taller - POZ</button></li>
+                                                        <li><button class="dropdown-item js-activar-equipo d-none" type="button">Activo</button></li>
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin equipos descargados.</span>
+                            }
+                        </td>
+                        <td id="equipos-ruta-cell">
+                            @if (equiposEnRutaDetalle.Any())
+                            {
+                                @if (rutaPavon.Any())
+                                {
+                                    <div class="procedencia-block">
+                                        <div class="procedencia-title">PAVON ASM (@rutaPavon.Count)</div>
+                                        <div class="equipos-chip-wrap">
+                                            @foreach (var equipo in rutaPavon)
+                                            {
+                                                <div class="dropdown equipo-chip-dropdown">
+                                                    <button class="equipo-chip equipo-chip--ruta dropdown-toggle"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-auto-close="true"
+                                                            aria-expanded="false"
+                                                            title="@($"Conductor: {equipo.Conductor} | P. Sugerido: {equipo.ToneladasRuta.ToString("N1", CultureInfo.CurrentCulture)} Tn")">
+                                                        <i class="bi bi-truck-front-fill"></i>
+                                                        @equipo.Equipo
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-poz">En Taller - POZ</button></li>
+                                                        <li><button class="dropdown-item js-activar-equipo d-none" type="button">Activo</button></li>
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                @if (rutaTriton.Any())
+                                {
+                                    <div class="procedencia-block">
+                                        <div class="procedencia-title">TRITON (@rutaTriton.Count)</div>
+                                        <div class="equipos-chip-wrap">
+                                            @foreach (var equipo in rutaTriton)
+                                            {
+                                                <div class="dropdown equipo-chip-dropdown">
+                                                    <button class="equipo-chip equipo-chip--ruta dropdown-toggle"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-auto-close="true"
+                                                            aria-expanded="false"
+                                                            title="@($"Conductor: {equipo.Conductor} | P. Sugerido: {equipo.ToneladasRuta.ToString("N1", CultureInfo.CurrentCulture)} Tn")">
+                                                        <i class="bi bi-truck-front-fill"></i>
+                                                        @equipo.Equipo
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-poz">En Taller - POZ</button></li>
+                                                        <li><button class="dropdown-item js-activar-equipo d-none" type="button">Activo</button></li>
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                @if (rutaOtros.Any())
+                                {
+                                    <div class="procedencia-block">
+                                        <div class="procedencia-title">OTROS (@rutaOtros.Count)</div>
+                                        <div class="equipos-chip-wrap">
+                                            @foreach (var equipo in rutaOtros)
+                                            {
+                                                <div class="dropdown equipo-chip-dropdown">
+                                                    <button class="equipo-chip equipo-chip--ruta dropdown-toggle"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-auto-close="true"
+                                                            aria-expanded="false"
+                                                            title="@($"Conductor: {equipo.Conductor} | P. Sugerido: {equipo.ToneladasRuta.ToString("N1", CultureInfo.CurrentCulture)} Tn")">
+                                                        <i class="bi bi-truck-front-fill"></i>
+                                                        @equipo.Equipo
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-poz">En Taller - POZ</button></li>
+                                                        <li><button class="dropdown-item js-activar-equipo d-none" type="button">Activo</button></li>
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin equipos en ruta.</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row g-3 varado-grid">
+            <div class="col-lg-6">
+                <div class="varado-panel varado-panel--carretera">
+                    <div class="varado-panel__title">
+                        Varado en Carretera (<span id="varado-carretera-count">0</span>)
+                    </div>
+                    <div class="equipos-chip-wrap" id="varado-carretera-wrap"></div>
+                    <div class="text-muted small mt-2" id="varado-carretera-empty">
+                        Sin equipos en esta categoria.
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="varado-panel varado-panel--taller">
+                    <div class="varado-panel__title">
+                        En Taller (<span id="varado-taller-count">0</span>)
+                    </div>
+                    <div class="varado-subgrid">
+                        <div class="varado-subpanel">
+                            <div class="varado-subpanel__title">
+                                PCT (<span id="varado-taller-pct-count">0</span>)
+                            </div>
+                            <div class="equipos-chip-wrap varado-taller-wrap" id="varado-taller-pct-wrap"></div>
+                            <div class="text-muted small mt-2 varado-subpanel__empty" id="varado-taller-pct-empty">
+                                Sin equipos en PCT.
+                            </div>
+                        </div>
+                        <div class="varado-subpanel">
+                            <div class="varado-subpanel__title">
+                                PSB (<span id="varado-taller-psb-count">0</span>)
+                            </div>
+                            <div class="equipos-chip-wrap varado-taller-wrap" id="varado-taller-psb-wrap"></div>
+                            <div class="text-muted small mt-2 varado-subpanel__empty" id="varado-taller-psb-empty">
+                                Sin equipos en PSB.
+                            </div>
+                        </div>
+                        <div class="varado-subpanel">
+                            <div class="varado-subpanel__title">
+                                POZ (<span id="varado-taller-poz-count">0</span>)
+                            </div>
+                            <div class="equipos-chip-wrap varado-taller-wrap" id="varado-taller-poz-wrap"></div>
+                            <div class="text-muted small mt-2 varado-subpanel__empty" id="varado-taller-poz-empty">
+                                Sin equipos en POZ.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+}
+else
+{
+    @if (hasFechaValida)
+    {
+        <div class="alert alert-info mb-0" role="alert">
+            No hay registros FINALIZADO o EN RUTA para la fecha operativa @fechaOperativaLabel.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info mb-0" role="alert">
+            No hay resumen para estados FINALIZADO o EN RUTA. Verifica la columna Estado en el Excel.
+        </div>
+    }
+}
+
+    <div class="upload-zone">
+        <div class="upload-zone__header">
+            <div>
+                <div class="upload-zone__title">Centro de actualizacion de datos</div>
+                <div class="upload-zone__subtitle">Carga un nuevo Excel para refrescar tarjetas, detalle y dashboard.</div>
+            </div>
+        </div>
+
+        <div class="upload-zone__body">
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger mb-2" role="alert">
+                    @Model.ErrorMessage
+                </div>
+            }
+
+            @if (Model.IsFromUpload)
+            {
+                <div class="alert alert-success mb-2" role="alert">
+                    Datos cargados desde: <strong>@Model.SourceFileName</strong>
+                    @if (Model.FechaOperativa.HasValue)
+                    {
+                        <span class="d-block mt-1">
+                            Fecha operativa detectada: <strong>@fechaOperativaLabel</strong>
+                        </span>
+                    }
+                </div>
+            }
+
+            <div class="upload-panel">
+                <form asp-controller="Operaciones"
+                      asp-action="SeguimientoToneladas"
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="upload-panel__form d-flex flex-wrap align-items-end gap-2">
+                    @Html.AntiForgeryToken()
+
+                    <div class="upload-panel__input-wrap">
+                        <label class="form-label fw-semibold mb-1">Archivo Excel (.xlsx)</label>
+                        <input type="file" name="excelFile" class="form-control" accept=".xlsx" required />
+                        <small class="text-muted">
+                            Formato detectado para tu archivo: <strong>C. Equipo</strong>, <strong>P. Neto</strong> y opcionales:
+                            Procedencia, Ubicacion, Estado, <strong>P. Sugerido</strong>, P. Bruto, P. Tara.
+                        </small>
+                    </div>
+
+                    <div class="upload-panel__actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-1"></i>
+                            Cargar Excel de toneladas
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/operaciones-seguimiento-toneladas-enhanced.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var carreteraWrap = document.getElementById("varado-carretera-wrap");
+            var tallerPctWrap = document.getElementById("varado-taller-pct-wrap");
+            var tallerPsbWrap = document.getElementById("varado-taller-psb-wrap");
+            var tallerPozWrap = document.getElementById("varado-taller-poz-wrap");
+            var tallerWrapByZone = {
+                pct: tallerPctWrap,
+                psb: tallerPsbWrap,
+                poz: tallerPozWrap
+            };
+            var tallerWraps = [tallerPctWrap, tallerPsbWrap, tallerPozWrap].filter(function (wrap) { return !!wrap; });
+            var carreteraCount = document.getElementById("varado-carretera-count");
+            var tallerCount = document.getElementById("varado-taller-count");
+            var tallerCountByZone = {
+                pct: document.getElementById("varado-taller-pct-count"),
+                psb: document.getElementById("varado-taller-psb-count"),
+                poz: document.getElementById("varado-taller-poz-count")
+            };
+            var carreteraEmpty = document.getElementById("varado-carretera-empty");
+            var tallerEmptyByZone = {
+                pct: document.getElementById("varado-taller-pct-empty"),
+                psb: document.getElementById("varado-taller-psb-empty"),
+                poz: document.getElementById("varado-taller-poz-empty")
+            };
+            var descargadosCell = document.getElementById("equipos-descargados-cell");
+            var rutaCell = document.getElementById("equipos-ruta-cell");
+            var descargadosCount = document.getElementById("equipos-descargados-count");
+            var rutaCount = document.getElementById("equipos-ruta-count");
+
+            function configureChipDropdowns() {
+                if (!window.bootstrap || !bootstrap.Dropdown) {
+                    return;
+                }
+
+                document.querySelectorAll(".equipo-chip-dropdown [data-bs-toggle='dropdown']").forEach(function (toggle) {
+                    bootstrap.Dropdown.getOrCreateInstance(toggle, {
+                        boundary: "viewport",
+                        offset: [0, 8],
+                        popperConfig: function (defaultConfig) {
+                            var baseConfig = defaultConfig || {};
+                            var baseModifiers = Array.isArray(baseConfig.modifiers)
+                                ? baseConfig.modifiers.filter(function (modifier) {
+                                    return modifier &&
+                                        modifier.name !== "preventOverflow" &&
+                                        modifier.name !== "flip" &&
+                                        modifier.name !== "offset";
+                                })
+                                : [];
+
+                            baseModifiers.push(
+                                {
+                                    name: "offset",
+                                    options: { offset: [0, 8] }
+                                },
+                                {
+                                    name: "preventOverflow",
+                                    options: { boundary: "viewport", padding: 8 }
+                                },
+                                {
+                                    name: "flip",
+                                    options: {
+                                        fallbackPlacements: ["top-start", "bottom-start", "top-end", "bottom-end"]
+                                    }
+                                });
+
+                            return Object.assign({}, baseConfig, {
+                                strategy: "fixed",
+                                modifiers: baseModifiers
+                            });
+                        }
+                    });
+                });
+            }
+
+            configureChipDropdowns();
+
+            if (!carreteraWrap || tallerWraps.length === 0) {
+                return;
+            }
+
+            var origenWrapPorChip = new WeakMap();
+
+            function countChips(container) {
+                return container ? container.querySelectorAll(".equipo-chip-dropdown").length : 0;
+            }
+
+            function isChipEnVarado(chipContainer) {
+                var wrap = chipContainer ? chipContainer.closest(".equipos-chip-wrap") : null;
+                if (!wrap) {
+                    return false;
+                }
+
+                return wrap === carreteraWrap || wrap.classList.contains("varado-taller-wrap");
+            }
+
+            function resolveTallerZoneFromChip(chipContainer) {
+                var rawText = chipContainer ? chipContainer.textContent || "" : "";
+                var normalizedText = rawText.toUpperCase();
+
+                if (normalizedText.indexOf("PSB") !== -1) {
+                    return "psb";
+                }
+
+                if (normalizedText.indexOf("POZ") !== -1) {
+                    return "poz";
+                }
+
+                if (normalizedText.indexOf("PCT") !== -1) {
+                    return "pct";
+                }
+
+                return "pct";
+            }
+
+            function resolveTallerWrapForStatus(status, chipContainer) {
+                if (status === "taller-pct") {
+                    return tallerWrapByZone.pct;
+                }
+
+                if (status === "taller-psb") {
+                    return tallerWrapByZone.psb;
+                }
+
+                if (status === "taller-poz") {
+                    return tallerWrapByZone.poz;
+                }
+
+                if (status === "taller") {
+                    var inferredZone = resolveTallerZoneFromChip(chipContainer);
+                    return tallerWrapByZone[inferredZone] || tallerWrapByZone.pct;
+                }
+
+                return null;
+            }
+
+            function toggleActivoOption(chipContainer) {
+                var activoBtn = chipContainer ? chipContainer.querySelector(".js-activar-equipo") : null;
+                if (!activoBtn) {
+                    return;
+                }
+
+                activoBtn.classList.toggle("d-none", !isChipEnVarado(chipContainer));
+            }
+
+            function closeDropdown(chipContainer) {
+                var toggle = chipContainer ? chipContainer.querySelector("[data-bs-toggle='dropdown']") : null;
+                if (!toggle || !window.bootstrap || !bootstrap.Dropdown) {
+                    return;
+                }
+
+                var dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(toggle);
+                dropdownInstance.hide();
+            }
+
+            function refreshCounters() {
+                var carreteraTotal = countChips(carreteraWrap);
+                var tallerTotal = tallerWraps.reduce(function (sum, wrap) {
+                    return sum + countChips(wrap);
+                }, 0);
+
+                carreteraCount.textContent = carreteraTotal.toString();
+                tallerCount.textContent = tallerTotal.toString();
+
+                carreteraEmpty.classList.toggle("d-none", carreteraTotal > 0);
+
+                Object.keys(tallerWrapByZone).forEach(function (zone) {
+                    var wrap = tallerWrapByZone[zone];
+                    if (!wrap) {
+                        return;
+                    }
+
+                    var zoneCount = countChips(wrap);
+                    var countElement = tallerCountByZone[zone];
+                    var emptyElement = tallerEmptyByZone[zone];
+
+                    if (countElement) {
+                        countElement.textContent = zoneCount.toString();
+                    }
+
+                    if (emptyElement) {
+                        emptyElement.classList.toggle("d-none", zoneCount > 0);
+                    }
+                });
+
+                if (descargadosCell && descargadosCount) {
+                    descargadosCount.textContent = countChips(descargadosCell).toString();
+                }
+
+                if (rutaCell && rutaCount) {
+                    rutaCount.textContent = countChips(rutaCell).toString();
+                }
+
+                document.querySelectorAll(".equipo-chip-dropdown").forEach(function (chipContainer) {
+                    toggleActivoOption(chipContainer);
+                });
+            }
+
+            document.querySelectorAll(".js-mover-equipo").forEach(function (actionBtn) {
+                actionBtn.addEventListener("click", function () {
+                    var status = actionBtn.getAttribute("data-target-status");
+                    var chipContainer = actionBtn.closest(".equipo-chip-dropdown");
+
+                    if (!status || !chipContainer) {
+                        return;
+                    }
+
+                    if (!origenWrapPorChip.has(chipContainer)) {
+                        var wrapActual = chipContainer.closest(".equipos-chip-wrap");
+                        if (wrapActual && !isChipEnVarado(chipContainer)) {
+                            origenWrapPorChip.set(chipContainer, wrapActual);
+                        }
+                    }
+
+                    if (status === "carretera") {
+                        carreteraWrap.appendChild(chipContainer);
+                    } else {
+                        var tallerDestino = resolveTallerWrapForStatus(status, chipContainer);
+                        if (tallerDestino) {
+                            tallerDestino.appendChild(chipContainer);
+                        }
+                    }
+
+                    closeDropdown(chipContainer);
+                    configureChipDropdowns();
+                    refreshCounters();
+                });
+            });
+
+            document.querySelectorAll(".js-activar-equipo").forEach(function (actionBtn) {
+                actionBtn.addEventListener("click", function () {
+                    var chipContainer = actionBtn.closest(".equipo-chip-dropdown");
+                    if (!chipContainer) {
+                        return;
+                    }
+
+                    var origenWrap = origenWrapPorChip.get(chipContainer);
+                    if (!origenWrap) {
+                        return;
+                    }
+
+                    origenWrap.appendChild(chipContainer);
+                    closeDropdown(chipContainer);
+                    configureChipDropdowns();
+                    refreshCounters();
+                });
+            });
+
+            document.querySelectorAll(".equipo-chip-dropdown").forEach(function (chipContainer) {
+                var wrapInicial = chipContainer.closest(".equipos-chip-wrap");
+                if (wrapInicial && !isChipEnVarado(chipContainer)) {
+                    origenWrapPorChip.set(chipContainer, wrapInicial);
+                }
+            });
+
+            refreshCounters();
+        });
+    </script>
+}
+
+
+
+
+
+

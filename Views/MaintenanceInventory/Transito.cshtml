@@ -1,0 +1,222 @@
+@model IEnumerable<ITServiceDeskApp.Models.MaintenanceInventoryPart>
+@using ITServiceDeskApp.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Articulos en Transito";
+
+    var rows = Model ?? Enumerable.Empty<MaintenanceInventoryPart>();
+    var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var systemTypeOptions = ViewBag.SystemTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var siteOptions = ViewBag.SiteOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+
+    var canManage =
+        User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+        User.IsInRole(nameof(UserRole.Technician));
+
+    string search = ViewBag.Search as string ?? string.Empty;
+    bool includeInactive = ViewBag.IncludeInactive is bool b && b;
+    bool delayedOnly = ViewBag.DelayedOnly is bool d && d;
+    int transitSkuCount = ViewBag.TransitSkuCount is int t1 ? t1 : rows.Count();
+    int transitUnits = ViewBag.TransitUnits is int t2 ? t2 : rows.Sum(x => x.QuantityInTransit);
+    decimal transitValueCordoba = ViewBag.TransitValueCordoba is decimal c1 ? c1 : rows.Sum(x => (x.UnitCostCordoba ?? 0m) * x.QuantityInTransit);
+    decimal transitValueUsd = ViewBag.TransitValueUsd is decimal c2 ? c2 : rows.Sum(x => (x.UnitCostUsd ?? 0m) * x.QuantityInTransit);
+    int delayedCount = ViewBag.TransitDelayedCount is int t3 ? t3 : 0;
+    int incomingSoonCount = ViewBag.TransitIncomingSoonCount is int t4 ? t4 : 0;
+
+    DateTime etaDate(MaintenanceInventoryPart row)
+    {
+        return (row.PurchaseDate ?? DateTime.UtcNow).Date.AddDays(14);
+    }
+
+    string transitLabel(MaintenanceInventoryPart row)
+    {
+        var nowDate = DateTime.UtcNow.Date;
+        var eta = etaDate(row);
+        if (eta < nowDate)
+        {
+            return "Retrasado";
+        }
+
+        if (eta <= nowDate.AddDays(3))
+        {
+            return "Proximo";
+        }
+
+        return "En ruta";
+    }
+
+    string transitBadgeCss(MaintenanceInventoryPart row)
+    {
+        return transitLabel(row) switch
+        {
+            "Retrasado" => "bg-danger",
+            "Proximo" => "bg-warning text-dark",
+            _ => "bg-primary"
+        };
+    }
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Tablero de Articulos en Transito</h2>
+            <small class="text-muted">Seguimiento de repuestos comprados y pendientes de ingreso a bodega</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+            @if (canManage)
+            {
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Nuevo Repuesto
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-action="Index" class="btn btn-outline-dark">
+                    <i class="bi bi-grid-1x2"></i> Resumen
+                </a>
+                <a asp-action="Detalle" class="btn btn-outline-dark">
+                    <i class="bi bi-table"></i> Tabla detalle
+                </a>
+                <a asp-action="Transito" class="btn btn-dark">
+                    <i class="bi bi-truck"></i> Articulos en transito
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted small">SKUs en transito</div><div class="h4 mb-0">@transitSkuCount</div></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted small">Unidades en transito</div><div class="h4 mb-0 text-primary">@transitUnits</div></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted small">Valor en transito</div><div class="fw-semibold">C$ @transitValueCordoba:N2</div><div class="small text-muted">$ @transitValueUsd:N2</div></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted small">Semaforo logistica</div><div class="fw-semibold text-danger">@delayedCount retrasado(s)</div><div class="small text-warning-emphasis">@incomingSoonCount por arribar (<=3 dias)</div></div></div>
+        </div>
+    </div>
+
+    <form method="get" asp-action="Transito" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Buscar</label>
+                    <input type="text" class="form-control" name="search" value="@search" placeholder="Codigo, item, descripcion, proveedor..." />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Categoria</label>
+                    <select class="form-select" name="category" asp-items="categoryOptions">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sistema</label>
+                    <select class="form-select" name="systemType" asp-items="systemTypeOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Sitio</label>
+                    <select class="form-select" name="site" asp-items="siteOptions">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="delayedOnly" value="true" id="delayedOnly" @(delayedOnly ? "checked" : "")>
+                        <label class="form-check-label" for="delayedOnly">Solo retrasados</label>
+                    </div>
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" id="includeInactiveTransito" @(includeInactive ? "checked" : "")>
+                        <label class="form-check-label" for="includeInactiveTransito">Incluir inactivos</label>
+                    </div>
+                </div>
+
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-dark w-100">Filtrar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            @if (!rows.Any())
+            {
+                <div class="p-4">
+                    <div class="alert alert-info mb-0">No hay repuestos en transito para los filtros aplicados.</div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Item</th>
+                                <th>No. Parte</th>
+                                <th>Articulo</th>
+                                <th>Sitio</th>
+                                <th>Stock</th>
+                                <th>Transito</th>
+                                <th>Proveedor</th>
+                                <th>Compra</th>
+                                <th>ETA ref.</th>
+                                <th>Semaforo</th>
+                                <th>Valor transito</th>
+                                <th class="text-center">Accion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in rows)
+                            {
+                                var eta = etaDate(row);
+                                var valueC = (row.UnitCostCordoba ?? 0m) * row.QuantityInTransit;
+                                var valueU = (row.UnitCostUsd ?? 0m) * row.QuantityInTransit;
+
+                                <tr>
+                                    <td class="fw-semibold">@row.PartCode</td>
+                                    <td>@(string.IsNullOrWhiteSpace(row.ItemCode) ? "-" : row.ItemCode)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(row.ManufacturerPartNumber) ? "-" : row.ManufacturerPartNumber)</td>
+                                    <td>@row.PartName</td>
+                                    <td>@row.Site</td>
+                                    <td>@row.QuantityOnHand</td>
+                                    <td class="fw-semibold text-primary">@row.QuantityInTransit</td>
+                                    <td>@(string.IsNullOrWhiteSpace(row.Supplier) ? "-" : row.Supplier)</td>
+                                    <td>@(row.PurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                    <td>@eta.ToString("dd/MM/yyyy")</td>
+                                    <td><span class="badge @transitBadgeCss(row)">@transitLabel(row)</span></td>
+                                    <td>
+                                        <div class="small">C$ @valueC:N2</div>
+                                        <div class="small text-muted">$ @valueU:N2</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@row.Id" class="btn btn-sm btn-outline-info">Ver</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

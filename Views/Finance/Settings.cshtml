@@ -1,0 +1,34 @@
+@model ITServiceDeskApp.ViewModels.Finance.FinanceSettingsViewModel
+
+@{
+    ViewData["Title"] = "Configuracion Financiera";
+}
+
+<div class="container mt-4" style="max-width:760px;">
+    <h3>Configuracion Financiera</h3>
+    @if (TempData["TicketsMessage"] is string msg && !string.IsNullOrWhiteSpace(msg))
+    {
+        <div class="alert alert-success">@msg</div>
+    }
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Settings" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                <div class="row g-3">
+                    <div class="col-md-6"><label asp-for="UsdToCordobaRate" class="form-label fw-semibold"></label><input asp-for="UsdToCordobaRate" type="number" step="0.0001" class="form-control" /><span asp-validation-for="UsdToCordobaRate" class="text-danger small"></span></div>
+                    <div class="col-md-6"><label asp-for="DefaultEscalationHours" class="form-label fw-semibold"></label><input asp-for="DefaultEscalationHours" type="number" class="form-control" /><span asp-validation-for="DefaultEscalationHours" class="text-danger small"></span></div>
+                    <div class="col-md-6"><label asp-for="DefaultAlertThresholdPercent" class="form-label fw-semibold"></label><input asp-for="DefaultAlertThresholdPercent" type="number" class="form-control" /><span asp-validation-for="DefaultAlertThresholdPercent" class="text-danger small"></span></div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a asp-action="Dashboard" class="btn btn-outline-secondary">Volver</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

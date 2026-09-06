@@ -18,8 +18,11 @@
     var incidentTypeOptions = ViewBag.IncidentTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var technicianOptions = ViewBag.TechnicianOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var requestingUserOptions = ViewBag.RequestingUserOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var ticketCostCenterOptions = ViewBag.TicketCostCenterOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var canEditSolutionForm = ViewBag.CanEditSolutionForm is bool allowed && allowed;
     var canSetPriority = ViewBag.CanSetPriority is bool allowedPriority && allowedPriority;
+    var isMaintenancePreset = string.Equals(Model.Department, "Mantenimiento", StringComparison.OrdinalIgnoreCase);
+    var createTitle = isMaintenancePreset ? "Nueva Orden de Mantenimiento" : "Nueva Incidencia";
 }
 
 <style>
@@ -126,13 +129,20 @@
 
 <div class="ticket-form-shell mt-3">
     <div class="ticket-form-header">
-        <h3 class="ticket-form-title">Nueva Incidencia</h3>
-        <a asp-action="Index" class="btn-close" title="Cerrar"></a>
+        <h3 class="ticket-form-title">@createTitle</h3>
+        <a asp-action="Index" asp-route-department="@(isMaintenancePreset ? "Mantenimiento" : null)" class="btn-close" title="Cerrar"></a>
     </div>
 
     <form asp-action="Create" method="post" enctype="multipart/form-data">
         <div class="ticket-form-body">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            @if (isMaintenancePreset)
+            {
+                <div class="alert alert-info">
+                    Estás creando una orden para <strong>Mantenimiento</strong>. Tipo sugerido: Preventivo o Correctivo.
+                </div>
+            }
 
             <div class="section-divider">
                 <span>Formulario de Usuario</span>
@@ -174,10 +184,22 @@
                 </div>
 
                 <div class="col-md-6">
+                    <label asp-for="CostCenterCode" class="field-label">#CC del area</label>
+                    <select asp-for="CostCenterCode" class="form-select" asp-items="ticketCostCenterOptions">
+                        <option value="">Seleccionar #CC</option>
+                    </select>
+                    <div class="form-note">Obligatorio cuando se registran costos o gastos.</div>
+                    <span asp-validation-for="CostCenterCode" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
                     <label asp-for="IncidentType" class="field-label">Tipo de Incidencia <span class="required">*</span></label>
                     <select asp-for="IncidentType" class="form-select" asp-items="incidentTypeOptions">
                         <option value="">Seleccionar tipo</option>
                     </select>
+                    <div id="maintenanceTypeHint" class="form-note" style="display:none;">
+                        Sugerencia para mantenimiento: "Mantenimiento Preventivo" o "Mantenimiento Correctivo".
+                    </div>
                     <span asp-validation-for="IncidentType" class="text-danger small"></span>
                 </div>
 
@@ -365,9 +387,9 @@
         </div>
 
         <div class="ticket-form-footer">
-            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            <a asp-action="Index" asp-route-department="@(isMaintenancePreset ? "Mantenimiento" : null)" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-create">
-                <i class="bi bi-plus-square"></i> Crear Incidencia
+                <i class="bi bi-plus-square"></i> @(isMaintenancePreset ? "Crear Orden" : "Crear Incidencia")
             </button>
         </div>
     </form>
@@ -381,6 +403,9 @@
             const canEditSolutionForm = @(canEditSolutionForm ? "true" : "false");
             const prioritySelect = document.getElementById("prioritySelect");
             const slaPreview = document.getElementById("slaPreview");
+            const departmentSelect = document.getElementById("Department");
+            const incidentTypeSelect = document.getElementById("IncidentType");
+            const maintenanceTypeHint = document.getElementById("maintenanceTypeHint");
             const sparePartRequired = document.getElementById("sparePartRequired");
             const sparePartPurchasedWrap = document.getElementById("sparePartPurchasedWrap");
             const sparePartDetailsWrap = document.getElementById("sparePartDetailsWrap");
@@ -491,6 +516,26 @@
                 slaPreview.value = formatDateTime(deadline);
             }
 
+            function updateMaintenanceHints() {
+                const isMaintenance =
+                    departmentSelect &&
+                    departmentSelect.value &&
+                    departmentSelect.value.toLowerCase() === "mantenimiento";
+
+                if (maintenanceTypeHint) {
+                    maintenanceTypeHint.style.display = isMaintenance ? "block" : "none";
+                }
+
+                if (isMaintenance && incidentTypeSelect && !incidentTypeSelect.value) {
+                    const correctiveOption = Array.from(incidentTypeSelect.options)
+                        .find(option => option.value.toLowerCase() === "mantenimiento correctivo");
+
+                    if (correctiveOption) {
+                        incidentTypeSelect.value = correctiveOption.value;
+                    }
+                }
+            }
+
             function toggleSparePartDetails() {
                 const visible = sparePartRequired.checked;
                 sparePartPurchasedWrap.style.display = visible ? "flex" : "none";
@@ -507,11 +552,15 @@
             if (prioritySelect) {
                 prioritySelect.addEventListener("change", updateSlaPreview);
             }
+            if (departmentSelect) {
+                departmentSelect.addEventListener("change", updateMaintenanceHints);
+            }
 
             sparePartRequired.addEventListener("change", toggleSparePartDetails);
             componentChanged.addEventListener("change", toggleChangedComponentDetails);
 
             updateSlaPreview();
+            updateMaintenanceHints();
             toggleSparePartDetails();
             toggleChangedComponentDetails();
         });

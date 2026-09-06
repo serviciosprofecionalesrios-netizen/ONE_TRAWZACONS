@@ -83,6 +83,7 @@ namespace ITServiceDeskApp.Controllers
         public async Task<IActionResult> Create(Credential credential)
         {
             NormalizeCredential(credential);
+            ValidateCredentialBusinessRules(credential);
 
             if (await _context.Credentials.AnyAsync(c => c.Name == credential.Name && c.Type == credential.Type))
             {
@@ -141,6 +142,7 @@ namespace ITServiceDeskApp.Controllers
             }
 
             NormalizeCredential(credential);
+            ValidateCredentialBusinessRules(credential);
 
             if (await _context.Credentials.AnyAsync(c => c.Id != credential.Id && c.Name == credential.Name && c.Type == credential.Type))
             {
@@ -242,6 +244,25 @@ namespace ITServiceDeskApp.Controllers
             }
 
             return value.Trim();
+        }
+
+        private void ValidateCredentialBusinessRules(Credential credential)
+        {
+            if (string.IsNullOrWhiteSpace(credential.Port))
+            {
+                return;
+            }
+
+            var portValue = credential.Port.Trim();
+            if (!portValue.All(char.IsDigit))
+            {
+                return;
+            }
+
+            if (!int.TryParse(portValue, out var parsedPort) || parsedPort < 1 || parsedPort > 65535)
+            {
+                ModelState.AddModelError(nameof(Credential.Port), "El puerto numerico debe estar entre 1 y 65535.");
+            }
         }
 
         private async Task PopulateTypeOptionsAsync(string? selectedType)

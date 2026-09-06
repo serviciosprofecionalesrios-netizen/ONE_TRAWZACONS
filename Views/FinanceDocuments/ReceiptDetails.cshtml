@@ -1,0 +1,168 @@
+@model ITServiceDeskApp.Models.FinanceReceipt
+@using ITServiceDeskApp.Models
+
+@{
+    ViewData["Title"] = "Detalle de Recibo";
+    var signUrl = ViewBag.SignUrl as string ?? string.Empty;
+    var attachments = ViewBag.Attachments as List<FinanceAttachment> ?? new List<FinanceAttachment>();
+}
+
+<div class="container mt-4" style="max-width:1000px;">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h3 class="mb-1">Detalle de Recibo</h3>
+            <div class="text-muted">PDF con firma electrónica remota por enlace seguro.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="ReceiptCreate" class="btn btn-outline-primary">Nuevo Recibo</a>
+            <a asp-action="DownloadReceiptPdf" asp-route-id="@Model.Id" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["TicketsMessage"] is string ok && !string.IsNullOrWhiteSpace(ok))
+    {
+        <div class="alert alert-success">@ok</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">No. recibo</dt>
+                        <dd class="col-sm-8"><span class="badge text-bg-dark">@Model.ReceiptNumber</span></dd>
+
+                        <dt class="col-sm-4">Sitio / Sede</dt>
+                        <dd class="col-sm-8">@Model.Site</dd>
+
+                        <dt class="col-sm-4">Recibido de</dt>
+                        <dd class="col-sm-8">@Model.ReceivedFrom</dd>
+
+                        <dt class="col-sm-4">RUC / Identificacion</dt>
+                        <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.CounterpartyTaxId) ? "N/A" : Model.CounterpartyTaxId)</dd>
+
+                        <dt class="col-sm-4">Monto</dt>
+                        <dd class="col-sm-8">@Model.Currency @Model.Amount.ToString("N2")</dd>
+
+                        <dt class="col-sm-4">Fecha recibo</dt>
+                        <dd class="col-sm-8">@Model.ReceiptDateUtc.ToLocalTime().ToString("dd/MM/yyyy")</dd>
+
+                        <dt class="col-sm-4">Concepto</dt>
+                        <dd class="col-sm-8">@Model.Concept</dd>
+
+                        <dt class="col-sm-4">Notas</dt>
+                        <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Notes) ? "N/A" : Model.Notes)</dd>
+
+                        <dt class="col-sm-4">Creado por</dt>
+                        <dd class="col-sm-8">@Model.CreatedBy</dd>
+
+                        <dt class="col-sm-4">Fecha creación</dt>
+                        <dd class="col-sm-8">@Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4">Aprobacion</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @(Model.ApprovalStatus == "Aprobado" ? "text-bg-success" : Model.ApprovalStatus == "Rechazado" ? "text-bg-danger" : "text-bg-warning")">@Model.ApprovalStatus</span>
+                            @if (!string.IsNullOrWhiteSpace(Model.ApprovedBy))
+                            {
+                                <div class="small text-muted">@Model.ApprovedBy - @Model.ApprovedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.ApprovalNotes))
+                            {
+                                <div class="small">@Model.ApprovalNotes</div>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    @if (Model.SignedAtUtc.HasValue)
+                    {
+                        <div class="alert alert-success">
+                            <strong>Firmado electrónicamente</strong><br />
+                            Por: @Model.SignedByName<br />
+                            Fecha: @Model.SignedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <strong>Firma pendiente</strong><br />
+                            Comparte este enlace para firmar desde celular, laptop o cualquier dispositivo.
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(signUrl))
+                    {
+                        <label class="form-label fw-semibold">Enlace de firma</label>
+                        <div class="input-group">
+                            <input id="receiptSignUrl" type="text" class="form-control" readonly value="@signUrl" />
+                            <button type="button" class="btn btn-outline-secondary" id="copySignUrlBtn">Copiar</button>
+                        </div>
+                        <div class="small text-muted mt-2">Comparte este enlace para firmar el recibo.</div>
+                    }
+
+                    <hr />
+                    <form asp-action="ApproveReceipt" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <label class="form-label fw-semibold">Notas de aprobacion</label>
+                        <textarea name="notes" class="form-control mb-2" rows="2"></textarea>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
+                            <button type="submit" formaction="@Url.Action("RejectReceipt", "FinanceDocuments")" class="btn btn-outline-danger btn-sm">Rechazar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-header fw-semibold">Adjuntos</div>
+        <div class="card-body">
+            @if (attachments.Count == 0)
+            {
+                <div class="text-muted">Sin adjuntos.</div>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var file in attachments)
+                    {
+                        <a asp-action="DownloadAttachment" asp-route-id="@file.Id" class="list-group-item list-group-item-action d-flex justify-content-between">
+                            <span>@file.FileName</span>
+                            <span class="text-muted small">@((file.SizeBytes / 1024m).ToString("N1")) KB</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var copyBtn = document.getElementById("copySignUrlBtn");
+            var input = document.getElementById("receiptSignUrl");
+            if (!copyBtn || !input) return;
+
+            copyBtn.addEventListener("click", function () {
+                input.select();
+                input.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(input.value).then(function () {
+                    copyBtn.textContent = "Copiado";
+                    setTimeout(function () { copyBtn.textContent = "Copiar"; }, 1300);
+                }).catch(function () {
+                    // fallback
+                });
+            });
+        })();
+    </script>
+}
