@@ -17,7 +17,7 @@ plan gratuito. Revisa los importes que muestra Render antes de confirmar.
 
 ## Primera publicación
 
-1. Sube esta rama al repositorio remoto.
+1. Sube la rama `render-deploy` al repositorio remoto.
 2. En Render, elige **New > Blueprint** y conecta el repositorio.
 3. Selecciona `render.yaml` cuando Render lo detecte.
 4. Define `BootstrapAdmin__Password` con una contraseña única de al menos 12

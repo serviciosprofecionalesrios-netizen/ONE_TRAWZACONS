@@ -2,6 +2,7 @@ services:
   - type: web
     name: trawzacons-service-desk
     runtime: docker
+    branch: render-deploy
     plan: 0.5c-512mb
     region: virginia
     dockerfilePath: ./Dockerfile
