@@ -3,7 +3,7 @@ services:
     name: trawzacons-service-desk
     runtime: docker
     branch: render-deploy
-    plan: 0.5c-512mb
+    plan: free
     region: virginia
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -31,17 +31,11 @@ services:
         value: "false"
       - key: WhatsAppNotifications__Enabled
         value: "false"
-    disk:
-      name: trawzacons-storage
-      mountPath: /app/storage
-      sizeGB: 1
-
 databases:
   - name: trawzacons-db
     databaseName: trawzacons
     user: trawzacons_app
-    plan: 0.1c-256mb
+    plan: free
     region: virginia
     postgresMajorVersion: "18"
-    diskSizeGB: 1
     ipAllowList: []

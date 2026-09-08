@@ -1,19 +1,24 @@
 # Publicación en Render
 
-La aplicación está preparada para ejecutarse en Render como un servicio Docker,
-con PostgreSQL administrado y un disco persistente para adjuntos, evidencias,
-archivos operativos y claves de protección de datos.
+La aplicación está preparada para una demostración temporal en Render como un
+servicio Docker gratuito, con PostgreSQL administrado gratuito y almacenamiento
+efímero para adjuntos, evidencias, archivos operativos y claves de protección.
 
 ## Recursos creados por el Blueprint
 
 - Servicio web `trawzacons-service-desk` en la región de Virginia.
 - Base PostgreSQL `trawzacons-db` en la misma región y red privada.
-- Disco persistente de 1 GB montado en `/app/storage`.
+- Directorio efímero `/app/storage` para los archivos de la demostración.
 - Migración automática del esquema al arrancar.
 - Comprobación de salud en `/health`.
 
-Estos recursos son de pago porque Render no permite discos persistentes en el
-plan gratuito. Revisa los importes que muestra Render antes de confirmar.
+Esta configuración no requiere un recurso de pago. El servicio web gratuito
+puede suspenderse después de un periodo sin tráfico, y la primera petición tras
+la suspensión tardará más en responder.
+
+La base PostgreSQL gratuita caduca después de 30 días. Los archivos escritos en
+`/app/storage` se pierden cuando el servicio se reinicia o se vuelve a desplegar.
+Esta variante debe utilizarse únicamente para mostrar el proyecto al cliente.
 
 ## Primera publicación
 
@@ -53,9 +58,8 @@ base SQL Server local hasta validar la migración de datos. La transferencia deb
 hacerse después de crear PostgreSQL, usando la URL externa temporal o una lista
 de IP autorizadas, y verificando conteos por tabla antes del cambio definitivo.
 
-Los archivos versionados de `Data/Operaciones` se copian al disco sólo durante
-la primera inicialización. Los adjuntos nuevos se guardan en el mismo disco y
-permanecen después de reinicios y despliegues.
+Los adjuntos y archivos operativos creados durante la demostración son
+temporales y no permanecen después de reinicios o nuevos despliegues.
 
 ## Desarrollo local
 
