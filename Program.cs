@@ -10,6 +10,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
+// The existing SQL Server model stores DateTime without timezone information
+// and the application contains both local and UTC values. Keep that established
+// behavior when Npgsql writes to PostgreSQL's timestamp-without-time-zone columns.
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
