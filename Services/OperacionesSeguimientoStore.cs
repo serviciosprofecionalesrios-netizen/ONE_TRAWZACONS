@@ -109,6 +109,13 @@ namespace ITServiceDeskApp.Services
 
         private void EnsurePersistenceTables()
         {
+            // PostgreSQL is provisioned through EF Core migrations. This legacy
+            // bootstrap SQL is intentionally SQL Server-specific.
+            if (!_context.Database.IsSqlServer())
+            {
+                return;
+            }
+
             const string sql = """
                 IF OBJECT_ID(N'dbo.OperacionesSeguimientoRegistros', N'U') IS NULL
                 BEGIN

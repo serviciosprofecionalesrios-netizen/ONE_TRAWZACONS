@@ -176,6 +176,11 @@ namespace ITServiceDeskApp.Services
 
         private void EnsurePersistenceTable()
         {
+            if (!_context.Database.IsSqlServer())
+            {
+                return;
+            }
+
             const string sql = """
                 IF OBJECT_ID(N'dbo.OperacionesIngresoEquipoGondolaTareasPadre', N'U') IS NULL
                 BEGIN
