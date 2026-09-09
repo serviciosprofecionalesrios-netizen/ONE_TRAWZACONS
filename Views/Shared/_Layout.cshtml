@@ -1589,10 +1589,10 @@
                     <li class="nav-item dropdown area-dropdown">
                         <a id="mantenimientoMenuTrigger"
                            class="nav-link menu-link dropdown-toggle @(isMantenimientoMenuActive ? "active fw-bold" : "")"
-                           href="@Url.Action("Index", "MaintenanceRepairs")"
+                           href="@Url.Action("Index", "Tickets", new { department = "Mantenimiento" })"
                            role="button"
                            data-bs-toggle="dropdown"
-                           data-dashboard-url="@Url.Action("Index", "MaintenanceRepairs")"
+                           data-dashboard-url="@Url.Action("Index", "Tickets", new { department = "Mantenimiento" })"
                            aria-expanded="false">
                             <span class="menu-text">Mantenimiento</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>

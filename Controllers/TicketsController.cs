@@ -10,6 +10,7 @@ using ITServiceDeskApp.Models;
 using ITServiceDeskApp.Services;
 using ITServiceDeskApp.Services.Interfaces;
 using ITServiceDeskApp.ViewModels.Tickets;
+using ITServiceDeskApp.ViewModels.Inventory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -206,19 +207,22 @@ namespace ITServiceDeskApp.Controllers
         private readonly IEmailNotificationService _emailNotificationService;
         private readonly IWhatsAppNotificationService _whatsAppNotificationService;
         private readonly ILogger<TicketsController> _logger;
+        private readonly PublishedInventoryService _publishedInventory;
 
         public TicketsController(
             ApplicationDbContext context,
             IWebHostEnvironment environment,
             IEmailNotificationService emailNotificationService,
             IWhatsAppNotificationService whatsAppNotificationService,
-            ILogger<TicketsController> logger)
+            ILogger<TicketsController> logger,
+            PublishedInventoryService publishedInventory)
         {
             _context = context;
             _environment = environment;
             _emailNotificationService = emailNotificationService;
             _whatsAppNotificationService = whatsAppNotificationService;
             _logger = logger;
+            _publishedInventory = publishedInventory;
         }
 
         public async Task<IActionResult> Index(
@@ -1270,6 +1274,17 @@ namespace ITServiceDeskApp.Controllers
                         });
             }
 
+            InventorySourceResult? publishedRepairs = null;
+            IReadOnlyDictionary<string, int> publishedRepairStates = new Dictionary<string, int>();
+            if (isMaintenanceView)
+            {
+                publishedRepairs = await _publishedInventory.GetAsync(PublishedInventoryService.Repairs, HttpContext.RequestAborted);
+                if (publishedRepairs.Table != null)
+                    publishedRepairStates = publishedRepairs.Table.Rows
+                        .GroupBy(r => PublishedRepairsViewModel.State(publishedRepairs.Table, r), StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+            }
+
             var model = new TicketsIndexViewModel
             {
                 Search = normalizedSearch,
@@ -1354,6 +1369,9 @@ namespace ITServiceDeskApp.Controllers
                 LatestAuditByTicket = latestAuditByTicket,
                 Tickets = tickets
             };
+
+            ViewBag.PublishedRepairs = publishedRepairs;
+            ViewBag.PublishedRepairStates = publishedRepairStates;
 
             return View(model);
         }

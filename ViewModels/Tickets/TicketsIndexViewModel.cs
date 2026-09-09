@@ -81,6 +81,10 @@ namespace ITServiceDeskApp.ViewModels.Tickets
         public IReadOnlyList<string> IncidentTypeOptions { get; set; } = Array.Empty<string>();
         public IReadOnlyList<string> MaintenanceStageOptions { get; set; } = Array.Empty<string>();
         public IReadOnlyList<Ticket> Tickets { get; set; } = Array.Empty<Ticket>();
+        public int PublishedRepairsTotal { get; set; }
+        public int PublishedRepairsDelivered { get; set; }
+        public int PublishedRepairsCompleted { get; set; }
+        public int PublishedRepairsPending { get; set; }
         public IReadOnlyList<TechnicianLoadItem> TechnicianLoads { get; set; } = Array.Empty<TechnicianLoadItem>();
         public IReadOnlyList<TechnicianCapacityKpiItem> TechnicianCapacityItems { get; set; } = Array.Empty<TechnicianCapacityKpiItem>();
         public double TechnicianCapacityUtilizationRate { get; set; }
