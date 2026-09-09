@@ -36,6 +36,19 @@ if (args.Length > 0)
         Check(table.Rows.Count == expected[i], $"Published snapshot {files[i]}: {expected[i]} records");
     }
 }
+if (args.Length > 0 && File.Exists(Path.Combine(args[0], "Reparaciones.csv")))
+{
+    var repairs = PublishedInventoryService.Parse(File.ReadAllText(Path.Combine(args[0], "Reparaciones.csv")), PublishedInventoryService.Repairs);
+    Check(repairs.Rows.Count == 108 && repairs.ExcludedRows == 3, "Repairs snapshot: 108 records, three empty rows excluded");
+    var counts = repairs.Rows.GroupBy(r => PublishedRepairsViewModel.State(repairs, r)).ToDictionary(g => g.Key, g => g.Count());
+    Check(counts["Entregado"] == 90 && counts["Terminado"] == 10 && counts["Pendiente"] == 8, "Repair status totals match source");
+    var model = new PublishedRepairsViewModel { Sheet = PublishedInventoryService.Repairs, Source = new(repairs, DateTimeOffset.UtcNow, null) };
+    Check(model.Value(repairs.Rows[0], "Codigo de Equipo") == "W-0008" && model.Value(repairs.Rows[0], "Descripción del problema").Contains('\n'), "Repair equipment and multiline problem preserved");
+    var repairHandler = new FixtureHandler(File.ReadAllText(Path.Combine(args[0], "Reparaciones.csv")));
+    var repairService = new PublishedInventoryService(new Factory(repairHandler), NullLogger<PublishedInventoryService>.Instance);
+    await repairService.GetAsync(PublishedInventoryService.Repairs, default);
+    Check(repairHandler.LastUrl == PublishedInventoryService.RepairsSourceUrl.Replace("/pubhtml", "/pub?output=csv&gid=1524236300"), "Repairs use the correct separate document");
+}
 sealed class Factory(HttpMessageHandler handler) : IHttpClientFactory
 {
     public HttpClient CreateClient(string name) => new(handler, false);
@@ -44,9 +57,11 @@ sealed class FixtureHandler(string csv) : HttpMessageHandler
 {
     public int Calls;
     public bool Fail;
+    public string? LastUrl;
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref Calls);
+        LastUrl = request.RequestUri?.ToString();
         return Task.FromResult(new HttpResponseMessage(Fail ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK) { Content = new StringContent(csv) });
     }
 }

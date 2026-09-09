@@ -4,6 +4,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Compile Include="../../Services/PublishedInventoryService.cs" Link="PublishedInventoryService.cs" />
     <Compile Include="../../ViewModels/Inventory/PublishedInventoryViewModel.cs" Link="PublishedInventoryViewModel.cs" />
+    <Compile Include="../../ViewModels/Inventory/PublishedRepairsViewModel.cs" Link="PublishedRepairsViewModel.cs" />
     <Using Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 </Project>

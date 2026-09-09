@@ -1,0 +1,54 @@
+@model ITServiceDeskApp.ViewModels.Inventory.PublishedRepairsViewModel
+@{ ViewData["Title"] = "Reparaciones"; }
+<link rel="stylesheet" href="~/css/inventory-workspace.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/maintenance-repairs.css" asp-append-version="true" />
+<div class="container-fluid inventory-workspace repairs-workspace">
+    <header class="inventory-heading">
+        <div class="inventory-symbol"><i class="bi bi-tools" aria-hidden="true"></i></div>
+        <div><div class="inventory-eyebrow">MANTENIMIENTO</div><h2>Reparaciones</h2><p>Seguimiento de equipos, trabajos de taller y entregas.</p></div>
+        <div class="inventory-total"><strong>@(Model.Source.Table?.Rows.Count.ToString("N0") ?? "—")</strong><span>reparaciones registradas</span></div>
+    </header>
+    @if (Model.Source.Warning != null)
+    {
+        <div class="alert alert-warning" role="alert">No fue posible actualizar la información. @(Model.Source.Table != null ? "Se muestra la última consulta disponible." : "Intenta nuevamente en un momento.")</div>
+    }
+    @if (Model.Source.Table != null)
+    {
+        <nav class="repair-states" aria-label="Estado de las reparaciones">
+            <a class="repair-state @(Model.Status == "" ? "selected" : "")" asp-action="Index" asp-route-q="@Model.Query"><span>Todas</span><strong>@Model.Source.Table.Rows.Count</strong></a>
+            @foreach (var state in Model.StatusCounts)
+            {
+                <a class="repair-state @(Model.Status.Equals(state.Key, StringComparison.OrdinalIgnoreCase) ? "selected" : "")" asp-action="Index" asp-route-status="@state.Key" asp-route-q="@Model.Query"><span>@state.Key</span><strong>@state.Value</strong></a>
+            }
+        </nav>
+        <form method="get" class="inventory-search" role="search">
+            <input type="hidden" name="status" value="@Model.Status" />
+            <label class="visually-hidden" for="repairs-query">Buscar reparaciones</label>
+            <input class="form-control" id="repairs-query" name="q" maxlength="200" value="@Model.Query" placeholder="Buscar folio, equipo, mecánico, problema o cliente…" />
+            <button class="btn btn-primary">Buscar</button>
+            @if (Model.Query.Length > 0 || Model.Status.Length > 0) { <a class="btn btn-outline-secondary" asp-action="Index">Limpiar</a> }
+        </form>
+        <div class="inventory-results"><span>@Model.TotalRows resultados</span><span>Página @Model.Page de @Model.TotalPages</span></div>
+        <div class="repair-list">
+        @foreach (var row in Model.Rows)
+        {
+            var state = ITServiceDeskApp.ViewModels.Inventory.PublishedRepairsViewModel.State(Model.Source.Table, row);
+            var stateStyle = state.Equals("Entregado", StringComparison.OrdinalIgnoreCase) ? "delivered" : state.Equals("Terminado", StringComparison.OrdinalIgnoreCase) ? "completed" : state.Equals("Pendiente", StringComparison.OrdinalIgnoreCase) ? "pending" : "unknown";
+            <article class="repair-card">
+                <header class="repair-card-header"><div><span class="inventory-code">@Model.Value(row, "N° Gestion")</span><h3><i class="bi bi-truck" aria-hidden="true"></i> @Model.Value(row, "Codigo de Equipo")</h3></div><span class="repair-badge @stateStyle">@state</span></header>
+                <dl class="inventory-facts"><div><dt>Mecánico asignado</dt><dd>@Model.Value(row, "Mecanico Asignado")</dd></div><div><dt>Entrada</dt><dd>@Model.Value(row, "Fecha de entrada")</dd></div><div><dt>Salida</dt><dd>@Model.Value(row, "Fecha de salida")</dd></div><div><dt>Sitio</dt><dd>@Model.Value(row, "Sitio")</dd></div></dl>
+                <div class="repair-problem"><h4>Problema reportado</h4><p>@Model.Value(row, "Descripción del problema")</p></div>
+                <details><summary>Ver diagnóstico y trabajo realizado</summary>
+                    <div class="repair-detail-grid"><section><h4>Diagnóstico</h4><p>@Model.Value(row, "Diagnóstico")</p></section><section><h4>Trabajo realizado</h4><p>@Model.Value(row, "Descripción del trabajo realizado")</p></section><section><h4>Elemento</h4><p>@Model.Value(row, "Elemento")</p></section></div>
+                    <dl class="inventory-facts"><div><dt>Cliente</dt><dd>@Model.Value(row, "Cliente")</dd></div><div><dt>Responsable</dt><dd>@Model.Value(row, "Responsable")</dd></div><div><dt>Kilometraje de entrada</dt><dd>@Model.Value(row, "Km Entrada")</dd></div><div><dt>Kilometraje de salida</dt><dd>@Model.Value(row, "Km Salida")</dd></div></dl>
+                </details>
+            </article>
+        }
+        </div>
+        @if (Model.TotalRows == 0) { <div class="inventory-empty"><h3>No se encontraron reparaciones</h3><p>Prueba con otro filtro o término de búsqueda.</p></div> }
+        <nav class="d-flex justify-content-between my-4" aria-label="Páginas de reparaciones"><span>Página @Model.Page de @Model.TotalPages</span><div class="d-flex gap-2">
+            @if (Model.Page > 1) { <a class="btn btn-outline-secondary" asp-action="Index" asp-route-q="@Model.Query" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Anterior</a> }
+            @if (Model.Page < Model.TotalPages) { <a class="btn btn-primary" asp-action="Index" asp-route-q="@Model.Query" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Siguiente</a> }
+        </div></nav>
+    }
+</div>

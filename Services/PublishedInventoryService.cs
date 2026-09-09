@@ -4,10 +4,12 @@ using System.Collections.Concurrent;
 
 namespace ITServiceDeskApp.Services;
 
-// Only this fixed, user-provided public document is fetched. No arbitrary URLs.
+// Only fixed, user-provided public documents are fetched. No request-provided URLs.
 public sealed class PublishedInventoryService(IHttpClientFactory clients, ILogger<PublishedInventoryService> logger)
 {
     public const string SourceUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9UL6D90oBYQxXoKBRow9Zhvlmd7D7dL7QYwMgUYMLafBE9eHDkFcQFQfmXcK4v799GiSboWOm3hKC/pubhtml";
+    public const string RepairsSourceUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaXxESkG30H_6igTHWwFQSv2h-i8zqbZ6e9X_tiR5ggvrY6incp4R7TF9RXcr1UZYwa54_Z7ba4rgs/pubhtml";
+    public static readonly InventorySheet Repairs = new("reparaciones", "Reparaciones", "1524236300", ["ID Reparación", "N° Gestion", "Codigo de Equipo"]);
     public static readonly IReadOnlyList<InventorySheet> Sheets = Array.AsReadOnly(new[]
     {
         new InventorySheet("inventario", "Inventario", "1210627928", ["ID_PRODUCTO", "ITEM", "DESCRIPCION"]),
@@ -32,7 +34,8 @@ public sealed class PublishedInventoryService(IHttpClientFactory clients, ILogge
                 return previous ?? new(null, null, "No se pudo consultar Google Sheets. Intenta de nuevo en un minuto.");
             try
             {
-                var url = SourceUrl.Replace("/pubhtml", $"/pub?output=csv&gid={sheet.Gid}");
+                var sourceUrl = sheet == Repairs ? RepairsSourceUrl : SourceUrl;
+                var url = sourceUrl.Replace("/pubhtml", $"/pub?output=csv&gid={sheet.Gid}");
                 var csv = await clients.CreateClient("PublishedInventory").GetStringAsync(url, cancellationToken);
                 var result = new InventorySourceResult(Parse(csv, sheet), DateTimeOffset.UtcNow, null);
                 cache[sheet.Key] = result;

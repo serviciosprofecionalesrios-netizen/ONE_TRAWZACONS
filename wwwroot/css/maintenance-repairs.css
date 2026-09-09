@@ -1,0 +1,20 @@
+.repairs-workspace { --inventory-accent: #176e79; }
+.repair-states { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.repair-state { flex: 1; min-width: 125px; padding: 16px 20px; background: white; border: 1px solid #dfe6ef; border-radius: 12px; color: #53657a; text-decoration: none; }
+.repair-state strong { display: block; font-size: 1.6rem; color: #203047; }
+.repair-state.selected { border: 2px solid #176e79; background: #edf7f8; }
+.repair-list { display: grid; gap: 18px; }
+.repair-card { padding: 24px; background: white; border: 1px solid #dfe6ef; border-radius: 14px; }
+.repair-card-header { display: flex; justify-content: space-between; gap: 15px; align-items: start; }
+.repair-card h3 { font-size: 1.15rem; font-weight: 700; margin: 0; }
+.repair-card h4 { font-size: .8rem; font-weight: 700; color: #53657a; }
+.repair-card p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; line-height: 1.7; }
+.repair-problem { padding: 16px; background: #f5f8fa; border-radius: 8px; margin-bottom: 18px; }
+.repair-problem p { margin: 0; }
+.repair-badge { padding: 6px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+.repair-badge.delivered { background: #e7f4ed; color: #17633b; }
+.repair-badge.completed { background: #e7effb; color: #265fa0; }
+.repair-badge.pending { background: #fff2d6; color: #885610; }
+.repair-badge.unknown { background: #edf2f7; color: #53657a; }
+.repair-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; }
+@media(max-width:767px) { .repair-card { padding: 16px; } .repair-detail-grid { grid-template-columns: 1fr; } }
