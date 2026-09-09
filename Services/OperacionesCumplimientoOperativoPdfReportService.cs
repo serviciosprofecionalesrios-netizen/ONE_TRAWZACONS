@@ -957,7 +957,7 @@ namespace ITServiceDeskApp.Services
 
                 row.RelativeItem().PaddingLeft(10).Column(column =>
                 {
-                    column.Item().Text(string.Empty).FontSize(18).SemiBold().FontColor("#11439A");
+                    column.Item().Text("TRAWZACONS").FontSize(18).SemiBold().FontColor("#11439A");
                     column.Item().Text("Operaciones - Reporte de Cumplimiento Operativo").FontSize(12).SemiBold().FontColor(Colors.Grey.Darken3);
                     column.Item().PaddingTop(2).Text($"Fuente: {model.SourceFileName ?? "Seguimiento de toneladas"}").FontSize(9).FontColor(Colors.Grey.Darken2);
                     column.Item().Text($"Corte operativo: {fechaCorte:dd/MM/yyyy}").FontSize(9).FontColor(Colors.Grey.Darken2);

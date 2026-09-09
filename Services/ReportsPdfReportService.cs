@@ -58,7 +58,7 @@ namespace ITServiceDeskApp.Services
 
                     row.RelativeItem().PaddingLeft(10).Column(column =>
                     {
-                        column.Item().Text(string.Empty)
+                        column.Item().Text("TRAWZACONS")
                             .FontSize(18)
                             .SemiBold()
                             .FontColor("#11439A");
