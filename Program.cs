@@ -27,6 +27,8 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient("PublishedInventory", client => client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddSingleton<PublishedInventoryService>();
 
 var databaseProvider = builder.Configuration["Database:Provider"]?.Trim() ?? "SqlServer";
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

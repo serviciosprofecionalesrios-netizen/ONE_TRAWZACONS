@@ -12,6 +12,25 @@
         </div>
     </div>
 
+    <h3 class="h5">Datos de Google Sheets</h3>
+    <div class="row g-3 mb-4">
+        @foreach (var sheet in ITServiceDeskApp.Services.PublishedInventoryService.Sheets)
+        {
+            var source = Model.PublishedSources[sheet.Key];
+            <div class="col-md-3">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <h4 class="h6">@sheet.Name</h4>
+                    <div class="h3">@(source.Table?.Rows.Count.ToString("N0") ?? "No disponible")</div>
+                    <div class="small text-muted">Registros identificados en la hoja</div>
+                    @if (source.Warning != null) { <p class="small text-warning" role="status">@source.Warning</p> }
+                    <a class="btn btn-sm btn-outline-primary mt-2" asp-action="Fuente" asp-route-section="@sheet.Key">Consultar @sheet.Name.ToLowerInvariant()</a>
+                </div></div>
+            </div>
+        }
+    </div>
+
+    <h3 class="h5">Registros locales del sistema</h3>
+
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card shadow-sm h-100">

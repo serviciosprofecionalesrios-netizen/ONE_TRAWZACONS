@@ -2082,6 +2082,12 @@
                             <span class="menu-text">Inventario</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu">
+                            <li><span class="menu-group-label">Datos de Google Sheets</span></li>
+                            @foreach (var sheet in ITServiceDeskApp.Services.PublishedInventoryService.Sheets)
+                            {
+                                <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key"><span class="op-item-main">@sheet.Name</span></a></li>
+                            }
+                            <li><hr class="dropdown-divider"></li>
                             <li><span class="menu-group-label">Inventarios</span></li>
                             <li>
                                 <a class="dropdown-item op-menu-item @(invHubActive ? "is-active" : "")"
