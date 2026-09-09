@@ -9,6 +9,8 @@ public class PublishedInventoryViewModel
     public required InventorySheet Sheet { get; init; }
     public required InventorySourceResult Source { get; init; }
     public string Query { get; init; } = "";
+    public DateTime? From { get; init; }
+    public DateTime? To { get; init; }
     public int Page { get; init; }
     public int TotalRows { get; init; }
     public int TotalPages => Math.Max(1, (TotalRows + 49) / 50);

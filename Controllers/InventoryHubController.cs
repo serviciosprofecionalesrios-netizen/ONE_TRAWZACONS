@@ -20,22 +20,28 @@ namespace ITServiceDeskApp.Controllers
             _published = published;
         }
 
-        public async Task<IActionResult> Fuente(string section = "inventario", string? q = null, int page = 1, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Fuente(string section = "inventario", string? q = null, DateTime? from = null, DateTime? to = null, int page = 1, CancellationToken cancellationToken = default)
         {
             var sheet = PublishedInventoryService.Sheets.FirstOrDefault(x => x.Key == section);
             if (sheet == null) return NotFound();
             var source = await _published.GetAsync(sheet, cancellationToken);
             var query = (q ?? "").Trim();
             if (query.Length > 200) return BadRequest("La búsqueda debe tener como máximo 200 caracteres.");
-            var rows = (source.Table?.Rows ?? []).Where(r => query.Length == 0 ||
-                r.Cells.Any(c => c.Contains(query, StringComparison.OrdinalIgnoreCase))).ToArray();
+            var dateIndex = source.Table == null ? -1 : Array.FindIndex(source.Table.Headers, h => h.Contains("FECHA", StringComparison.OrdinalIgnoreCase) || h.Contains("Marca de Tiempo", StringComparison.OrdinalIgnoreCase));
+            var rows = (source.Table?.Rows ?? []).Where(r => query.Length == 0 || r.Cells.Any(c => c.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                .Where(r => dateIndex < 0 || (!from.HasValue && !to.HasValue) || TryDate(r.Cells[dateIndex], out var d) && (!from.HasValue || d.Date >= from.Value.Date) && (!to.HasValue || d.Date <= to.Value.Date))
+                .OrderByDescending(r => dateIndex >= 0 && TryDate(r.Cells[dateIndex], out var parsed) ? parsed : DateTime.MinValue).ToArray();
             page = Math.Clamp(page, 1, Math.Max(1, (rows.Length + 49) / 50));
             return View(new PublishedInventoryViewModel
             {
-                Sheet = sheet, Source = source, Query = query, Page = page,
+                Sheet = sheet, Source = source, Query = query, From = from, To = to, Page = page,
                 TotalRows = rows.Length, Rows = rows.Skip((page - 1) * 50).Take(50).ToArray()
             });
         }
+
+        private static bool TryDate(string value, out DateTime date) =>
+            DateTime.TryParse(value, new System.Globalization.CultureInfo("es-NI"), System.Globalization.DateTimeStyles.AllowWhiteSpaces, out date) ||
+            DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AllowWhiteSpaces, out date);
 
         public async Task<IActionResult> Index()
         {

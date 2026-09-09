@@ -25,6 +25,7 @@
             <input type="hidden" name="status" value="@Model.Status" />
             <label class="visually-hidden" for="repairs-query">Buscar reparaciones</label>
             <input class="form-control" id="repairs-query" name="q" maxlength="200" value="@Model.Query" placeholder="Buscar folio, equipo, mecánico, problema o cliente…" />
+            <input type="date" name="from" value="@(Model.From?.ToString("yyyy-MM-dd"))" class="form-control" title="Desde" aria-label="Fecha desde" /><input type="date" name="to" value="@(Model.To?.ToString("yyyy-MM-dd"))" class="form-control" title="Hasta" aria-label="Fecha hasta" />
             <button class="btn btn-primary">Buscar</button>
             @if (Model.Query.Length > 0 || Model.Status.Length > 0) { <a class="btn btn-outline-secondary" asp-action="Index">Limpiar</a> }
         </form>
@@ -47,8 +48,8 @@
         </div>
         @if (Model.TotalRows == 0) { <div class="inventory-empty"><h3>No se encontraron reparaciones</h3><p>Prueba con otro filtro o término de búsqueda.</p></div> }
         <nav class="d-flex justify-content-between my-4" aria-label="Páginas de reparaciones"><span>Página @Model.Page de @Model.TotalPages</span><div class="d-flex gap-2">
-            @if (Model.Page > 1) { <a class="btn btn-outline-secondary" asp-action="Index" asp-route-q="@Model.Query" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Anterior</a> }
-            @if (Model.Page < Model.TotalPages) { <a class="btn btn-primary" asp-action="Index" asp-route-q="@Model.Query" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Siguiente</a> }
+            @if (Model.Page > 1) { <a class="btn btn-outline-secondary" asp-action="Index" asp-route-q="@Model.Query" asp-route-status="@Model.Status" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page - 1)">Anterior</a> }
+            @if (Model.Page < Model.TotalPages) { <a class="btn btn-primary" asp-action="Index" asp-route-q="@Model.Query" asp-route-status="@Model.Status" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page + 1)">Siguiente</a> }
         </div></nav>
     }
 </div>

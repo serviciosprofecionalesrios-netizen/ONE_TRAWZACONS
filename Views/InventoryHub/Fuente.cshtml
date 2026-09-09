@@ -19,8 +19,9 @@
             <input type="hidden" name="section" value="@Model.Sheet.Key" />
             <label for="inventory-search" class="visually-hidden">Buscar registros</label>
             <input id="inventory-search" name="q" value="@Model.Query" maxlength="200" class="form-control" placeholder="@(Model.Sheet.Key == "inventario" ? "Buscar artículo, código, número de parte o almacén…" : Model.Sheet.Key == "salidas" ? "Buscar requisición, equipo, destinatario o fecha…" : "Buscar orden, proveedor, descripción o fecha…")" />
+            @if (Model.Sheet.Key != "inventario") { <input type="date" name="from" value="@(Model.From?.ToString("yyyy-MM-dd"))" class="form-control" title="Desde" aria-label="Fecha desde" /><input type="date" name="to" value="@(Model.To?.ToString("yyyy-MM-dd"))" class="form-control" title="Hasta" aria-label="Fecha hasta" /> }
             <button class="btn btn-primary" type="submit">Buscar</button>
-            @if (!string.IsNullOrEmpty(Model.Query)) { <a class="btn btn-outline-secondary" asp-action="Fuente" asp-route-section="@Model.Sheet.Key">Limpiar</a> }
+            @if (!string.IsNullOrEmpty(Model.Query) || Model.From.HasValue || Model.To.HasValue) { <a class="btn btn-outline-secondary" asp-action="Fuente" asp-route-section="@Model.Sheet.Key">Limpiar</a> }
         </form>
         <div class="inventory-results"><span>@Model.TotalRows resultados</span><span>Página @Model.Page de @Model.TotalPages</span></div>
         @switch (Model.Sheet.Key)
@@ -34,8 +35,8 @@
         <nav aria-label="Páginas de resultados" class="d-flex justify-content-between align-items-center my-4">
             <span class="text-muted small">Página @Model.Page de @Model.TotalPages</span>
             <div class="d-flex gap-2">
-                @if (Model.Page > 1) { <a class="btn btn-outline-secondary" asp-action="Fuente" asp-route-section="@Model.Sheet.Key" asp-route-q="@Model.Query" asp-route-page="@(Model.Page - 1)">Anterior</a> }
-                @if (Model.Page < Model.TotalPages) { <a class="btn btn-primary" asp-action="Fuente" asp-route-section="@Model.Sheet.Key" asp-route-q="@Model.Query" asp-route-page="@(Model.Page + 1)">Siguiente</a> }
+                @if (Model.Page > 1) { <a class="btn btn-outline-secondary" asp-action="Fuente" asp-route-section="@Model.Sheet.Key" asp-route-q="@Model.Query" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page - 1)">Anterior</a> }
+                @if (Model.Page < Model.TotalPages) { <a class="btn btn-primary" asp-action="Fuente" asp-route-section="@Model.Sheet.Key" asp-route-q="@Model.Query" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page + 1)">Siguiente</a> }
             </div>
         </nav>
     }
