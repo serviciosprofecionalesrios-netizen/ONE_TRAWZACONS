@@ -1,0 +1,12 @@
+@model ITServiceDeskApp.ViewModels.Inventory.PublishedInventoryViewModel
+<div class="receipt-list">@foreach (var row in Model.Rows)
+{
+    <article class="receipt-card">
+        <div class="receipt-marker"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i></div>
+        <div class="receipt-content"><div class="d-flex justify-content-between flex-wrap gap-2"><span class="inventory-code">OC @Model.Value(row, "ORDEN DE COMPRA")</span><span class="inventory-status">@Model.Value(row, "ESTADO RECIBIDO")</span></div>
+        <h3>@Model.Value(row, "DESCRIPCION")</h3>
+        <dl class="inventory-facts"><div><dt>Proveedor</dt><dd>@Model.Value(row, "PROVEEDOR")</dd></div><div><dt>Fecha de recepción</dt><dd>@Model.Value(row, "FECHA/HORA")</dd></div><div><dt>A comprar</dt><dd>@Model.Value(row, "CANT. A COMPRAR") @Model.Value(row, "U/M")</dd></div><div><dt>Cant. recibida</dt><dd>@Model.Value(row, "CANT. RECIBIDA")</dd></div><div><dt>Cantidad recibida (OC)</dt><dd>@Model.Value(row, "CANTIDAD RECIBIDA")</dd></div></dl>
+        <details><summary>Detalle de recepción</summary><dl class="inventory-facts mt-3"><div><dt>Descripción adicional</dt><dd>@Model.Value(row, "DESCRIPCION EXTRA")</dd></div><div><dt>Estado OC</dt><dd>@Model.Value(row, "ESTADO OC")</dd></div><div><dt>Total C$</dt><dd>@Model.Value(row, "TOTAL C$")</dd></div><div><dt>Total $</dt><dd>@Model.Value(row, "TOTAL $")</dd></div></dl></details>
+        </div>
+    </article>
+}</div>

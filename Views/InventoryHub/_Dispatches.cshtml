@@ -1,0 +1,7 @@
+@model ITServiceDeskApp.ViewModels.Inventory.PublishedInventoryViewModel
+<div class="table-responsive inventory-table" tabindex="0" aria-label="Registro de despachos">
+<table class="table align-middle mb-0"><thead><tr><th>Requisición / fecha</th><th>Material</th><th class="text-end">Cantidad</th><th>Origen → destino</th><th>Equipo / operación</th><th>Recibido por</th><th>Estado</th></tr></thead>
+<tbody>@foreach (var row in Model.Rows)
+{
+    <tr><td><span class="inventory-code">@Model.Value(row, "N° REQUISA")</span><small class="d-block text-muted">@Model.Value(row, "FECHA/HORA")</small></td><td class="inventory-description"><strong>@Model.Value(row, "DESCRIPCION")</strong><small>@Model.Value(row, "ITEM")</small></td><td class="text-end"><span class="inventory-quantity">@Model.Value(row, "Cantidad Despachada")</span></td><td>@Model.Value(row, "ALMACEN DESPACHO") → @Model.Value(row, "ALMACEN TRASLADO")</td><td><strong>@Model.Value(row, "CODIGO EQUIPO/PLACA")</strong><small class="d-block text-muted">@Model.Value(row, "OPERACION")</small></td><td>@Model.Value(row, "RECIBI")</td><td><span class="inventory-status">@Model.Value(row, "ESTADO")</span></td></tr>
+}</tbody></table></div>

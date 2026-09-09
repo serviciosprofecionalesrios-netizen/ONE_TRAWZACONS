@@ -1,0 +1,10 @@
+@model ITServiceDeskApp.ViewModels.Inventory.PublishedInventoryViewModel
+<div class="purchase-grid">@foreach (var row in Model.Rows)
+{
+    <article class="purchase-card"><header><span class="inventory-code">OC @Model.Value(row, "ORDEN DE COMPRA")</span><span class="inventory-status">@Model.Value(row, "ESTADO OC")</span></header>
+        <h3>@Model.Value(row, "PROVEEDOR")</h3><p class="purchase-description">@Model.Value(row, "DESCRIPCION")</p>
+        <dl class="inventory-facts"><div><dt>Fecha</dt><dd>@Model.Value(row, "FECHA/HORA")</dd></div><div><dt>Factura</dt><dd>@Model.Value(row, "FACTURA #")</dd></div><div><dt>Forma de pago</dt><dd>@Model.Value(row, "METODO DE PAGO")</dd></div></dl>
+        <div class="purchase-totals"><div><span>Total C$</span><strong>@Model.Value(row, "TOTAL C$")</strong></div><div><span>Total $</span><strong>@Model.Value(row, "TOTAL $")</strong></div></div>
+        <details><summary>Ver detalle de compra</summary><dl class="inventory-facts mt-3"><div><dt>Cantidad a comprar</dt><dd>@Model.Value(row, "CANT. A COMPRAR")</dd></div><div><dt>Cantidad recibida</dt><dd>@Model.Value(row, "CANTIDAD RECIBIDA")</dd></div><div><dt>Unidad</dt><dd>@Model.Value(row, "U/M")</dd></div><div><dt>Precio unitario C$</dt><dd>@Model.Value(row, "PRECIO UNITARIO C$")</dd></div><div><dt>Precio unitario $</dt><dd>@Model.Value(row, "PRECIO UNITARIO $")</dd></div><div><dt>Descripción adicional</dt><dd>@Model.Value(row, "DESCRIPCION EXTRA")</dd></div></dl></details>
+    </article>
+}</div>

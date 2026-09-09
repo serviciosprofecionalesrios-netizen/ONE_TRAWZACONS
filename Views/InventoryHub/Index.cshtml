@@ -12,7 +12,7 @@
         </div>
     </div>
 
-    <h3 class="h5">Datos de Google Sheets</h3>
+    <h3 class="h5">Almacén y compras</h3>
     <div class="row g-3 mb-4">
         @foreach (var sheet in ITServiceDeskApp.Services.PublishedInventoryService.Sheets)
         {
@@ -21,28 +21,19 @@
                 <div class="card shadow-sm h-100"><div class="card-body">
                     <h4 class="h6">@sheet.Name</h4>
                     <div class="h3">@(source.Table?.Rows.Count.ToString("N0") ?? "No disponible")</div>
-                    <div class="small text-muted">Registros identificados en la hoja</div>
-                    @if (source.Warning != null) { <p class="small text-warning" role="status">@source.Warning</p> }
+                    <div class="small text-muted">Registros disponibles</div>
+                    @if (source.Warning != null) { <p class="small text-warning" role="status">No fue posible actualizar la información. Abre la sección para consultar su disponibilidad.</p> }
                     <a class="btn btn-sm btn-outline-primary mt-2" asp-action="Fuente" asp-route-section="@sheet.Key">Consultar @sheet.Name.ToLowerInvariant()</a>
                 </div></div>
             </div>
         }
     </div>
 
-    <h3 class="h5">Registros locales del sistema</h3>
+    <h3 class="h5">Gestión operativa</h3>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Inventario TI</div>
-                    <div class="h3 mb-1">@Model.ItAssetsTotal</div>
-                    <div class="small text-muted">Activos: @Model.ItAssetsActive</div>
-                    <a class="btn btn-sm btn-outline-primary mt-3" asp-controller="Inventory" asp-action="Index">Ver inventario TI</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
+
+        <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Inventario de repuestos</div>
@@ -55,7 +46,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Solicitudes de compras</div>
@@ -74,7 +65,6 @@
         <div class="card-body">
             <h5 class="fw-bold mb-3">Accesos rapidos</h5>
             <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-primary" asp-controller="Inventory" asp-action="Create"><i class="bi bi-plus-circle me-1"></i> Nuevo articulo TI</a>
                 <a class="btn btn-primary" asp-controller="MaintenanceInventory" asp-action="Create"><i class="bi bi-plus-circle me-1"></i> Nuevo articulo de repuesto</a>
                 <a class="btn btn-outline-dark"
                    asp-controller="Tickets"

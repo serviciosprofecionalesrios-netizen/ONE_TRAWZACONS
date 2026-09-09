@@ -1,13 +1,8 @@
 @using ITServiceDeskApp.Services
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <h3 class="h5">Inventario y movimientos de Google Sheets</h3>
-        <p class="text-muted">Consulta existencias, entradas, salidas y compras del archivo publicado.</p>
-        <div class="d-flex flex-wrap gap-2">
-            @foreach (var sheet in PublishedInventoryService.Sheets)
-            {
-                <a class="btn btn-outline-primary" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key">@sheet.Name</a>
-            }
-        </div>
-    </div>
-</div>
+<nav class="inventory-tabs" aria-label="Secciones de inventario">
+    @foreach (var sheet in PublishedInventoryService.Sheets)
+    {
+        var active = Context.Request.Query["section"].ToString() == sheet.Key || (string.IsNullOrEmpty(Context.Request.Query["section"]) && sheet.Key == "inventario");
+        <a class="@(active ? "selected" : "")" aria-current="@(active ? "page" : null)" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key">@sheet.Name</a>
+    }
+</nav>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -1371,8 +1371,6 @@
     var mntTecnicosSubmenuActive = mntTecnicosNuevoActive || mntTecnicosListaActive;
 
     var invHubActive = currentController == "InventoryHub" && currentAction == "Index";
-    var invTiListActive = currentController == "Inventory" && currentAction == "Index";
-    var invTiNewActive = currentController == "Inventory" && currentAction == "Create";
     var invSpareListActive = currentController == "MaintenanceInventory" && (currentAction == "Index" || currentAction == "Detalle" || currentAction == "Transito");
     var invSpareNewActive = currentController == "MaintenanceInventory" && currentAction == "Create";
     var invPurchaseOrderActive = isOcCreateFinanceContext;
@@ -2082,7 +2080,7 @@
                             <span class="menu-text">Inventario</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu">
-                            <li><span class="menu-group-label">Datos de Google Sheets</span></li>
+                            <li><span class="menu-group-label">Almacén y compras</span></li>
                             @foreach (var sheet in ITServiceDeskApp.Services.PublishedInventoryService.Sheets)
                             {
                                 <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key"><span class="op-item-main">@sheet.Name</span></a></li>
@@ -2098,24 +2096,10 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item op-menu-item @(invTiListActive ? "is-active" : "")"
-                                   asp-controller="Inventory"
-                                   asp-action="Index">
-                                    <span class="op-item-main"><i class="bi bi-pc-display"></i>Inventario TI</span>
-                                </a>
-                            </li>
-                            <li>
                                 <a class="dropdown-item op-menu-item @(invSpareListActive ? "is-active" : "")"
                                    asp-controller="MaintenanceInventory"
                                    asp-action="Index">
                                     <span class="op-item-main"><i class="bi bi-box-seam"></i>Inventario de repuestos</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item op-menu-item @(invTiNewActive ? "is-active" : "")"
-                                   asp-controller="Inventory"
-                                   asp-action="Create">
-                                    <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nuevo articulo TI</span>
                                 </a>
                             </li>
                             <li>
