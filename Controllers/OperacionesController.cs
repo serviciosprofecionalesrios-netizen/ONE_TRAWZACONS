@@ -5190,17 +5190,23 @@ namespace ITServiceDeskApp.Controllers
                 .OrderBy(x => x.Fecha)
                 .ToList();
 
-            var comparativoToneladasSitio = Enumerable.Range(1, 3)
+            var hoy = DateTime.Today;
+            var fechaLimiteComparativo = fechaCorte.Year == hoy.Year && fechaCorte < hoy
+                ? hoy
+                : fechaCorte;
+            var cantidadMesesComparativo = Math.Clamp(fechaLimiteComparativo.Month, 1, 12);
+
+            var comparativoToneladasSitio = Enumerable.Range(1, cantidadMesesComparativo)
                 .Select(monthNumber =>
                 {
-                    var corteDiaMes = monthNumber < fechaCorte.Month
-                        ? DateTime.DaysInMonth(fechaCorte.Year, monthNumber)
-                        : monthNumber == fechaCorte.Month
-                            ? Math.Min(fechaCorte.Day, DateTime.DaysInMonth(fechaCorte.Year, monthNumber))
+                    var corteDiaMes = monthNumber < fechaLimiteComparativo.Month
+                        ? DateTime.DaysInMonth(fechaLimiteComparativo.Year, monthNumber)
+                        : monthNumber == fechaLimiteComparativo.Month
+                            ? Math.Min(fechaLimiteComparativo.Day, DateTime.DaysInMonth(fechaLimiteComparativo.Year, monthNumber))
                             : 0;
                     var rowsMesComparativo = rowsConFecha
                         .Where(r =>
-                            r.FechaEvento!.Value.Year == fechaCorte.Year &&
+                            r.FechaEvento!.Value.Year == fechaLimiteComparativo.Year &&
                             r.FechaEvento.Value.Month == monthNumber &&
                             corteDiaMes > 0 &&
                             r.FechaEvento.Value.Day <= corteDiaMes &&
@@ -5228,17 +5234,17 @@ namespace ITServiceDeskApp.Controllers
                 })
                 .ToList();
 
-            var comparativoDieselSitio = Enumerable.Range(1, 3)
+            var comparativoDieselSitio = Enumerable.Range(1, cantidadMesesComparativo)
                 .Select(monthNumber =>
                 {
-                    var corteDiaMes = monthNumber < fechaCorte.Month
-                        ? DateTime.DaysInMonth(fechaCorte.Year, monthNumber)
-                        : monthNumber == fechaCorte.Month
-                            ? Math.Min(fechaCorte.Day, DateTime.DaysInMonth(fechaCorte.Year, monthNumber))
+                    var corteDiaMes = monthNumber < fechaLimiteComparativo.Month
+                        ? DateTime.DaysInMonth(fechaLimiteComparativo.Year, monthNumber)
+                        : monthNumber == fechaLimiteComparativo.Month
+                            ? Math.Min(fechaLimiteComparativo.Day, DateTime.DaysInMonth(fechaLimiteComparativo.Year, monthNumber))
                             : 0;
                     var rowsMesComparativo = rowsConFecha
                         .Where(r =>
-                            r.FechaEvento!.Value.Year == fechaCorte.Year &&
+                            r.FechaEvento!.Value.Year == fechaLimiteComparativo.Year &&
                             r.FechaEvento.Value.Month == monthNumber &&
                             corteDiaMes > 0 &&
                             r.FechaEvento.Value.Day <= corteDiaMes &&

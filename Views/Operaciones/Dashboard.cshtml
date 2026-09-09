@@ -15,6 +15,9 @@
         Model.ComparativoToneladasSitio.Select(x => new { mes = x.Mes, triton = x.Triton }));
     var comparativoDieselSitioJson = JsonSerializer.Serialize(
         Model.ComparativoDieselSitio.Select(x => new { mes = x.Mes, triton = x.Triton }));
+    var rangoMesesComparativo = Model.ComparativoToneladasSitio.Count > 1
+        ? $"{Model.ComparativoToneladasSitio.First().Mes} a {Model.ComparativoToneladasSitio.Last().Mes}"
+        : Model.ComparativoToneladasSitio.FirstOrDefault()?.Mes ?? "Mes actual";
     var proyeccionPct = Model.MetaDiaria > 0
         ? Math.Round((Model.PrediccionToneladasManana / Model.MetaDiaria) * 100m, 1)
         : 0m;
@@ -733,7 +736,7 @@
     <div class="row g-3 mb-3 layout-row row-comparativos">
         <div class="col-lg-6">
             <div class="ops-card">
-                <div class="ops-card__header">Comparativo Toneladas (Enero, Febrero, Marzo) - TRITON</div>
+                <div class="ops-card__header">Comparativo Toneladas (@rangoMesesComparativo) - TRITON</div>
                 <div class="ops-card__body">
                     <canvas id="chartComparativoToneladasSitio" height="180"></canvas>
                 </div>
