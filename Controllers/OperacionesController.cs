@@ -3668,6 +3668,14 @@ namespace ITServiceDeskApp.Controllers
         private List<OperacionesMetaProduccionMensualEntry> LoadOperacionesMetasProduccionMensual()
         {
             var path = GetOperacionesMetasProduccionMensualPath();
+            if (!System.IO.File.Exists(path) && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PERSISTENT_STORAGE_PATH")))
+            {
+                var legacyPath = Path.Combine(_environment.ContentRootPath, "Data", "Operaciones", OperacionesMetasProduccionMensualFileName);
+                if (System.IO.File.Exists(legacyPath))
+                {
+                    path = legacyPath;
+                }
+            }
             if (!System.IO.File.Exists(path))
             {
                 return new List<OperacionesMetaProduccionMensualEntry>();
@@ -3714,6 +3722,14 @@ namespace ITServiceDeskApp.Controllers
 
         private string GetOperacionesMetasProduccionMensualPath()
         {
+            // Render exposes PERSISTENT_STORAGE_PATH for user-maintained operational settings.
+            // Keep the legacy path as a read fallback so existing local deployments retain their metas.
+            var persistentRoot = Environment.GetEnvironmentVariable("PERSISTENT_STORAGE_PATH");
+            if (!string.IsNullOrWhiteSpace(persistentRoot))
+            {
+                return Path.Combine(persistentRoot, "operaciones", OperacionesMetasProduccionMensualFileName);
+            }
+
             return Path.Combine(_environment.ContentRootPath, "Data", "Operaciones", OperacionesMetasProduccionMensualFileName);
         }
 
