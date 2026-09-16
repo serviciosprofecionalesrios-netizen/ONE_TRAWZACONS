@@ -22,6 +22,7 @@
     var selectedSparePartsJson = ViewBag.SelectedSparePartsJson as string ?? "[]";
     var maintenanceUiMetaJson = ViewBag.MaintenanceUiMetaJson as string ?? "{}";
     var canSetPriority = ViewBag.CanSetPriority is bool canSet && canSet;
+    var todayString = DateTime.Today.ToString("yyyy-MM-dd");
 }
 
 <style>
@@ -59,7 +60,7 @@
 
 <div class="m-shell mt-3">
     <div class="m-head">
-        <h3 class="m-title">Nueva Orden de Mantenimiento</h3>
+        <h3 class="m-title">Alta de reparaciones</h3>
         <a asp-action="Index" asp-route-department="Mantenimiento" class="btn-close" title="Cerrar"></a>
     </div>
 
@@ -75,7 +76,7 @@
             <input type="hidden" id="maintenanceUiMetaJson" name="maintenanceUiMetaJson" value="@maintenanceUiMetaJson" />
 
             <div class="m-box mb-3">
-                <h4>Plantilla rapida</h4>
+                <h4>Plantilla rápida (opcional)</h4>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-8">
                         <label class="m-label mb-1" for="templatePresetSelect">Tipo de plantilla</label>
@@ -106,12 +107,13 @@
             </div>
 
             <div class="row g-3">
+                <div class="col-12"><h4 class="mb-0">Datos principales</h4><div class="m-note">Información registrada cuando el equipo ingresa a mantenimiento.</div></div>
                 <div class="col-md-4"><label class="m-label">Numero de orden</label><input class="form-control" value="@previewTicket" readonly /><div class="m-note">Se genera automaticamente al guardar.</div></div>
                 <div class="col-md-4"><label class="m-label">Fecha de creacion</label><input class="form-control" value="@previewCreated" readonly /></div>
                 <div class="col-md-4"><label class="m-label">Departamento</label><input class="form-control" value="Mantenimiento" readonly /></div>
 
                 <div class="col-md-5">
-                    <label asp-for="RequestingUser" class="m-label">Solicitante <span class="req">*</span></label>
+                    <label asp-for="RequestingUser" class="m-label">Responsable <span class="req">*</span></label>
                     <select asp-for="RequestingUser" class="form-select" asp-items="requestingUserOptions"><option value="">Seleccionar solicitante</option></select>
                     <span asp-validation-for="RequestingUser" class="text-danger small"></span>
                 </div>
@@ -119,6 +121,14 @@
                     <label asp-for="Site" class="m-label">Sitio / Ubicacion <span class="req">*</span></label>
                     <select asp-for="Site" class="form-select" asp-items="siteOptions"><option value="">Seleccionar sitio</option></select>
                     <span asp-validation-for="Site" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="m-label" for="customer">Cliente</label>
+                    <input id="customer" name="customer" class="form-control" maxlength="120" placeholder="Nombre del cliente" />
+                </div>
+                <div class="col-md-4">
+                    <label class="m-label" for="intakeDate">Fecha de entrada <span class="req">*</span></label>
+                    <input id="intakeDate" name="intakeDate" class="form-control" type="date" value="@todayString" required />
                 </div>
                 <div class="col-md-3">
                     <label asp-for="Tenencia" class="m-label">Tenencia <span class="req">*</span></label>
@@ -199,12 +209,12 @@
                     <div class="m-note">Puedes escoger dos o mas tecnicos.</div>
                     <span asp-validation-for="AssignedTechnician" class="text-danger small"></span>
                 </div>
-                <div class="col-md-6"><label class="m-label">Evidencia inicial</label><input type="file" name="reportEvidenceFile" class="form-control" accept=".jpg,.jpeg,.png,.webp,.pdf" /></div>
+                <div class="col-md-6"><label class="m-label">Documento de ingreso</label><input type="file" name="reportEvidenceFile" class="form-control" accept=".jpg,.jpeg,.png,.webp,.pdf" /></div>
 
-                <div class="col-md-4"><label asp-for="UnitCode" class="m-label">Unidad / Equipo <span class="req">*</span></label><input asp-for="UnitCode" class="form-control" placeholder="Ej: U-102 / EXC-07" required /><span asp-validation-for="UnitCode" class="text-danger small"></span></div>
-                <div class="col-md-4"><label asp-for="FailureCategory" class="m-label">Categoria de falla</label><select asp-for="FailureCategory" class="form-select" asp-items="maintenanceFailureCategoryOptions"><option value="">Seleccionar categoria</option></select><span asp-validation-for="FailureCategory" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="UnitCode" class="m-label">Codigo de equipo <span class="req">*</span></label><input asp-for="UnitCode" class="form-control" placeholder="Ej: W-0069" required /><span asp-validation-for="UnitCode" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="FailureCategory" class="m-label">Descripcion</label><select asp-for="FailureCategory" class="form-select" asp-items="maintenanceFailureCategoryOptions"><option value="">Seleccionar descripcion</option></select><span asp-validation-for="FailureCategory" class="text-danger small"></span></div>
                 <div class="col-md-4"><label asp-for="DamagedElement" class="m-label">Elemento danado</label><input asp-for="DamagedElement" class="form-control" placeholder="Ej: Bomba hidraulica, alternador" /><span asp-validation-for="DamagedElement" class="text-danger small"></span></div>
-                <div class="col-md-6"><label asp-for="FailureOdometerKm" class="m-label">KM al ingreso por falla</label><input asp-for="FailureOdometerKm" class="form-control" type="number" step="0.01" min="0" /><span asp-validation-for="FailureOdometerKm" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="FailureOdometerKm" class="m-label">KM entrada</label><input asp-for="FailureOdometerKm" class="form-control" type="number" step="0.01" min="0" /><span asp-validation-for="FailureOdometerKm" class="text-danger small"></span></div>
                 <div class="col-md-6"><label asp-for="ExitOdometerKm" class="m-label">KM de salida de taller</label><input asp-for="ExitOdometerKm" class="form-control" type="number" step="0.01" min="0" /><span asp-validation-for="ExitOdometerKm" class="text-danger small"></span></div>
 
                 <div class="col-12">
@@ -253,8 +263,22 @@
                     </div>
                 </div>
 
-                <div class="col-12"><label asp-for="Description" class="m-label">Descripcion del trabajo <span class="req">*</span></label><textarea asp-for="Description" class="form-control" rows="4"></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
+                <div class="col-12"><label asp-for="Description" class="m-label">Descripción del problema <span class="req">*</span></label><textarea asp-for="Description" class="form-control" rows="4" placeholder="Describa la falla reportada y las condiciones de ingreso."></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
                 <div class="col-12"><label asp-for="Observations" class="m-label">Datos del equipo / observaciones</label><textarea asp-for="Observations" class="form-control" rows="3"></textarea><span asp-validation-for="Observations" class="text-danger small"></span></div>
+
+                <div class="col-12"><div class="m-box"><h4>Evidencia</h4><div class="m-note mb-2">Registre las fotografías de condición del equipo al momento de recibirlo.</div><div class="row g-3">
+                    <div class="col-md-6"><label class="m-label">Foto tablero entrada</label><input type="file" name="dashboardEntryFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /></div>
+                    <div class="col-md-6"><label class="m-label">Foto tablero salida</label><input type="file" name="dashboardExitFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /></div>
+                    <div class="col-md-3"><label class="m-label">Foto delantera</label><input type="file" name="frontPhotoFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /></div>
+                    <div class="col-md-3"><label class="m-label">Foto trasera</label><input type="file" name="rearPhotoFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /></div>
+                    <div class="col-md-3"><label class="m-label">Foto izquierda</label><input type="file" name="leftPhotoFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /></div>
+                    <div class="col-md-3"><label class="m-label">Foto derecha</label><input type="file" name="rightPhotoFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /></div>
+                </div></div></div>
+
+                <div class="col-12"><div class="m-box"><h4>Consentimiento</h4><div class="row g-3">
+                    <div class="col-md-6"><label class="m-label">Firma de recibido</label><input type="file" name="receivedSignatureFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /><div class="m-note">Adjunte la firma o comprobante de quien entrega el equipo.</div></div>
+                    <div class="col-md-6"><label class="m-label">Firma del cliente</label><input type="file" name="customerSignatureFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" /><div class="m-note">Adjunte la firma o comprobante de conformidad del cliente.</div></div>
+                </div></div></div>
             </div>
         </div>
         <div class="m-foot">

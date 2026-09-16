@@ -34,7 +34,13 @@ namespace ITServiceDeskApp.Controllers
         {
             "PCT",
             "PSB",
-            "POZ"
+            "POZ",
+            "Plantel Central",
+            "San Benito",
+            "Carretera",
+            "Mina El Limón",
+            "La Libertad",
+            "Plantel Las Lajitas"
         };
         private static readonly string[] MaintenanceTenencias =
         {
@@ -52,7 +58,19 @@ namespace ITServiceDeskApp.Controllers
             "Suspension",
             "Refrigeracion",
             "Carroceria",
-            "Otro"
+            "Otro",
+            "Electrico",
+            "Suspension",
+            "Direccion",
+            "Llantas",
+            "AC",
+            "Chasis",
+            "Rin",
+            "Levante",
+            "Combustible",
+            "Tren de rodaje",
+            "Tren motriz",
+            "Mantenimiento"
         };
         private static readonly string[] MaintenanceStageOptions = MaintenanceTechnicianCatalog.MaintenanceStageOptions;
 
@@ -3700,6 +3718,16 @@ namespace ITServiceDeskApp.Controllers
         public async Task<IActionResult> CreateMaintenance(
             Ticket ticket,
             IFormFile? reportEvidenceFile,
+            IFormFile? dashboardEntryFile,
+            IFormFile? dashboardExitFile,
+            IFormFile? frontPhotoFile,
+            IFormFile? rearPhotoFile,
+            IFormFile? leftPhotoFile,
+            IFormFile? rightPhotoFile,
+            IFormFile? receivedSignatureFile,
+            IFormFile? customerSignatureFile,
+            string? customer,
+            DateTime? intakeDate,
             string? sparePartsJson,
             string? maintenanceUiMetaJson,
             string? submitAction)
@@ -3712,6 +3740,11 @@ namespace ITServiceDeskApp.Controllers
 
             ticket.Status = TicketStatus.Open;
             ticket.Department = "Mantenimiento";
+
+            if (!intakeDate.HasValue)
+            {
+                ModelState.AddModelError("intakeDate", "Debe indicar la fecha de entrada.");
+            }
 
             if (!canSetPriority)
             {
@@ -3984,7 +4017,25 @@ namespace ITServiceDeskApp.Controllers
                 ticket.AttachmentPath,
                 new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" });
 
-            ticket.CreatedDate = DateTime.UtcNow;
+            var imageExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var intakeEvidence = new Dictionary<string, string?>
+            {
+                ["Cliente"] = customer?.Trim(),
+                ["Fecha de entrada"] = intakeDate?.Date.ToString("dd/MM/yyyy"),
+                ["Foto tablero entrada"] = await SaveUploadedFileAsync(dashboardEntryFile, null, imageExtensions),
+                ["Foto tablero salida"] = await SaveUploadedFileAsync(dashboardExitFile, null, imageExtensions),
+                ["Foto delantera"] = await SaveUploadedFileAsync(frontPhotoFile, null, imageExtensions),
+                ["Foto trasera"] = await SaveUploadedFileAsync(rearPhotoFile, null, imageExtensions),
+                ["Foto izquierda"] = await SaveUploadedFileAsync(leftPhotoFile, null, imageExtensions),
+                ["Foto derecha"] = await SaveUploadedFileAsync(rightPhotoFile, null, imageExtensions),
+                ["Firma de recibido"] = await SaveUploadedFileAsync(receivedSignatureFile, null, imageExtensions),
+                ["Firma cliente"] = await SaveUploadedFileAsync(customerSignatureFile, null, imageExtensions)
+            };
+            ticket.InitialConditionNotes = string.Join(Environment.NewLine, intakeEvidence
+                .Where(item => !string.IsNullOrWhiteSpace(item.Value))
+                .Select(item => $"{item.Key}: {item.Value}"));
+
+            ticket.CreatedDate = intakeDate?.Date ?? DateTime.UtcNow;
             ticket.SLADeadline = CalculateSLA(ticket.Priority);
             ticket.ClosedDate = null;
 
