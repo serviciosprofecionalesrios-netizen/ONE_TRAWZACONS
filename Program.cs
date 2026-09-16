@@ -151,6 +151,35 @@ using (var scope = app.Services.CreateScope())
 
         context.Database.Migrate();
 
+        var existingTechnicianNames = context.MaintenanceTechnicians
+            .Select(x => x.FullName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var techniciansToAdd = MaintenanceTechnicianCatalog.InitialPersonnel
+            .Where(person => !existingTechnicianNames.Contains(person.FullName))
+            .Select(person => new MaintenanceTechnician
+            {
+                FullName = person.FullName,
+                Category = person.Specialty,
+                Shift = "Diurno",
+                MaxActiveOrders = 4,
+                PhoneNumber = person.PhoneNumber ?? "No registrado",
+                EmergencyContactName = "No registrado",
+                EmergencyRelationship = "No registrado",
+                EmergencyContactPhone = "No registrado",
+                IsAvailable = true,
+                IsActive = true,
+                Notes = $"Rol: {person.Role}. Especialidad: {person.Specialty}." +
+                    (string.IsNullOrWhiteSpace(person.Email) ? string.Empty : $" Correo: {person.Email}"),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            })
+            .ToList();
+        if (techniciansToAdd.Count > 0)
+        {
+            context.MaintenanceTechnicians.AddRange(techniciansToAdd);
+            context.SaveChanges();
+        }
+
         var bootstrapEmail = builder.Configuration["BootstrapAdmin:Email"]?.Trim().ToLowerInvariant()
             ?? "admin@trawzacons.com";
 

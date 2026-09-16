@@ -5710,7 +5710,7 @@ namespace ITServiceDeskApp.Controllers
             ViewBag.TechnicianOptions = technicianOptions
                 .Select(x =>
                 {
-                    var label = $"{x.FullName} ({x.CurrentActiveOrders}/{x.MaxActiveOrders})";
+                    var label = $"{x.FullName} — {x.Category} ({x.CurrentActiveOrders}/{x.MaxActiveOrders})";
                     if (x.IsOverCapacity)
                     {
                         label += " - Capacidad completa";
@@ -5807,6 +5807,14 @@ namespace ITServiceDeskApp.Controllers
             var requestingUserOptions = requestingUsers
                 .Select(u => new SelectListItem($"{u.FullName} ({u.Email})", u.FullName))
                 .ToList();
+
+            if (requestingUserOptions.All(option =>
+                    !string.Equals(option.Value, "David Canales", StringComparison.OrdinalIgnoreCase)))
+            {
+                requestingUserOptions.Add(new SelectListItem(
+                    "David Canales (Supervisor de Taller)",
+                    "David Canales"));
+            }
 
             if (!string.IsNullOrWhiteSpace(ticket?.RequestingUser) &&
                 requestingUserOptions.All(o => o.Value != ticket.RequestingUser))

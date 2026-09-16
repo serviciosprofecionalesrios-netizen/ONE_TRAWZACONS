@@ -1765,15 +1765,18 @@
                                     </span>
                                 </button>
                             </li>
-                            <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="tecnicos" data-search="nuevo tecnico taller mecanico electrico llantero contacto emergencia">
-                                <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntTecnicosNuevoActive ? "is-active" : "")"
-                                   asp-controller="MaintenanceTechnicians"
-                                   asp-action="Create"
-                                   data-fav-key="mnt-new-technician"
-                                   data-fav-label="Nuevo tecnico de taller">
-                                    <span class="op-item-main"><i class="bi bi-person-plus"></i>Nuevo tecnico</span>
-                                </a>
-                            </li>
+                            @if (User.IsInRole("Administrator"))
+                            {
+                                <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="tecnicos" data-search="nuevo tecnico taller mecanico electrico llantero contacto emergencia">
+                                    <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntTecnicosNuevoActive ? "is-active" : "")"
+                                       asp-controller="MaintenanceTechnicians"
+                                       asp-action="Create"
+                                       data-fav-key="mnt-new-technician"
+                                       data-fav-label="Nuevo tecnico de taller">
+                                        <span class="op-item-main"><i class="bi bi-person-plus"></i>Nuevo tecnico</span>
+                                    </a>
+                                </li>
+                            }
                             <li class="js-mnt-item" data-mnt-group="gestion" data-mnt-subitem="tecnicos" data-search="ver tecnicos taller lista disponibilidad categoria">
                                 <a class="dropdown-item op-menu-item js-mnt-fav-link @(mntTecnicosListaActive ? "is-active" : "")"
                                    asp-controller="MaintenanceTechnicians"

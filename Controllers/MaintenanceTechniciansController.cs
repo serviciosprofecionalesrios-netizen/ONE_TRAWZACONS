@@ -99,7 +99,7 @@ namespace ITServiceDeskApp.Controllers
             return View(rows);
         }
 
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Create()
         {
             var categories = await BuildCategoryCatalogAsync();
@@ -118,7 +118,7 @@ namespace ITServiceDeskApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Create(MaintenanceTechnician model)
         {
             NormalizeModel(model);
@@ -140,7 +140,7 @@ namespace ITServiceDeskApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Edit(int id)
         {
             var model = await _context.MaintenanceTechnicians.FirstOrDefaultAsync(x => x.Id == id);
@@ -155,7 +155,7 @@ namespace ITServiceDeskApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Edit(int id, MaintenanceTechnician model)
         {
             if (id != model.Id)
@@ -218,7 +218,7 @@ namespace ITServiceDeskApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> ToggleAvailability(int id, string? returnUrl = null)
         {
             var row = await _context.MaintenanceTechnicians.FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
@@ -241,7 +241,7 @@ namespace ITServiceDeskApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(int id)
         {
             var row = await _context.MaintenanceTechnicians.FirstOrDefaultAsync(x => x.Id == id);

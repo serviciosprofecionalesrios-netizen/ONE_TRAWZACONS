@@ -15,6 +15,7 @@
     var availableCount = ViewBag.AvailableCount is int available ? available : rows.Count(x => x.IsAvailable);
     var unavailableCount = ViewBag.UnavailableCount is int unavailable ? unavailable : rows.Count(x => !x.IsAvailable);
     var activeLoads = ViewBag.ActiveLoads as IDictionary<string, int> ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    var canManageTechnicians = User.IsInRole(nameof(UserRole.Administrator));
 }
 
 <div class="container mt-4">
@@ -23,9 +24,12 @@
             <h2 class="mb-1">Personal tecnico de taller</h2>
             <p class="text-muted mb-0">Catalogo de mecanicos, electricos, llanteros y demas personal tecnico para asignacion por categoria.</p>
         </div>
-        <a asp-action="Create" class="btn btn-success">
-            <i class="bi bi-person-plus"></i> Nuevo tecnico
-        </a>
+        @if (canManageTechnicians)
+        {
+            <a asp-action="Create" class="btn btn-success">
+                <i class="bi bi-person-plus"></i> Nuevo tecnico
+            </a>
+        }
     </div>
 
     <div class="row g-3 mb-3">
@@ -160,6 +164,8 @@
                                     }
                                 </td>
                                 <td class="text-center">
+                                    @if (canManageTechnicians)
+                                    {
                                     <a asp-action="Edit" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary">Editar</a>
                                     @if (row.IsActive)
                                     {
@@ -177,6 +183,7 @@
                                             <input type="hidden" name="id" value="@row.Id" />
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
                                         </form>
+                                    }
                                     }
                                 </td>
                             </tr>
