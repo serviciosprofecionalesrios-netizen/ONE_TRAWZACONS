@@ -129,8 +129,9 @@ namespace ITServiceDeskApp.Controllers
 
         private async Task<string> GenerateNextItemAsync()
         {
-            // The published sheet uses 1010000000 + ROW() - 1; data starts on row 2.
-            const long firstItem = 1_010_000_001L;
+            // The existing Maestro already reaches 1010001444. Keep new records in
+            // that same sequence even though its historical rows are not imported here.
+            const long firstItem = 1_010_001_445L;
             var items = await _context.InventoryMasterArticles
                 .AsNoTracking()
                 .Select(x => x.Item)
