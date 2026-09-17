@@ -1414,6 +1414,9 @@ namespace ITServiceDeskApp.Migrations.Postgres
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Item")
+                        .IsUnique();
+
                     b.HasIndex("ProductCode")
                         .IsUnique();
 

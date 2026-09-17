@@ -78,6 +78,10 @@ namespace ITServiceDeskApp.Data
                 .HasIndex(i => i.ProductCode)
                 .IsUnique();
 
+            modelBuilder.Entity<InventoryMasterArticle>()
+                .HasIndex(i => i.Item)
+                .IsUnique();
+
             modelBuilder.Entity<MaintenanceInventoryPart>()
                 .HasIndex(i => i.PartCode)
                 .IsUnique();

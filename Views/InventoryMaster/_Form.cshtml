@@ -8,8 +8,7 @@
     </div>
     <div class="col-md-4">
         <label asp-for="Warehouse" class="form-label fw-semibold">Almacén *</label>
-        <input asp-for="Warehouse" class="form-control" list="warehouse-options" />
-        <datalist id="warehouse-options"><option>ACT</option><option>ASB</option></datalist>
+        <select asp-for="Warehouse" class="form-select"><option value="">Seleccionar almacén</option><option>ACT</option><option>AOZ</option><option>ASB</option><option>ACHI</option><option>ALRUS</option></select>
         <span asp-validation-for="Warehouse" class="text-danger small"></span>
     </div>
     <div class="col-md-4">
@@ -17,13 +16,14 @@
         <input asp-for="ItemType" class="form-control" />
     </div>
     <div class="col-md-4">
-        <label asp-for="Item" class="form-label fw-semibold">Ítem *</label>
-        <input asp-for="Item" class="form-control" placeholder="Se usa el ID si se deja vacío" />
+        <label asp-for="Item" class="form-label fw-semibold">Ítem consecutivo *</label>
+        <input asp-for="Item" class="form-control" readonly />
+        <div class="form-text">Generado automáticamente con el siguiente consecutivo.</div>
         <span asp-validation-for="Item" class="text-danger small"></span>
     </div>
     <div class="col-md-4"><label asp-for="PartNumber" class="form-label fw-semibold">N.º parte</label><input asp-for="PartNumber" class="form-control" /></div>
-    <div class="col-md-4"><label asp-for="UnitOfMeasure" class="form-label fw-semibold">U/M</label><input asp-for="UnitOfMeasure" class="form-control" placeholder="Unidad, caja, litro..." /></div>
-    <div class="col-md-4"><label asp-for="PurchaseUnitOfMeasure" class="form-label fw-semibold">U/M compra</label><input asp-for="PurchaseUnitOfMeasure" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="UnitOfMeasure" class="form-label fw-semibold">U/M</label><select asp-for="UnitOfMeasure" class="form-select"><option value="">Seleccionar unidad</option><option>PZ</option><option>UND</option><option>JG</option><option>KIT</option><option>LB</option><option>GL</option><option>MT</option><option>1/2 GL</option><option>1/4 GL</option><option>1/8 GL</option></select><span asp-validation-for="UnitOfMeasure" class="text-danger small"></span></div>
+    <div class="col-md-4"><label asp-for="PurchaseUnitOfMeasure" class="form-label fw-semibold">U/M compra</label><select asp-for="PurchaseUnitOfMeasure" class="form-select"><option value="">Seleccionar unidad</option><option>PZ</option><option>UND</option><option>JG</option><option>KIT</option><option>LB</option><option>GL</option><option>MT</option><option>1/2 GL</option><option>1/4 GL</option><option>1/8 GL</option></select><span asp-validation-for="PurchaseUnitOfMeasure" class="text-danger small"></span></div>
     <div class="col-md-4"><label asp-for="Shelf" class="form-label fw-semibold">Estante *</label><input asp-for="Shelf" type="number" min="0" class="form-control" /><span asp-validation-for="Shelf" class="text-danger small"></span></div>
     <div class="col-md-4"><label asp-for="Position" class="form-label fw-semibold">Posición</label><input asp-for="Position" class="form-control" /></div>
     <div class="col-md-4"><label asp-for="SuggestedQuantity" class="form-label fw-semibold">Sugerido</label><input asp-for="SuggestedQuantity" type="number" min="0" class="form-control" /></div>
