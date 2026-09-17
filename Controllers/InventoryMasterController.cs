@@ -129,7 +129,8 @@ namespace ITServiceDeskApp.Controllers
 
         private async Task<string> GenerateNextItemAsync()
         {
-            const long firstItem = 1_010_000_000L;
+            // The published sheet uses 1010000000 + ROW() - 1; data starts on row 2.
+            const long firstItem = 1_010_000_001L;
             var items = await _context.InventoryMasterArticles
                 .AsNoTracking()
                 .Select(x => x.Item)
