@@ -1,148 +1,105 @@
 using ITServiceDeskApp.Data;
 using ITServiceDeskApp.Models;
+using ITServiceDeskApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using System.Drawing;
 
-namespace ITServiceDeskApp.Controllers
+namespace ITServiceDeskApp.Controllers;
+
+[Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
+public class InventoryMasterController : Controller
 {
-    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
-    public class InventoryMasterController : Controller
+    private readonly ApplicationDbContext _context;
+    private readonly IWebHostEnvironment _environment;
+
+    public InventoryMasterController(ApplicationDbContext context, IWebHostEnvironment environment)
     {
-        private static readonly string[] WarehouseOptions = { "ACT", "AOZ", "ASB", "ACHI", "ALRUS" };
-        private static readonly string[] UnitOfMeasureOptions = { "PZ", "UND", "JG", "KIT", "LB", "GL", "MT", "1/2 GL", "1/4 GL", "1/8 GL" };
-        private readonly ApplicationDbContext _context;
+        _context = context;
+        _environment = environment;
+    }
 
-        public InventoryMasterController(ApplicationDbContext context) => _context = context;
+    public async Task<IActionResult> Index(string? search, string? warehouse, string? category, string? stockStatus, bool includeInactive = false)
+    {
+        var items = await BuildFilteredQuery(search, warehouse, category, stockStatus, includeInactive)
+            .OrderBy(x => x.Site).ThenBy(x => x.ItemCode).ThenBy(x => x.PartName).ToListAsync();
+        await PopulateFiltersAsync(warehouse, category, stockStatus);
+        ViewBag.Search = search;
+        ViewBag.IncludeInactive = includeInactive;
+        return View(items);
+    }
 
-        public async Task<IActionResult> Index(string? search, bool includeInactive = false)
+    [HttpGet]
+    public async Task<IActionResult> ExportExcel(string? search, string? warehouse, string? category, string? stockStatus, bool includeInactive = false)
+    {
+        var items = await BuildFilteredQuery(search, warehouse, category, stockStatus, includeInactive)
+            .OrderBy(x => x.Site).ThenBy(x => x.ItemCode).ThenBy(x => x.PartName).ToListAsync();
+        return File(BuildPhysicalInventoryExcel(items), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"InventarioFisico_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPdf(string? search, string? warehouse, string? category, string? stockStatus, bool includeInactive = false)
+    {
+        var items = await BuildFilteredQuery(search, warehouse, category, stockStatus, includeInactive)
+            .OrderBy(x => x.Site).ThenBy(x => x.ItemCode).ThenBy(x => x.PartName).ToListAsync();
+        var bytes = InventoryPhysicalCountPdfReportService.GeneratePdf(items, _environment.WebRootPath);
+        return File(bytes, "application/pdf", $"InventarioFisico_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+    }
+
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+    public IActionResult Create() => RedirectToAction(nameof(MaintenanceInventoryController.Create), "MaintenanceInventory");
+
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+    public IActionResult Edit(int id) => RedirectToAction(nameof(MaintenanceInventoryController.Details), "MaintenanceInventory", new { id });
+
+    private IQueryable<MaintenanceInventoryPart> BuildFilteredQuery(string? search, string? warehouse, string? category, string? stockStatus, bool includeInactive)
+    {
+        var query = _context.MaintenanceInventoryParts.AsNoTracking();
+        if (!includeInactive) query = query.Where(x => x.IsActive);
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            var query = _context.InventoryMasterArticles.AsNoTracking();
-            if (!includeInactive) query = query.Where(x => x.IsActive);
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var term = search.Trim();
-                query = query.Where(x => x.ProductCode.Contains(term) || x.Warehouse.Contains(term) ||
-                    x.Item.Contains(term) || (x.PartNumber != null && x.PartNumber.Contains(term)) ||
-                    (x.Description != null && x.Description.Contains(term)));
-            }
-
-            ViewBag.Search = search;
-            ViewBag.IncludeInactive = includeInactive;
-            return View(await query.OrderBy(x => x.Warehouse).ThenBy(x => x.Item).ToListAsync());
+            var term = search.Trim();
+            query = query.Where(x => (x.ItemCode != null && x.ItemCode.Contains(term)) || x.PartCode.Contains(term) || x.PartName.Contains(term) ||
+                (x.ManufacturerPartNumber != null && x.ManufacturerPartNumber.Contains(term)) || (x.Brand != null && x.Brand.Contains(term)) ||
+                (x.ShelfLocation != null && x.ShelfLocation.Contains(term)));
         }
+        if (!string.IsNullOrWhiteSpace(warehouse)) query = query.Where(x => x.Site == warehouse);
+        if (!string.IsNullOrWhiteSpace(category)) query = query.Where(x => x.Category == category);
+        if (!string.IsNullOrWhiteSpace(stockStatus)) query = query.Where(x => x.StockStatus == stockStatus);
+        return query;
+    }
 
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
-        public IActionResult Create() => RedirectToAction(nameof(MaintenanceInventoryController.Create), "MaintenanceInventory");
+    private async Task PopulateFiltersAsync(string? warehouse, string? category, string? stockStatus)
+    {
+        var rows = _context.MaintenanceInventoryParts.AsNoTracking();
+        ViewBag.Warehouses = await rows.Select(x => x.Site).Distinct().OrderBy(x => x).ToListAsync();
+        ViewBag.Categories = await rows.Select(x => x.Category).Distinct().OrderBy(x => x).ToListAsync();
+        ViewBag.StockStatuses = await rows.Select(x => x.StockStatus).Distinct().OrderBy(x => x).ToListAsync();
+        ViewBag.Warehouse = warehouse; ViewBag.Category = category; ViewBag.StockStatus = stockStatus;
+    }
 
-        [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
-        public async Task<IActionResult> Create(InventoryMasterArticle model)
+    private static byte[] BuildPhysicalInventoryExcel(IReadOnlyList<MaintenanceInventoryPart> items)
+    {
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        using var package = new ExcelPackage();
+        var sheet = package.Workbook.Worksheets.Add("Inventario físico");
+        sheet.Cells[1, 1].Value = "INVENTARIO FÍSICO - MAESTRO DE INVENTARIOS";
+        sheet.Cells[2, 1].Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+        sheet.Cells[4, 1].LoadFromArrays(new[] { new object[] { "Ítem", "Código", "Artículo / descripción", "N.º parte", "Almacén", "Ubicación", "U/M", "Stock sistema", "Conteo físico", "Diferencia", "Observaciones" } });
+        var row = 5;
+        foreach (var item in items)
         {
-            Normalize(model);
-            if (string.IsNullOrWhiteSpace(model.ProductCode)) model.ProductCode = await GenerateProductCodeAsync();
-            // ITEM is generated by the source spreadsheet. Never trust a value posted by the browser.
-            model.Item = await GenerateNextItemAsync();
-            ModelState.Remove(nameof(model.Item));
-            ValidateDropdowns(model);
-            if (await _context.InventoryMasterArticles.AnyAsync(x => x.ProductCode == model.ProductCode))
-                ModelState.AddModelError(nameof(model.ProductCode), "El ID de producto ya existe.");
-            if (await _context.InventoryMasterArticles.AnyAsync(x => x.Item == model.Item) ||
-                await _context.MaintenanceInventoryParts.AnyAsync(x => x.ItemCode == model.Item))
-                ModelState.AddModelError(nameof(model.Item), "El consecutivo de ítem ya existe. Intente guardar de nuevo.");
-            if (!ModelState.IsValid) return View(model);
-
-            model.CreatedAt = DateTime.UtcNow;
-            model.UpdatedAt = DateTime.UtcNow;
-            _context.InventoryMasterArticles.Add(model);
-            await _context.SaveChangesAsync();
-            TempData["InventoryMasterMessage"] = "Artículo agregado al Maestro.";
-            return RedirectToAction(nameof(Index));
+            sheet.Cells[row, 1].Value = item.ItemCode; sheet.Cells[row, 2].Value = item.PartCode; sheet.Cells[row, 3].Value = item.PartName;
+            sheet.Cells[row, 4].Value = item.ManufacturerPartNumber; sheet.Cells[row, 5].Value = item.Site; sheet.Cells[row, 6].Value = item.ShelfLocation;
+            sheet.Cells[row, 7].Value = item.UnitOfMeasure; sheet.Cells[row, 8].Value = item.QuantityOnHand;
+            sheet.Cells[row, 10].Formula = $"=IF(I{row}=\"\",\"\",I{row}-H{row})"; row++;
         }
-
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
-        public async Task<IActionResult> Edit(int id)
-        {
-            var model = await _context.InventoryMasterArticles.FindAsync(id);
-            return model == null ? NotFound() : View(model);
-        }
-
-        [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
-        public async Task<IActionResult> Edit(int id, InventoryMasterArticle model)
-        {
-            if (id != model.Id) return NotFound();
-            var current = await _context.InventoryMasterArticles.FindAsync(id);
-            if (current == null) return NotFound();
-            Normalize(model);
-            ValidateDropdowns(model);
-            if (await _context.InventoryMasterArticles.AnyAsync(x => x.Id != id && x.ProductCode == model.ProductCode))
-                ModelState.AddModelError(nameof(model.ProductCode), "El ID de producto ya existe.");
-            if (!ModelState.IsValid) return View(model);
-
-            _context.Entry(current).Property(x => x.RowVersion).OriginalValue = model.RowVersion;
-            current.ProductCode = model.ProductCode; current.Warehouse = model.Warehouse; current.ItemType = model.ItemType;
-            current.PartNumber = model.PartNumber; current.Description = model.Description;
-            current.ExtraDescription = model.ExtraDescription; current.UnitOfMeasure = model.UnitOfMeasure;
-            current.PurchaseUnitOfMeasure = model.PurchaseUnitOfMeasure; current.Shelf = model.Shelf;
-            current.Position = model.Position; current.SuggestedQuantity = model.SuggestedQuantity;
-            current.IsActive = model.IsActive; current.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            TempData["InventoryMasterMessage"] = "Artículo Maestro actualizado.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        private static void Normalize(InventoryMasterArticle model)
-        {
-            model.ProductCode = (model.ProductCode ?? string.Empty).Trim();
-            model.Warehouse = (model.Warehouse ?? string.Empty).Trim();
-            model.Item = (model.Item ?? string.Empty).Trim();
-            model.ItemType = TrimOrNull(model.ItemType); model.PartNumber = TrimOrNull(model.PartNumber);
-            model.Description = TrimOrNull(model.Description); model.ExtraDescription = TrimOrNull(model.ExtraDescription);
-            model.UnitOfMeasure = TrimOrNull(model.UnitOfMeasure); model.PurchaseUnitOfMeasure = TrimOrNull(model.PurchaseUnitOfMeasure);
-            model.Position = TrimOrNull(model.Position);
-        }
-
-        private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-        private void ValidateDropdowns(InventoryMasterArticle model)
-        {
-            if (!WarehouseOptions.Contains(model.Warehouse, StringComparer.OrdinalIgnoreCase))
-                ModelState.AddModelError(nameof(model.Warehouse), "Seleccione un almacén válido.");
-            if (!string.IsNullOrWhiteSpace(model.UnitOfMeasure) && !UnitOfMeasureOptions.Contains(model.UnitOfMeasure, StringComparer.OrdinalIgnoreCase))
-                ModelState.AddModelError(nameof(model.UnitOfMeasure), "Seleccione una unidad de medida válida.");
-            if (!string.IsNullOrWhiteSpace(model.PurchaseUnitOfMeasure) && !UnitOfMeasureOptions.Contains(model.PurchaseUnitOfMeasure, StringComparer.OrdinalIgnoreCase))
-                ModelState.AddModelError(nameof(model.PurchaseUnitOfMeasure), "Seleccione una unidad de compra válida.");
-        }
-
-        private async Task<string> GenerateProductCodeAsync()
-        {
-            var prefix = $"ART-{DateTime.UtcNow:yyyy}-";
-            var count = await _context.InventoryMasterArticles.CountAsync(x => x.ProductCode.StartsWith(prefix));
-            return $"{prefix}{count + 1:D4}";
-        }
-
-        private async Task<string> GenerateNextItemAsync()
-        {
-            // The existing Maestro already reaches 1010001444. Keep new records in
-            // that same sequence even though its historical rows are not imported here.
-            const long firstItem = 1_010_001_445L;
-            var masterItems = await _context.InventoryMasterArticles
-                .AsNoTracking()
-                .Select(x => x.Item)
-                .ToListAsync();
-            var maintenanceItems = await _context.MaintenanceInventoryParts
-                .AsNoTracking()
-                .Where(x => x.ItemCode != null)
-                .Select(x => x.ItemCode!)
-                .ToListAsync();
-            var highest = masterItems.Concat(maintenanceItems)
-                .Select(value => long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : 0)
-                .Where(number => number >= firstItem)
-                .DefaultIfEmpty(firstItem - 1)
-                .Max();
-            return (highest + 1).ToString("D10", CultureInfo.InvariantCulture);
-        }
+        using (var title = sheet.Cells[1, 1, 1, 11]) { title.Merge = true; title.Style.Font.Bold = true; title.Style.Font.Size = 14; title.Style.Font.Color.SetColor(Color.White); title.Style.Fill.PatternType = ExcelFillStyle.Solid; title.Style.Fill.BackgroundColor.SetColor(Color.FromArgb(17, 67, 154)); }
+        using (var headers = sheet.Cells[4, 1, 4, 11]) { headers.Style.Font.Bold = true; headers.Style.Fill.PatternType = ExcelFillStyle.Solid; headers.Style.Fill.BackgroundColor.SetColor(Color.FromArgb(221, 235, 247)); }
+        sheet.View.FreezePanes(5, 1); sheet.Cells.AutoFitColumns(); sheet.Column(3).Width = 32; sheet.Column(11).Width = 28;
+        return package.GetAsByteArray();
     }
 }
