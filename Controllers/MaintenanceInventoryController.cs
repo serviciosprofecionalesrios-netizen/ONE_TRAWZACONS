@@ -675,9 +675,9 @@ namespace ITServiceDeskApp.Controllers
             var publishedMatch = Regex.Match(uri.AbsolutePath, @"/spreadsheets/d/e/([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase);
             if (publishedMatch.Success)
             {
-                var gidMatch = Regex.Match(source, @"(?:[?#&]gid=)(\d+)", RegexOptions.IgnoreCase);
-                var gidPart = gidMatch.Success ? $"&gid={gidMatch.Groups[1].Value}" : string.Empty;
-                return $"https://docs.google.com/spreadsheets/d/e/{publishedMatch.Groups[1].Value}/pub?output=csv{gidPart}";
+                var publishedGidMatch = Regex.Match(source, @"(?:[?#&]gid=)(\d+)", RegexOptions.IgnoreCase);
+                var publishedGidPart = publishedGidMatch.Success ? $"&gid={publishedGidMatch.Groups[1].Value}" : string.Empty;
+                return $"https://docs.google.com/spreadsheets/d/e/{publishedMatch.Groups[1].Value}/pub?output=csv{publishedGidPart}";
             }
 
             var match = Regex.Match(uri.AbsolutePath, @"/spreadsheets/d/([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase);
