@@ -957,12 +957,12 @@ namespace ITServiceDeskApp.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
+                    b.Property<int>("CriticalFindingsCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("EquipmentCode")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
-
-                    b.Property<int>("CriticalFindingsCount")
-                        .HasColumnType("int");
 
                     b.Property<int>("FindingsCount")
                         .HasColumnType("int");
@@ -1103,15 +1103,15 @@ namespace ITServiceDeskApp.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("ApprovalResponseDueAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ApprovedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ApprovedBy")
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
-
-                    b.Property<DateTime?>("ApprovalResponseDueAtUtc")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Area")
                         .IsRequired()
@@ -1339,6 +1339,85 @@ namespace ITServiceDeskApp.Migrations
                         .IsUnique();
 
                     b.ToTable("InventoryItems");
+                });
+
+            modelBuilder.Entity("ITServiceDeskApp.Models.InventoryMasterArticle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ExtraDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Item")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ItemType")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("PartNumber")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Position")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("PurchaseUnitOfMeasure")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Shelf")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SuggestedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Warehouse")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductCode")
+                        .IsUnique();
+
+                    b.ToTable("InventoryMasterArticles");
                 });
 
             modelBuilder.Entity("ITServiceDeskApp.Models.MaintenanceAppointment", b =>

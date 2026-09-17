@@ -1252,6 +1252,7 @@
     var isInventarioMenuActive =
         currentController == "InventoryHub" ||
         currentController == "Inventory" ||
+        currentController == "InventoryMaster" ||
         currentController == "MaintenanceInventory" ||
         (currentController == "Tickets" &&
          (
@@ -1372,6 +1373,8 @@
     var mntTecnicosSubmenuActive = mntTecnicosNuevoActive || mntTecnicosListaActive;
 
     var invHubActive = currentController == "InventoryHub" && currentAction == "Index";
+    var invMasterListActive = currentController == "InventoryMaster" && currentAction == "Index";
+    var invMasterNewActive = currentController == "InventoryMaster" && currentAction == "Create";
     var invSpareListActive = currentController == "MaintenanceInventory" && (currentAction == "Index" || currentAction == "Detalle" || currentAction == "Transito");
     var invSpareNewActive = currentController == "MaintenanceInventory" && currentAction == "Create";
     var invPurchaseOrderActive = isOcCreateFinanceContext;
@@ -2103,10 +2106,24 @@
                                 </a>
                             </li>
                             <li>
+                                <a class="dropdown-item op-menu-item @(invMasterListActive ? "is-active" : "")"
+                                   asp-controller="InventoryMaster"
+                                   asp-action="Index">
+                                    <span class="op-item-main"><i class="bi bi-boxes"></i>Maestro de artículos</span>
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item op-menu-item @(invSpareListActive ? "is-active" : "")"
                                    asp-controller="MaintenanceInventory"
                                    asp-action="Index">
                                     <span class="op-item-main"><i class="bi bi-box-seam"></i>Inventario de repuestos</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item op-menu-item @(invMasterNewActive ? "is-active" : "")"
+                                   asp-controller="InventoryMaster"
+                                   asp-action="Create">
+                                    <span class="op-item-main"><i class="bi bi-plus-circle"></i>Nuevo artículo Maestro</span>
                                 </a>
                             </li>
                             <li>

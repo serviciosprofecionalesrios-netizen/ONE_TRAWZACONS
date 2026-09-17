@@ -26,6 +26,7 @@ namespace ITServiceDeskApp.Data
         public DbSet<MaintenanceAppointment> MaintenanceAppointments => Set<MaintenanceAppointment>();
         public DbSet<MaintenanceTechnician> MaintenanceTechnicians => Set<MaintenanceTechnician>();
         public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+        public DbSet<InventoryMasterArticle> InventoryMasterArticles => Set<InventoryMasterArticle>();
         public DbSet<MaintenanceInventoryPart> MaintenanceInventoryParts => Set<MaintenanceInventoryPart>();
         public DbSet<Credential> Credentials => Set<Credential>();
         public DbSet<OperacionesSeguimientoRegistro> OperacionesSeguimientoRegistros => Set<OperacionesSeguimientoRegistro>();
@@ -71,6 +72,10 @@ namespace ITServiceDeskApp.Data
 
             modelBuilder.Entity<InventoryItem>()
                 .HasIndex(i => i.AssetCode)
+                .IsUnique();
+
+            modelBuilder.Entity<InventoryMasterArticle>()
+                .HasIndex(i => i.ProductCode)
                 .IsUnique();
 
             modelBuilder.Entity<MaintenanceInventoryPart>()

@@ -1,0 +1,117 @@
+using ITServiceDeskApp.Data;
+using ITServiceDeskApp.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace ITServiceDeskApp.Controllers
+{
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
+    public class InventoryMasterController : Controller
+    {
+        private readonly ApplicationDbContext _context;
+
+        public InventoryMasterController(ApplicationDbContext context) => _context = context;
+
+        public async Task<IActionResult> Index(string? search, bool includeInactive = false)
+        {
+            var query = _context.InventoryMasterArticles.AsNoTracking();
+            if (!includeInactive) query = query.Where(x => x.IsActive);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(x => x.ProductCode.Contains(term) || x.Warehouse.Contains(term) ||
+                    x.Item.Contains(term) || (x.PartNumber != null && x.PartNumber.Contains(term)) ||
+                    (x.Description != null && x.Description.Contains(term)));
+            }
+
+            ViewBag.Search = search;
+            ViewBag.IncludeInactive = includeInactive;
+            return View(await query.OrderBy(x => x.Warehouse).ThenBy(x => x.Item).ToListAsync());
+        }
+
+        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        public async Task<IActionResult> Create() => View(new InventoryMasterArticle
+        {
+            ProductCode = await GenerateProductCodeAsync(),
+            Item = "",
+            IsActive = true
+        });
+
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        public async Task<IActionResult> Create(InventoryMasterArticle model)
+        {
+            Normalize(model);
+            if (string.IsNullOrWhiteSpace(model.ProductCode)) model.ProductCode = await GenerateProductCodeAsync();
+            if (string.IsNullOrWhiteSpace(model.Item))
+            {
+                // AppSheet marks ITEM as required but does not make it editable;
+                // use the generated product ID when the user leaves it blank.
+                model.Item = model.ProductCode;
+                ModelState.Remove(nameof(model.Item));
+            }
+            if (await _context.InventoryMasterArticles.AnyAsync(x => x.ProductCode == model.ProductCode))
+                ModelState.AddModelError(nameof(model.ProductCode), "El ID de producto ya existe.");
+            if (!ModelState.IsValid) return View(model);
+
+            model.CreatedAt = DateTime.UtcNow;
+            model.UpdatedAt = DateTime.UtcNow;
+            _context.InventoryMasterArticles.Add(model);
+            await _context.SaveChangesAsync();
+            TempData["InventoryMasterMessage"] = "Artículo agregado al Maestro.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var model = await _context.InventoryMasterArticles.FindAsync(id);
+            return model == null ? NotFound() : View(model);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
+        public async Task<IActionResult> Edit(int id, InventoryMasterArticle model)
+        {
+            if (id != model.Id) return NotFound();
+            var current = await _context.InventoryMasterArticles.FindAsync(id);
+            if (current == null) return NotFound();
+            Normalize(model);
+            if (await _context.InventoryMasterArticles.AnyAsync(x => x.Id != id && x.ProductCode == model.ProductCode))
+                ModelState.AddModelError(nameof(model.ProductCode), "El ID de producto ya existe.");
+            if (!ModelState.IsValid) return View(model);
+
+            _context.Entry(current).Property(x => x.RowVersion).OriginalValue = model.RowVersion;
+            current.ProductCode = model.ProductCode; current.Warehouse = model.Warehouse; current.ItemType = model.ItemType;
+            current.Item = model.Item; current.PartNumber = model.PartNumber; current.Description = model.Description;
+            current.ExtraDescription = model.ExtraDescription; current.UnitOfMeasure = model.UnitOfMeasure;
+            current.PurchaseUnitOfMeasure = model.PurchaseUnitOfMeasure; current.Shelf = model.Shelf;
+            current.Position = model.Position; current.SuggestedQuantity = model.SuggestedQuantity;
+            current.IsActive = model.IsActive; current.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            TempData["InventoryMasterMessage"] = "Artículo Maestro actualizado.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private static void Normalize(InventoryMasterArticle model)
+        {
+            model.ProductCode = (model.ProductCode ?? string.Empty).Trim();
+            model.Warehouse = (model.Warehouse ?? string.Empty).Trim();
+            model.Item = (model.Item ?? string.Empty).Trim();
+            model.ItemType = TrimOrNull(model.ItemType); model.PartNumber = TrimOrNull(model.PartNumber);
+            model.Description = TrimOrNull(model.Description); model.ExtraDescription = TrimOrNull(model.ExtraDescription);
+            model.UnitOfMeasure = TrimOrNull(model.UnitOfMeasure); model.PurchaseUnitOfMeasure = TrimOrNull(model.PurchaseUnitOfMeasure);
+            model.Position = TrimOrNull(model.Position);
+        }
+
+        private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private async Task<string> GenerateProductCodeAsync()
+        {
+            var prefix = $"ART-{DateTime.UtcNow:yyyy}-";
+            var count = await _context.InventoryMasterArticles.CountAsync(x => x.ProductCode.StartsWith(prefix));
+            return $"{prefix}{count + 1:D4}";
+        }
+    }
+}
