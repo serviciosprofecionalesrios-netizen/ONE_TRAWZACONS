@@ -1535,6 +1535,10 @@ namespace ITServiceDeskApp.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
+                    b.Property<string>("ExtraDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("InvoiceNumber")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
@@ -1545,6 +1549,10 @@ namespace ITServiceDeskApp.Migrations
                     b.Property<string>("ItemCode")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ItemType")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<DateTime?>("LastIssueDate")
                         .HasColumnType("datetime2");
@@ -1572,6 +1580,10 @@ namespace ITServiceDeskApp.Migrations
 
                     b.Property<DateTime?>("PurchaseDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("PurchaseUnitOfMeasure")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("QuantityInTransit")
                         .HasColumnType("int");

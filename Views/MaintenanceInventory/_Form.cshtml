@@ -71,8 +71,15 @@
     </div>
 
     <div class="col-md-2">
-        <label asp-for="ItemCode" class="form-label fw-semibold">ITEM</label>
-        <input asp-for="ItemCode" class="form-control" placeholder="1010000731" />
+        <label asp-for="ItemCode" class="form-label fw-semibold">ITEM consecutivo</label>
+        <input asp-for="ItemCode" class="form-control" readonly />
+        <div class="form-text">Generado automáticamente.</div>
+        <span asp-validation-for="ItemCode" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="ItemType" class="form-label fw-semibold">Tipo de ítem</label>
+        <input asp-for="ItemType" class="form-control" placeholder="Repuesto / Consumible..." />
     </div>
 
     <div class="col-md-4">
@@ -97,6 +104,14 @@
             <option value="">Seleccionar</option>
         </select>
         <span asp-validation-for="UnitOfMeasure" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-2">
+        <label asp-for="PurchaseUnitOfMeasure" class="form-label fw-semibold">U/M compra</label>
+        <select asp-for="PurchaseUnitOfMeasure" class="form-select" asp-items="unitOfMeasureOptions">
+            <option value="">Seleccionar</option>
+        </select>
+        <span asp-validation-for="PurchaseUnitOfMeasure" class="text-danger small"></span>
     </div>
 
     <div class="col-md-3">
@@ -173,6 +188,11 @@
             <input asp-for="IsActive" class="form-check-input" />
             <label asp-for="IsActive" class="form-check-label">Activo</label>
         </div>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="ExtraDescription" class="form-label fw-semibold">Descripción extra</label>
+        <textarea asp-for="ExtraDescription" class="form-control" rows="2" placeholder="Detalle complementario del artículo"></textarea>
     </div>
 
     <div class="col-12">

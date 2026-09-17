@@ -58,7 +58,10 @@ namespace ITServiceDeskApp.Controllers
         private static readonly string[] SiteOptions =
         {
             "ACT",
-            "ASB"
+            "AOZ",
+            "ASB",
+            "ACHI",
+            "ALRUS"
         };
 
         private static readonly string[] TenenciaOptions =
@@ -69,6 +72,17 @@ namespace ITServiceDeskApp.Controllers
 
         private static readonly string[] UnitOfMeasureOptions =
         {
+            "PZ",
+            "UND",
+            "JG",
+            "KIT",
+            "LB",
+            "GL",
+            "MT",
+            "1/2 GL",
+            "1/4 GL",
+            "1/8 GL",
+            // Valores anteriores, conservados para que los repuestos históricos sigan siendo editables.
             "Unidad",
             "Juego",
             "Kit",
@@ -226,7 +240,9 @@ namespace ITServiceDeskApp.Controllers
                 StockStatus = "Disponible",
                 Site = "ACT",
                 Tenencia = "Propio",
-                UnitOfMeasure = "Unidad",
+                UnitOfMeasure = "PZ",
+                PurchaseUnitOfMeasure = "PZ",
+                ItemCode = await GenerateNextItemAsync(),
                 QuantityOnHand = 0,
                 MinimumStock = 0,
                 QuantityIssued = 0,
@@ -250,12 +266,21 @@ namespace ITServiceDeskApp.Controllers
                 model.PartCode = await GeneratePartCodeAsync();
             }
 
+            // The Item is assigned by the system so it remains consecutive and cannot be changed in the browser.
+            model.ItemCode = await GenerateNextItemAsync();
+            ModelState.Remove(nameof(MaintenanceInventoryPart.ItemCode));
+
             ValidateModelOptions(model);
             ApplyStockStatusByQuantity(model);
 
             if (await _context.MaintenanceInventoryParts.AnyAsync(x => x.PartCode == model.PartCode))
             {
                 ModelState.AddModelError(nameof(MaintenanceInventoryPart.PartCode), "El codigo del repuesto ya existe.");
+            }
+
+            if (await ItemCodeExistsAsync(model.ItemCode))
+            {
+                ModelState.AddModelError(nameof(MaintenanceInventoryPart.ItemCode), "El consecutivo de ítem ya existe. Intente guardar de nuevo.");
             }
 
             if (!ModelState.IsValid)
@@ -335,10 +360,12 @@ namespace ITServiceDeskApp.Controllers
             dbRow.CompatibleModel = model.CompatibleModel;
             dbRow.Brand = model.Brand;
             dbRow.ManufacturerPartNumber = model.ManufacturerPartNumber;
-            dbRow.ItemCode = model.ItemCode;
+            dbRow.ItemType = model.ItemType;
             dbRow.Site = model.Site;
             dbRow.Tenencia = model.Tenencia;
             dbRow.UnitOfMeasure = model.UnitOfMeasure;
+            dbRow.PurchaseUnitOfMeasure = model.PurchaseUnitOfMeasure;
+            dbRow.ExtraDescription = model.ExtraDescription;
             dbRow.QuantityOnHand = model.QuantityOnHand;
             dbRow.MinimumStock = model.MinimumStock;
             dbRow.QuantityIssued = model.QuantityIssued;
@@ -2052,8 +2079,9 @@ namespace ITServiceDeskApp.Controllers
             model.CompatibleModel = string.IsNullOrWhiteSpace(model.CompatibleModel) ? null : model.CompatibleModel.Trim();
             model.Brand = string.IsNullOrWhiteSpace(model.Brand) ? null : model.Brand.Trim();
             model.ManufacturerPartNumber = string.IsNullOrWhiteSpace(model.ManufacturerPartNumber) ? null : model.ManufacturerPartNumber.Trim();
-            var resolvedItemCode = ResolveItemCode(model.PartCode, model.ItemCode, model.ManufacturerPartNumber, model.PartName);
-            model.ItemCode = string.IsNullOrWhiteSpace(resolvedItemCode) ? null : resolvedItemCode.Trim();
+            model.ItemType = string.IsNullOrWhiteSpace(model.ItemType) ? null : model.ItemType.Trim();
+            model.PurchaseUnitOfMeasure = string.IsNullOrWhiteSpace(model.PurchaseUnitOfMeasure) ? null : model.PurchaseUnitOfMeasure.Trim();
+            model.ExtraDescription = string.IsNullOrWhiteSpace(model.ExtraDescription) ? null : model.ExtraDescription.Trim();
             model.Site = NormalizeSiteValue(model.Site);
             model.Tenencia = (model.Tenencia ?? string.Empty).Trim();
             model.UnitOfMeasure = (model.UnitOfMeasure ?? string.Empty).Trim();
@@ -2096,6 +2124,12 @@ namespace ITServiceDeskApp.Controllers
                 ModelState.AddModelError(nameof(MaintenanceInventoryPart.UnitOfMeasure), "Seleccione una unidad de medida valida.");
             }
 
+            if (!string.IsNullOrWhiteSpace(model.PurchaseUnitOfMeasure) &&
+                !UnitOfMeasureOptions.Contains(model.PurchaseUnitOfMeasure, StringComparer.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(nameof(MaintenanceInventoryPart.PurchaseUnitOfMeasure), "Seleccione una unidad de compra valida.");
+            }
+
             if (!StockStatusOptions.Contains(model.StockStatus, StringComparer.OrdinalIgnoreCase))
             {
                 ModelState.AddModelError(nameof(MaintenanceInventoryPart.StockStatus), "Seleccione un estado de stock valido.");
@@ -2132,6 +2166,35 @@ namespace ITServiceDeskApp.Controllers
                 .CountAsync(x => x.PartCode.StartsWith(prefix));
 
             return $"{prefix}-{(count + 1):D4}";
+        }
+
+        private async Task<string> GenerateNextItemAsync()
+        {
+            const long firstItem = 1_010_001_445L;
+            var maintenanceItems = await _context.MaintenanceInventoryParts
+                .AsNoTracking()
+                .Where(x => x.ItemCode != null)
+                .Select(x => x.ItemCode!)
+                .ToListAsync();
+            var masterItems = await _context.InventoryMasterArticles
+                .AsNoTracking()
+                .Select(x => x.Item)
+                .ToListAsync();
+            var highest = maintenanceItems.Concat(masterItems)
+                .Select(value => long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : 0)
+                .Where(number => number >= firstItem)
+                .DefaultIfEmpty(firstItem - 1)
+                .Max();
+
+            return (highest + 1).ToString("D10", CultureInfo.InvariantCulture);
+        }
+
+        private async Task<bool> ItemCodeExistsAsync(string? itemCode)
+        {
+            if (string.IsNullOrWhiteSpace(itemCode)) return false;
+
+            return await _context.MaintenanceInventoryParts.AnyAsync(x => x.ItemCode == itemCode) ||
+                   await _context.InventoryMasterArticles.AnyAsync(x => x.Item == itemCode);
         }
     }
 }

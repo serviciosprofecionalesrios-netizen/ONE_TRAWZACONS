@@ -43,6 +43,15 @@ namespace ITServiceDeskApp.Models
         [MaxLength(80)]
         public string? ItemCode { get; set; }
 
+        [MaxLength(120)]
+        public string? ItemType { get; set; }
+
+        [MaxLength(50)]
+        public string? PurchaseUnitOfMeasure { get; set; }
+
+        [MaxLength(500)]
+        public string? ExtraDescription { get; set; }
+
         [Required]
         [MaxLength(100)]
         public string Site { get; set; } = string.Empty;

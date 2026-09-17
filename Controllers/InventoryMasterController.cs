@@ -34,12 +34,7 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
-        public async Task<IActionResult> Create() => View(new InventoryMasterArticle
-        {
-            ProductCode = await GenerateProductCodeAsync(),
-            Item = await GenerateNextItemAsync(),
-            IsActive = true
-        });
+        public IActionResult Create() => RedirectToAction(nameof(MaintenanceInventoryController.Create), "MaintenanceInventory");
 
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Roles = "Administrator,CoordinadorIT,Technician")]
@@ -53,7 +48,8 @@ namespace ITServiceDeskApp.Controllers
             ValidateDropdowns(model);
             if (await _context.InventoryMasterArticles.AnyAsync(x => x.ProductCode == model.ProductCode))
                 ModelState.AddModelError(nameof(model.ProductCode), "El ID de producto ya existe.");
-            if (await _context.InventoryMasterArticles.AnyAsync(x => x.Item == model.Item))
+            if (await _context.InventoryMasterArticles.AnyAsync(x => x.Item == model.Item) ||
+                await _context.MaintenanceInventoryParts.AnyAsync(x => x.ItemCode == model.Item))
                 ModelState.AddModelError(nameof(model.Item), "El consecutivo de ítem ya existe. Intente guardar de nuevo.");
             if (!ModelState.IsValid) return View(model);
 
@@ -132,11 +128,16 @@ namespace ITServiceDeskApp.Controllers
             // The existing Maestro already reaches 1010001444. Keep new records in
             // that same sequence even though its historical rows are not imported here.
             const long firstItem = 1_010_001_445L;
-            var items = await _context.InventoryMasterArticles
+            var masterItems = await _context.InventoryMasterArticles
                 .AsNoTracking()
                 .Select(x => x.Item)
                 .ToListAsync();
-            var highest = items
+            var maintenanceItems = await _context.MaintenanceInventoryParts
+                .AsNoTracking()
+                .Where(x => x.ItemCode != null)
+                .Select(x => x.ItemCode!)
+                .ToListAsync();
+            var highest = masterItems.Concat(maintenanceItems)
                 .Select(value => long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : 0)
                 .Where(number => number >= firstItem)
                 .DefaultIfEmpty(firstItem - 1)
