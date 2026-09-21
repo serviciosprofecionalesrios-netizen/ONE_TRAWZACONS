@@ -274,6 +274,22 @@ namespace ITServiceDeskApp.Services
                 UserRole.EndUser => "Usuario Final",
                 UserRole.CoordinadorIT => "Coordinador IT",
                 UserRole.GerenciaGeneral => "Gerencia General",
+                UserRole.GestorHS => "Gestor H&S",
+                UserRole.GerenteHS => "Gerente H&S",
+                UserRole.SupervisorHS => "Supervisor H&S",
+                UserRole.GerenteTaller => "Gerente Taller",
+                UserRole.SupervisorTaller => "Supervisor Taller",
+                UserRole.GerenteCompras => "Gerente Compras",
+                UserRole.CEO => "CEO",
+                UserRole.SupervisorLogistica => "Supervisor Logística",
+                UserRole.EncargadoAlmacenPCT => "Encargado de Almacén PCT",
+                UserRole.EncargadoAlmacenPSB => "Encargado de Almacén PSB",
+                UserRole.SupervisorGeneralPSB => "Supervisor General PSB",
+                UserRole.SupervisorEncargadoML => "Supervisor Encargado ML",
+                UserRole.SupervisorML => "Supervisor ML",
+                UserRole.SupervisorEncargadoMLL => "Supervisor Encargado MLL",
+                UserRole.SupervisorMLL => "Supervisor MLL",
+                UserRole.Monitoreo => "Monitoreo",
                 _ => role.ToString()
             };
         }

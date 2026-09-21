@@ -56,7 +56,46 @@ namespace ITServiceDeskApp.Models
         GerenteHS = 7,
 
         [Display(Name = "Supervisor H&S")]
-        SupervisorHS = 8
+        SupervisorHS = 8,
+
+        [Display(Name = "Gerente Taller")]
+        GerenteTaller = 9,
+
+        [Display(Name = "Supervisor Taller")]
+        SupervisorTaller = 10,
+
+        [Display(Name = "Gerente Compras")]
+        GerenteCompras = 11,
+
+        [Display(Name = "CEO")]
+        CEO = 12,
+
+        [Display(Name = "Supervisor Logística")]
+        SupervisorLogistica = 13,
+
+        [Display(Name = "Encargado de Almacén PCT")]
+        EncargadoAlmacenPCT = 14,
+
+        [Display(Name = "Encargado de Almacén PSB")]
+        EncargadoAlmacenPSB = 15,
+
+        [Display(Name = "Supervisor General PSB")]
+        SupervisorGeneralPSB = 16,
+
+        [Display(Name = "Supervisor Encargado ML")]
+        SupervisorEncargadoML = 17,
+
+        [Display(Name = "Supervisor ML")]
+        SupervisorML = 18,
+
+        [Display(Name = "Supervisor Encargado MLL")]
+        SupervisorEncargadoMLL = 19,
+
+        [Display(Name = "Supervisor MLL")]
+        SupervisorMLL = 20,
+
+        [Display(Name = "Monitoreo")]
+        Monitoreo = 21
     }
 }
 
