@@ -1,5 +1,12 @@
 @model ITServiceDeskApp.ViewModels.Inventory.PublishedRepairsViewModel
-@{ ViewData["Title"] = "Reparaciones"; }
+@using ITServiceDeskApp.Models
+@{
+    ViewData["Title"] = "Reparaciones";
+    var systemRepairs = ViewBag.SystemRepairs as IReadOnlyList<Ticket> ?? Array.Empty<Ticket>();
+    var canEditRepairs = User.IsInRole(nameof(UserRole.Administrator)) ||
+                         User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
+                         User.IsInRole(nameof(UserRole.Technician));
+}
 <link rel="stylesheet" href="~/css/inventory-workspace.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/maintenance-repairs.css" asp-append-version="true" />
 <div class="container-fluid inventory-workspace repairs-workspace">
@@ -8,6 +15,48 @@
         <div><div class="inventory-eyebrow">MANTENIMIENTO</div><h2>Reparaciones</h2><p>Seguimiento de equipos, trabajos de taller y entregas.</p></div>
         <div class="inventory-total"><strong>@(Model.Source.Table?.Rows.Count.ToString("N0") ?? "—")</strong><span>reparaciones registradas</span></div>
     </header>
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div><div class="inventory-eyebrow">ÓRDENES DEL SISTEMA</div><h3 class="mb-0">Órdenes creadas desde Alta de reparaciones</h3></div>
+            <span class="badge text-bg-primary">@systemRepairs.Count orden(es)</span>
+        </div>
+        @if (systemRepairs.Count == 0)
+        {
+            <div class="inventory-empty"><h3>No hay órdenes registradas</h3><p>Las órdenes creadas desde el formulario aparecerán aquí.</p></div>
+        }
+        else
+        {
+            <div class="repair-list">
+            @foreach (var repair in systemRepairs)
+            {
+                var delivered = repair.Status == TicketStatus.Closed && !string.IsNullOrWhiteSpace(repair.ExitOrderPath);
+                var label = delivered ? "Entregado" : repair.MaintenanceStage ?? repair.Status.ToString();
+                var style = delivered ? "delivered" : repair.Status == TicketStatus.Resolved ? "completed" : "pending";
+                <article class="repair-card">
+                    <header class="repair-card-header"><div><span class="inventory-code">@repair.TicketNumber</span><h3><i class="bi bi-truck" aria-hidden="true"></i> @(repair.UnitCode ?? "Equipo sin código")</h3></div><span class="repair-badge @style">@label</span></header>
+                    <dl class="inventory-facts"><div><dt>Mecánico asignado</dt><dd>@(repair.AssignedTechnician ?? "Sin asignar")</dd></div><div><dt>Entrada</dt><dd>@repair.CreatedDate.ToLocalTime().ToString("dd/MM/yyyy")</dd></div><div><dt>Sitio</dt><dd>@repair.Site</dd></div><div><dt>Estado</dt><dd>@repair.Status</dd></div></dl>
+                    <div class="repair-problem"><h4>Problema reportado</h4><p>@repair.Description</p></div>
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                        @if (canEditRepairs)
+                        {
+                            <a class="btn btn-primary btn-sm" asp-controller="Tickets" asp-action="Edit" asp-route-id="@repair.Id"><i class="bi bi-pencil-square"></i> Editar y cambiar estado</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(repair.ExitOrderPath))
+                        {
+                            <a class="btn btn-outline-success btn-sm" href="@repair.ExitOrderPath" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Documento de entrega</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted small align-self-center">Falta PDF de entrega para marcar como Entregado.</span>
+                        }
+                    </div>
+                </article>
+            }
+            </div>
+        }
+    </section>
+    <hr class="my-4" />
+    <h3 class="mb-3">Historial de reparaciones publicado</h3>
     @if (Model.Source.Warning != null)
     {
         <div class="alert alert-warning" role="alert">No fue posible actualizar la información. @(Model.Source.Table != null ? "Se muestra la última consulta disponible." : "Intenta nuevamente en un momento.")</div>

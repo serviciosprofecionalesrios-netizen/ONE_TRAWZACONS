@@ -2115,6 +2115,13 @@ namespace ITServiceDeskApp.Controllers
             var isMaintenanceTicket = string.Equals(ticket.Department, "Mantenimiento", StringComparison.OrdinalIgnoreCase);
             if (isMaintenanceTicket && newStatus == TicketStatus.Closed)
             {
+                if (string.IsNullOrWhiteSpace(ticket.ExitOrderPath) ||
+                    !ticket.ExitOrderPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["TicketsError"] = "Para marcar la orden como entregada debe adjuntar el documento de entrega / salida en PDF.";
+                    return RedirectToIndexWithContext(search, status, priority, quick, department, site, tenencia, technician, incidentType, overdueBand, page, pageSize, maintenanceStage);
+                }
+
                 if (ticket.RequiresCostApproval && !ticket.CostApproved)
                 {
                     TempData["TicketsError"] = "No se puede cerrar la orden mientras la aprobacion de costos este pendiente.";
@@ -5346,6 +5353,15 @@ namespace ITServiceDeskApp.Controllers
                 {
                     dbTicket.Status = TicketStatus.Closed;
                 }
+            }
+
+            if (canEditSolutionForm &&
+                isMaintenanceTicket &&
+                string.Equals(dbTicket.MaintenanceStage, "Lista para entrega", StringComparison.OrdinalIgnoreCase) &&
+                IsTechnicalFormCompleted(dbTicket) &&
+                !(dbTicket.RequiresCostApproval && !dbTicket.CostApproved))
+            {
+                dbTicket.Status = TicketStatus.Closed;
             }
 
             if (isMaintenanceTicket && dbTicket.Status == TicketStatus.Closed)

@@ -1,18 +1,43 @@
+using ITServiceDeskApp.Data;
+using ITServiceDeskApp.Models;
 using ITServiceDeskApp.Services;
 using ITServiceDeskApp.ViewModels.Inventory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ITServiceDeskApp.Controllers;
 
 [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
-public class MaintenanceRepairsController(PublishedInventoryService sourceService) : Controller
+public class MaintenanceRepairsController(
+    PublishedInventoryService sourceService,
+    ApplicationDbContext context) : Controller
 {
     public async Task<IActionResult> Index(string? q = null, string? status = null, DateTime? from = null, DateTime? to = null, int page = 1, CancellationToken cancellationToken = default)
     {
         var query = (q ?? "").Trim();
         var selectedStatus = (status ?? "").Trim();
         if (query.Length > 200 || selectedStatus.Length > 100) return BadRequest("El filtro es demasiado largo.");
+
+        var systemRepairsQuery = context.Tickets
+            .AsNoTracking()
+            .Where(ticket => ticket.Department == "Mantenimiento");
+
+        if (query.Length > 0)
+        {
+            systemRepairsQuery = systemRepairsQuery.Where(ticket =>
+                (ticket.TicketNumber != null && ticket.TicketNumber.Contains(query)) ||
+                (ticket.UnitCode != null && ticket.UnitCode.Contains(query)) ||
+                ticket.Description.Contains(query) ||
+                (ticket.AssignedTechnician != null && ticket.AssignedTechnician.Contains(query)));
+        }
+
+        var systemRepairs = await systemRepairsQuery
+            .OrderByDescending(ticket => ticket.CreatedDate)
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
+        ViewBag.SystemRepairs = systemRepairs;
         var source = await sourceService.GetAsync(PublishedInventoryService.Repairs, cancellationToken);
         var table = source.Table;
         var counts = table?.Rows.GroupBy(r => PublishedRepairsViewModel.State(table, r), StringComparer.OrdinalIgnoreCase)
