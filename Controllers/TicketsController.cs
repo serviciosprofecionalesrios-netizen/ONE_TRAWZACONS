@@ -4001,7 +4001,7 @@ namespace ITServiceDeskApp.Controllers
             ticket.CostApprovedAtUtc = ticket.CostApproved ? DateTime.UtcNow : null;
 
             NormalizeSparePartFields(ticket);
-            ValidateSolutionBusinessRules(ticket, null, afterEvidenceFile: null);
+            ValidateSolutionBusinessRules(ticket, null, afterEvidenceFile: null, currentExitOrderPath: null, exitOrderFile: null);
             await ValidateTicketCostCenterTraceabilityAsync(
                 ticket,
                 hasSpending: HasAnyStructuredCost(ticket) || sparePartInputs.Count > 0);
@@ -4638,7 +4638,7 @@ namespace ITServiceDeskApp.Controllers
             NormalizeSparePartFields(ticket);
             NormalizeComponentChangeFields(ticket);
             ticket.CostCenterCode = NormalizeTicketCostCenterCode(ticket.CostCenterCode);
-            ValidateSolutionBusinessRules(ticket, null, afterEvidenceFile);
+            ValidateSolutionBusinessRules(ticket, null, afterEvidenceFile, currentExitOrderPath: null, exitOrderFile: exitOrderFile);
             await ValidateTicketCostCenterTraceabilityAsync(
                 ticket,
                 hasSpending: HasAnyStructuredCost(ticket));
@@ -4656,7 +4656,7 @@ namespace ITServiceDeskApp.Controllers
                 ticket.BeforeEvidencePath = await SaveUploadedFileAsync(beforeEvidenceFile, ticket.BeforeEvidencePath);
                 ticket.AfterEvidencePath = await SaveUploadedFileAsync(afterEvidenceFile, ticket.AfterEvidencePath);
                 ticket.TechnicalSheetPath = await SaveUploadedFileAsync(technicalSheetFile, ticket.TechnicalSheetPath, new[] { ".jpg", ".jpeg", ".png", ".webp" });
-                ticket.ExitOrderPath = await SaveUploadedFileAsync(exitOrderFile, ticket.ExitOrderPath, new[] { ".jpg", ".jpeg", ".png", ".webp" });
+                ticket.ExitOrderPath = await SaveUploadedFileAsync(exitOrderFile, ticket.ExitOrderPath, new[] { ".pdf" });
             }
             else
             {
@@ -5130,7 +5130,7 @@ namespace ITServiceDeskApp.Controllers
             NormalizeTechnicalFieldsForRole(ticket, canEditSolutionForm, originalTicket);
             NormalizeSparePartFields(ticket);
             NormalizeComponentChangeFields(ticket);
-            ValidateSolutionBusinessRules(ticket, originalTicket.AfterEvidencePath, afterEvidenceFile);
+            ValidateSolutionBusinessRules(ticket, originalTicket.AfterEvidencePath, afterEvidenceFile, originalTicket.ExitOrderPath, exitOrderFile);
 
             if (!ModelState.IsValid)
             {
@@ -5228,7 +5228,7 @@ namespace ITServiceDeskApp.Controllers
                     string.IsNullOrWhiteSpace(ticket.ExitOrderPath)
                         ? originalTicket.ExitOrderPath
                         : ticket.ExitOrderPath,
-                    new[] { ".jpg", ".jpeg", ".png", ".webp" });
+                    new[] { ".pdf" });
             }
             else
             {
@@ -7380,7 +7380,9 @@ namespace ITServiceDeskApp.Controllers
         private void ValidateSolutionBusinessRules(
             Ticket ticket,
             string? currentAfterEvidencePath,
-            IFormFile? afterEvidenceFile)
+            IFormFile? afterEvidenceFile,
+            string? currentExitOrderPath,
+            IFormFile? exitOrderFile)
         {
             var requiresFinalEvidence =
                 ticket.Status == TicketStatus.Resolved ||
@@ -7428,6 +7430,36 @@ namespace ITServiceDeskApp.Controllers
 
             if (string.Equals(ticket.Department, "Mantenimiento", StringComparison.OrdinalIgnoreCase))
             {
+                var hasStoredExitDocument = new[] { ticket.ExitOrderPath, currentExitOrderPath }
+                    .Any(path => !string.IsNullOrWhiteSpace(path) &&
+                        path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
+                var hasUploadedExitDocument = CanEditSolutionForm() &&
+                    exitOrderFile is { Length: > 0 } &&
+                    exitOrderFile.Length <= 10 * 1024 * 1024 &&
+                    string.Equals(Path.GetExtension(exitOrderFile.FileName), ".pdf", StringComparison.OrdinalIgnoreCase);
+
+                if (ticket.Status == TicketStatus.Closed && !hasStoredExitDocument && !hasUploadedExitDocument)
+                {
+                    ModelState.AddModelError(
+                        nameof(Ticket.ExitOrderPath),
+                        "Debe adjuntar el documento de entrega / salida en PDF antes de cerrar la orden.");
+                }
+
+                if (exitOrderFile is { Length: > 0 } &&
+                    !string.Equals(Path.GetExtension(exitOrderFile.FileName), ".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(
+                        nameof(Ticket.ExitOrderPath),
+                        "El documento de entrega / salida debe estar en formato PDF.");
+                }
+
+                if (exitOrderFile is { Length: > 10 * 1024 * 1024 })
+                {
+                    ModelState.AddModelError(
+                        nameof(Ticket.ExitOrderPath),
+                        "El documento de entrega / salida no puede superar 10 MB.");
+                }
+
                 if (ticket.Status == TicketStatus.Closed &&
                     ticket.RequiresCostApproval &&
                     !ticket.CostApproved)
@@ -7447,7 +7479,8 @@ namespace ITServiceDeskApp.Controllers
                 string.IsNullOrWhiteSpace(ticket.RootCause) ||
                 string.IsNullOrWhiteSpace(ticket.TechnicalTestsPerformed) ||
                 !ticket.UserConformityConfirmed ||
-                string.IsNullOrWhiteSpace(ticket.AfterEvidencePath))
+                string.IsNullOrWhiteSpace(ticket.AfterEvidencePath) ||
+                string.IsNullOrWhiteSpace(ticket.ExitOrderPath))
             {
                 return false;
             }

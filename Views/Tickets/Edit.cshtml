@@ -553,12 +553,14 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Orden de Salida</label>
-                        <input type="file" name="exitOrderFile" class="form-control" data-solution-field="true" accept=".jpg,.jpeg,.png,.webp" />
+                        <label class="form-label fw-semibold">Documento de entrega / salida (PDF)</label>
+                        <input type="file" name="exitOrderFile" class="form-control" data-solution-field="true" accept="application/pdf,.pdf" />
                         @if (!string.IsNullOrWhiteSpace(Model.ExitOrderPath))
                         {
                             <div class="form-text">Actual: <a href="@Model.ExitOrderPath" target="_blank">Ver archivo</a></div>
                         }
+                        <div class="form-text">Documento físico digitalizado, obligatorio para cerrar la orden.</div>
+                        <span asp-validation-for="ExitOrderPath" class="text-danger small"></span>
                     </div>
                 </div>
 
