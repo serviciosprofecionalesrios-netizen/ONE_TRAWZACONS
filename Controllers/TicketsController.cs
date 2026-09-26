@@ -4179,15 +4179,6 @@ namespace ITServiceDeskApp.Controllers
                         await RegisterMaintenanceAlertHistoryAsync(ticket.Id, MaintenanceAlertCostApprovalHistoryKey, "Pendiente", "Alerta de aprobacion de costos enviada");
                     }
 
-                    if (string.Equals(submitAction, "save_pdf", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return RedirectToAction(nameof(DownloadPdf), new
-                        {
-                            id = ticket.Id,
-                            department = "Mantenimiento"
-                        });
-                    }
-
                     TempData["ExternalRepairMessage"] = $"Orden {ticket.TicketNumber} creada correctamente y disponible en Reparaciones.";
                     return RedirectToAction("Index", "MaintenanceRepairs", new { q = ticket.TicketNumber });
                 }
