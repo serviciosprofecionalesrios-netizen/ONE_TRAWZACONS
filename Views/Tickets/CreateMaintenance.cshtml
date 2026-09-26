@@ -64,7 +64,7 @@
         <a asp-action="Index" asp-route-department="Mantenimiento" class="btn-close" title="Cerrar"></a>
     </div>
 
-    <form asp-action="CreateMaintenance" method="post" enctype="multipart/form-data" id="maintenanceCreateForm">
+    <form asp-action="CreateMaintenance" method="post" enctype="multipart/form-data" id="maintenanceCreateForm" novalidate>
         <div class="m-body">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
@@ -170,7 +170,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label for="TechnicianCategoryMulti" class="m-label">Categoria tecnica <span class="req">*</span></label>
+                    <label for="TechnicianCategoryMulti" class="m-label">Categoria tecnica</label>
                     <input asp-for="TechnicianCategory" type="hidden" />
                     <select id="TechnicianCategoryMulti" class="d-none" multiple>
                         @foreach (var option in maintenanceTechnicianCategoryOptions)
@@ -186,11 +186,11 @@
                             <div id="TechnicianCategoryOptions"></div>
                         </div>
                     </div>
-                    <div class="m-note">Seleccion multiple en desplegable.</div>
+                    <div class="m-note">Opcional al crear; puede asignarse después.</div>
                     <span asp-validation-for="TechnicianCategory" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3">
-                    <label for="AssignedTechnicianMulti" class="m-label">Tecnico asignado <span class="req">*</span></label>
+                    <label for="AssignedTechnicianMulti" class="m-label">Tecnico asignado</label>
                     <input asp-for="AssignedTechnician" type="hidden" />
                     <select id="AssignedTechnicianMulti" class="d-none" multiple>
                         @foreach (var option in technicianOptions)
@@ -206,7 +206,7 @@
                             <div id="AssignedTechnicianOptions"></div>
                         </div>
                     </div>
-                    <div class="m-note">Puedes escoger dos o mas tecnicos.</div>
+                    <div class="m-note">Opcional al crear; puede asignarse después.</div>
                     <span asp-validation-for="AssignedTechnician" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6"><label class="m-label">Documento de ingreso</label><input type="file" name="reportEvidenceFile" class="form-control" accept=".jpg,.jpeg,.png,.webp,.pdf" /></div>

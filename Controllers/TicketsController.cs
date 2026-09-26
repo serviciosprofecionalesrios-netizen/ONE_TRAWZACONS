@@ -3747,6 +3747,9 @@ namespace ITServiceDeskApp.Controllers
 
             ticket.Status = TicketStatus.Open;
             ticket.Department = "Mantenimiento";
+            ticket.RequestingUser = string.IsNullOrWhiteSpace(ticket.RequestingUser)
+                ? GetChangedBy()
+                : ticket.RequestingUser.Trim();
 
             if (!intakeDate.HasValue)
             {
@@ -3800,16 +3803,7 @@ namespace ITServiceDeskApp.Controllers
             ticket.ExternalCostCordoba = maintenanceUiMetaInput.ExternalCostCordoba;
             ticket.ExternalCostUsd = maintenanceUiMetaInput.ExternalCostUsd;
 
-            if (selectedTechnicianCategories.Count == 0)
-            {
-                ModelState.AddModelError(nameof(Ticket.TechnicianCategory), "Debe seleccionar al menos una categoria tecnica.");
-            }
-
-            if (selectedTechnicians.Count == 0)
-            {
-                ModelState.AddModelError(nameof(Ticket.AssignedTechnician), "Debe asignar al menos un tecnico responsable.");
-            }
-            else if (selectedTechnicianCategories.Count > 0)
+            if (selectedTechnicians.Count > 0)
             {
                 var selectedTechnicianRows = await _context.MaintenanceTechnicians
                     .AsNoTracking()
