@@ -569,17 +569,28 @@
     @if (Model.IsMaintenanceView && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult repairSource && repairSource.Table != null)
     {
         var repairStates = ViewBag.PublishedRepairStates as IReadOnlyDictionary<string, int> ?? new Dictionary<string, int>();
+        var externalTotal = repairSource.Table.Rows.Count;
+        var internalTotal = Model.TotalTickets;
+        var internalClosed = Math.Max(0, internalTotal - Model.ActiveTickets);
+        var externalDelivered = repairStates.TryGetValue("Entregado", out var delivered) ? delivered : 0;
+        var externalCompleted = repairStates.TryGetValue("Terminado", out var completed) ? completed : 0;
+        var externalPending = repairStates.TryGetValue("Pendiente", out var pending) ? pending : 0;
+        var externalInRepair = repairStates.TryGetValue("En reparacion", out var inRepair) ? inRepair : 0;
         <div class="card shadow-sm mb-3 border-0 maintenance-published-summary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <div><h6 class="fw-bold mb-1">Reparaciones registradas</h6><small class="text-muted">Información operativa del taller</small></div>
+                    <div><h6 class="fw-bold mb-1">Resumen consolidado de mantenimiento</h6><small class="text-muted">Órdenes registradas en el sistema y reparaciones de la fuente externa.</small></div>
                     <a class="btn btn-sm btn-outline-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Ver reparaciones</a>
                 </div>
                 <div class="row g-2">
-                    <div class="col-6 col-md-3"><div class="maintenance-summary-kpi"><span>Total</span><strong>@repairSource.Table.Rows.Count</strong></div></div>
-                    <div class="col-6 col-md-3"><div class="maintenance-summary-kpi"><span>Entregadas</span><strong>@(repairStates.TryGetValue("Entregado", out var delivered) ? delivered : 0)</strong></div></div>
-                    <div class="col-6 col-md-3"><div class="maintenance-summary-kpi"><span>Terminadas</span><strong>@(repairStates.TryGetValue("Terminado", out var completed) ? completed : 0)</strong></div></div>
-                    <div class="col-6 col-md-3"><div class="maintenance-summary-kpi"><span>Pendientes</span><strong>@(repairStates.TryGetValue("Pendiente", out var pending) ? pending : 0)</strong></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Órdenes del sistema</span><strong>@internalTotal</strong><small>@Model.ActiveTickets activas</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Reparaciones externas</span><strong>@externalTotal</strong><small>Fuente importada</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Total consolidado</span><strong>@(internalTotal + externalTotal)</strong><small>Ambos orígenes</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Finalizadas / entregadas</span><strong>@(internalClosed + externalDelivered)</strong><small>Sistema: @internalClosed · Externas: @externalDelivered</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas pendientes</span><strong>@externalPending</strong><small>Sin iniciar</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas en reparación</span><strong>@externalInRepair</strong><small>En taller</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas terminadas</span><strong>@externalCompleted</strong><small>Pendientes de entrega</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas entregadas</span><strong>@externalDelivered</strong><small>Con estado actualizado</small></div></div>
                 </div>
             </div>
         </div>

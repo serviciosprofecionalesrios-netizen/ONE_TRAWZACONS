@@ -1298,9 +1298,28 @@ namespace ITServiceDeskApp.Controllers
             {
                 publishedRepairs = await _publishedInventory.GetAsync(PublishedInventoryService.Repairs, HttpContext.RequestAborted);
                 if (publishedRepairs.Table != null)
+                {
+                    var repairNumberIndex = Array.FindIndex(
+                        publishedRepairs.Table.Headers,
+                        header => header.Equals("N° Gestion", StringComparison.OrdinalIgnoreCase));
+                    var externalRepairOverrides = await _context.MaintenanceExternalRepairs
+                        .AsNoTracking()
+                        .ToDictionaryAsync(item => item.SourceRepairNumber, StringComparer.OrdinalIgnoreCase);
+
                     publishedRepairStates = publishedRepairs.Table.Rows
-                        .GroupBy(r => PublishedRepairsViewModel.State(publishedRepairs.Table, r), StringComparer.OrdinalIgnoreCase)
+                        .GroupBy(row =>
+                        {
+                            var repairNumber = repairNumberIndex >= 0 && repairNumberIndex < row.Cells.Length
+                                ? row.Cells[repairNumberIndex].Trim()
+                                : string.Empty;
+                            return !string.IsNullOrWhiteSpace(repairNumber) &&
+                                   externalRepairOverrides.TryGetValue(repairNumber, out var localRepair) &&
+                                   !string.IsNullOrWhiteSpace(localRepair.Status)
+                                ? localRepair.Status.Trim()
+                                : PublishedRepairsViewModel.State(publishedRepairs.Table, row);
+                        }, StringComparer.OrdinalIgnoreCase)
                         .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+                }
             }
 
             var model = new TicketsIndexViewModel
@@ -5874,15 +5893,13 @@ namespace ITServiceDeskApp.Controllers
             var sites = new List<string>
             {
                 "Oficina ASOMA",
-                "Plantel Nagarote",
                 "Plantel Las Lajitas",
                 "Granada",
                 "Diriamba",
                 "Masaya",
                 "Los Brasiles",
                 "Casa Masaya",
-                "Casa Miramar",
-                "Casa de Alto Nagarote"
+                "Casa Miramar"
             };
 
             if (!string.IsNullOrWhiteSpace(ticket?.Site) &&
