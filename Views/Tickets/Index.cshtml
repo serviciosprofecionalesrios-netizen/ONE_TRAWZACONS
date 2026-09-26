@@ -596,6 +596,81 @@
         </div>
     }
 
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview" && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult externalRepairSource && externalRepairSource.Table != null)
+    {
+        var externalOverrides = ViewBag.PublishedRepairOverrides as IReadOnlyDictionary<string, MaintenanceExternalRepair>
+            ?? new Dictionary<string, MaintenanceExternalRepair>();
+        var table = externalRepairSource.Table;
+        var repairNumberIndex = Array.FindIndex(table.Headers, header => header.Equals("N° Gestion", StringComparison.OrdinalIgnoreCase));
+        Func<ITServiceDeskApp.ViewModels.Inventory.InventorySourceRow, string, string> externalValue = (row, header) =>
+        {
+            var index = Array.FindIndex(table.Headers, item => item.Equals(header, StringComparison.OrdinalIgnoreCase));
+            return index >= 0 && index < row.Cells.Length ? row.Cells[index] : string.Empty;
+        };
+        var externalDashboardRows = table.Rows.Take(12).ToList();
+
+        <section class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h6 class="fw-bold mb-1">Detalle de reparaciones externas</h6>
+                    <small class="text-muted">Información importada desde el submenú Reparaciones. Se muestran 12 registros; el listado completo permanece disponible allí.</small>
+                </div>
+                <a class="btn btn-sm btn-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Abrir listado completo</a>
+            </div>
+            <div class="card-body">
+                @if (!externalDashboardRows.Any())
+                {
+                    <div class="text-muted">No hay reparaciones externas disponibles.</div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var externalRepair in externalDashboardRows)
+                        {
+                            var repairNumber = repairNumberIndex >= 0 && repairNumberIndex < externalRepair.Cells.Length
+                                ? externalRepair.Cells[repairNumberIndex].Trim()
+                                : string.Empty;
+                            externalOverrides.TryGetValue(repairNumber, out var localOverride);
+                            var externalState = localOverride?.Status ?? ITServiceDeskApp.ViewModels.Inventory.PublishedRepairsViewModel.State(table, externalRepair);
+                            var mechanic = localOverride?.AssignedMechanic ?? externalValue(externalRepair, "Mecanico Asignado");
+                            var workPerformed = localOverride?.WorkPerformed ?? externalValue(externalRepair, "Descripción del trabajo realizado");
+
+                            <div class="col-12 col-xl-6">
+                                <article class="border rounded-3 p-3 h-100 bg-light-subtle">
+                                    <div class="d-flex justify-content-between gap-2 mb-2">
+                                        <div>
+                                            <div class="fw-bold">@(string.IsNullOrWhiteSpace(repairNumber) ? "Sin número de gestión" : repairNumber)</div>
+                                            <div class="small text-muted">Equipo: @(string.IsNullOrWhiteSpace(externalValue(externalRepair, "Codigo de Equipo")) ? "No indicado" : externalValue(externalRepair, "Codigo de Equipo"))</div>
+                                        </div>
+                                        <span class="badge rounded-pill text-bg-secondary align-self-start">@externalState</span>
+                                    </div>
+                                    <div class="small mb-2"><strong>Mecánico:</strong> @(string.IsNullOrWhiteSpace(mechanic) ? "Sin asignar" : mechanic) · <strong>Entrada:</strong> @(string.IsNullOrWhiteSpace(externalValue(externalRepair, "Fecha de entrada")) ? "—" : externalValue(externalRepair, "Fecha de entrada"))</div>
+                                    <div class="small mb-2"><strong>Problema:</strong> @(string.IsNullOrWhiteSpace(externalValue(externalRepair, "Descripción del problema")) ? "No indicado" : externalValue(externalRepair, "Descripción del problema"))</div>
+                                    <details class="small">
+                                        <summary class="fw-semibold">Ver diagnóstico, trabajo y datos de entrega</summary>
+                                        <div class="mt-2"><strong>Diagnóstico:</strong> @(string.IsNullOrWhiteSpace(externalValue(externalRepair, "Diagnóstico")) ? "No indicado" : externalValue(externalRepair, "Diagnóstico"))</div>
+                                        <div class="mt-2"><strong>Trabajo realizado:</strong> @(string.IsNullOrWhiteSpace(workPerformed) ? "No indicado" : workPerformed)</div>
+                                        <div class="mt-2"><strong>Salida:</strong> @(string.IsNullOrWhiteSpace(externalValue(externalRepair, "Fecha de salida")) ? "—" : externalValue(externalRepair, "Fecha de salida")) · <strong>Sitio:</strong> @(string.IsNullOrWhiteSpace(externalValue(externalRepair, "Sitio")) ? "—" : externalValue(externalRepair, "Sitio"))</div>
+                                    </details>
+                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                        @if (canEditTicket && !string.IsNullOrWhiteSpace(repairNumber))
+                                        {
+                                            <a class="btn btn-sm btn-outline-primary" asp-controller="MaintenanceRepairs" asp-action="EditExternal" asp-route-repairNumber="@repairNumber">Editar</a>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(localOverride?.DeliveryDocumentPath))
+                                        {
+                                            <a class="btn btn-sm btn-outline-success" href="@localOverride.DeliveryDocumentPath" target="_blank">PDF de entrega</a>
+                                        }
+                                    </div>
+                                </article>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
     @if (TempData["TicketsError"] is string errorMessage)
     {
         <div class="alert alert-danger shadow-sm">@errorMessage</div>

@@ -1294,6 +1294,8 @@ namespace ITServiceDeskApp.Controllers
 
             InventorySourceResult? publishedRepairs = null;
             IReadOnlyDictionary<string, int> publishedRepairStates = new Dictionary<string, int>();
+            IReadOnlyDictionary<string, MaintenanceExternalRepair> publishedRepairOverrides =
+                new Dictionary<string, MaintenanceExternalRepair>(StringComparer.OrdinalIgnoreCase);
             if (isMaintenanceView)
             {
                 publishedRepairs = await _publishedInventory.GetAsync(PublishedInventoryService.Repairs, HttpContext.RequestAborted);
@@ -1302,7 +1304,7 @@ namespace ITServiceDeskApp.Controllers
                     var repairNumberIndex = Array.FindIndex(
                         publishedRepairs.Table.Headers,
                         header => header.Equals("N° Gestion", StringComparison.OrdinalIgnoreCase));
-                    var externalRepairOverrides = await _context.MaintenanceExternalRepairs
+                    publishedRepairOverrides = await _context.MaintenanceExternalRepairs
                         .AsNoTracking()
                         .ToDictionaryAsync(item => item.SourceRepairNumber, StringComparer.OrdinalIgnoreCase);
 
@@ -1313,7 +1315,7 @@ namespace ITServiceDeskApp.Controllers
                                 ? row.Cells[repairNumberIndex].Trim()
                                 : string.Empty;
                             return !string.IsNullOrWhiteSpace(repairNumber) &&
-                                   externalRepairOverrides.TryGetValue(repairNumber, out var localRepair) &&
+                                   publishedRepairOverrides.TryGetValue(repairNumber, out var localRepair) &&
                                    !string.IsNullOrWhiteSpace(localRepair.Status)
                                 ? localRepair.Status.Trim()
                                 : PublishedRepairsViewModel.State(publishedRepairs.Table, row);
@@ -1409,6 +1411,7 @@ namespace ITServiceDeskApp.Controllers
 
             ViewBag.PublishedRepairs = publishedRepairs;
             ViewBag.PublishedRepairStates = publishedRepairStates;
+            ViewBag.PublishedRepairOverrides = publishedRepairOverrides;
 
             return View(model);
         }
