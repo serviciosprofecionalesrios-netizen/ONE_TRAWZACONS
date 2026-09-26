@@ -1293,12 +1293,19 @@ namespace ITServiceDeskApp.Controllers
             }
 
             InventorySourceResult? publishedRepairs = null;
+            InventorySourceResult? publishedMaintenanceInventory = null;
             IReadOnlyDictionary<string, int> publishedRepairStates = new Dictionary<string, int>();
             IReadOnlyDictionary<string, MaintenanceExternalRepair> publishedRepairOverrides =
                 new Dictionary<string, MaintenanceExternalRepair>(StringComparer.OrdinalIgnoreCase);
             if (isMaintenanceView)
             {
                 publishedRepairs = await _publishedInventory.GetAsync(PublishedInventoryService.Repairs, HttpContext.RequestAborted);
+                var inventorySheet = PublishedInventoryService.Sheets
+                    .FirstOrDefault(sheet => sheet.Key.Equals("inventario", StringComparison.OrdinalIgnoreCase));
+                if (inventorySheet != null)
+                {
+                    publishedMaintenanceInventory = await _publishedInventory.GetAsync(inventorySheet, HttpContext.RequestAborted);
+                }
                 if (publishedRepairs.Table != null)
                 {
                     var repairNumberIndex = Array.FindIndex(
@@ -1410,6 +1417,7 @@ namespace ITServiceDeskApp.Controllers
             };
 
             ViewBag.PublishedRepairs = publishedRepairs;
+            ViewBag.PublishedMaintenanceInventory = publishedMaintenanceInventory;
             ViewBag.PublishedRepairStates = publishedRepairStates;
             ViewBag.PublishedRepairOverrides = publishedRepairOverrides;
 

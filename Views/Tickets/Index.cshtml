@@ -576,21 +576,25 @@
         var externalCompleted = repairStates.TryGetValue("Terminado", out var completed) ? completed : 0;
         var externalPending = repairStates.TryGetValue("Pendiente", out var pending) ? pending : 0;
         var externalInRepair = repairStates.TryGetValue("En reparacion", out var inRepair) ? inRepair : 0;
+        var corporateInventorySource = ViewBag.PublishedMaintenanceInventory as ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult;
+        var corporateInventoryRows = corporateInventorySource?.Table?.Rows.Count ?? 0;
+        var corporateInventoryUpdatedAt = corporateInventorySource?.RetrievedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Sin actualización disponible";
         <div class="card shadow-sm mb-3 border-0 maintenance-published-summary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <div><h6 class="fw-bold mb-1">Resumen consolidado de mantenimiento</h6><small class="text-muted">Órdenes registradas en el sistema y reparaciones de la fuente externa.</small></div>
+                    <div><h6 class="fw-bold mb-1">Resumen consolidado de mantenimiento</h6><small class="text-muted">Información integrada de órdenes, reparaciones e inventario corporativo.</small></div>
                     <a class="btn btn-sm btn-outline-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Ver reparaciones</a>
                 </div>
                 <div class="row g-2">
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Órdenes del sistema</span><strong>@internalTotal</strong><small>@Model.ActiveTickets activas</small></div></div>
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Reparaciones externas</span><strong>@externalTotal</strong><small>Fuente importada</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Órdenes registradas</span><strong>@internalTotal</strong><small>@Model.ActiveTickets activas</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Reparaciones registradas</span><strong>@externalTotal</strong><small>Sistema de mantenimiento</small></div></div>
                     <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Total consolidado</span><strong>@(internalTotal + externalTotal)</strong><small>Ambos orígenes</small></div></div>
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Finalizadas / entregadas</span><strong>@(internalClosed + externalDelivered)</strong><small>Sistema: @internalClosed · Externas: @externalDelivered</small></div></div>
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas pendientes</span><strong>@externalPending</strong><small>Sin iniciar</small></div></div>
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas en reparación</span><strong>@externalInRepair</strong><small>En taller</small></div></div>
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas terminadas</span><strong>@externalCompleted</strong><small>Pendientes de entrega</small></div></div>
-                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Externas entregadas</span><strong>@externalDelivered</strong><small>Con estado actualizado</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Finalizadas / entregadas</span><strong>@(internalClosed + externalDelivered)</strong><small>Órdenes: @internalClosed · Reparaciones: @externalDelivered</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Pendientes de reparación</span><strong>@externalPending</strong><small>Sin iniciar</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>En reparación</span><strong>@externalInRepair</strong><small>En taller</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Reparaciones terminadas</span><strong>@externalCompleted</strong><small>Pendientes de entrega</small></div></div>
+                    <div class="col-6 col-lg-3"><div class="maintenance-summary-kpi"><span>Reparaciones entregadas</span><strong>@externalDelivered</strong><small>Con estado actualizado</small></div></div>
+                    <div class="col-12 col-lg-3"><div class="maintenance-summary-kpi"><span>Inventario corporativo</span><strong>@corporateInventoryRows</strong><small>Registros integrados · @corporateInventoryUpdatedAt</small></div></div>
                 </div>
             </div>
         </div>
@@ -612,8 +616,8 @@
         <section class="card shadow-sm mb-3">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h6 class="fw-bold mb-1">Detalle de reparaciones externas</h6>
-                    <small class="text-muted">Información importada desde el submenú Reparaciones. Se muestran 12 registros; el listado completo permanece disponible allí.</small>
+                    <h6 class="fw-bold mb-1">Detalle de reparaciones</h6>
+                    <small class="text-muted">Información de mantenimiento integrada. Se muestran 12 registros; el listado completo permanece disponible en Reparaciones.</small>
                 </div>
                 <a class="btn btn-sm btn-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Abrir listado completo</a>
             </div>
