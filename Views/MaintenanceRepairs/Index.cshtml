@@ -6,6 +6,8 @@
     var canEditRepairs = User.IsInRole(nameof(UserRole.Administrator)) ||
                          User.IsInRole(nameof(UserRole.CoordinadorIT)) ||
                          User.IsInRole(nameof(UserRole.Technician));
+    var externalOverrides = ViewBag.ExternalRepairOverrides as IReadOnlyDictionary<string, MaintenanceExternalRepair>
+        ?? new Dictionary<string, MaintenanceExternalRepair>();
 }
 <link rel="stylesheet" href="~/css/inventory-workspace.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/maintenance-repairs.css" asp-append-version="true" />
@@ -57,6 +59,10 @@
     </section>
     <hr class="my-4" />
     <h3 class="mb-3">Historial de reparaciones publicado</h3>
+    @if (TempData["ExternalRepairMessage"] is string externalRepairMessage)
+    {
+        <div class="alert alert-success">@externalRepairMessage</div>
+    }
     @if (Model.Source.Warning != null)
     {
         <div class="alert alert-warning" role="alert">No fue posible actualizar la información. @(Model.Source.Table != null ? "Se muestra la última consulta disponible." : "Intenta nuevamente en un momento.")</div>
@@ -82,7 +88,9 @@
         <div class="repair-list">
         @foreach (var row in Model.Rows)
         {
-            var state = ITServiceDeskApp.ViewModels.Inventory.PublishedRepairsViewModel.State(Model.Source.Table, row);
+            var repairNumber = Model.Value(row, "N° Gestion");
+            externalOverrides.TryGetValue(repairNumber, out var localOverride);
+            var state = localOverride?.Status ?? ITServiceDeskApp.ViewModels.Inventory.PublishedRepairsViewModel.State(Model.Source.Table, row);
             var stateStyle = state.Equals("Entregado", StringComparison.OrdinalIgnoreCase) ? "delivered" : state.Equals("Terminado", StringComparison.OrdinalIgnoreCase) ? "completed" : state.Equals("Pendiente", StringComparison.OrdinalIgnoreCase) ? "pending" : "unknown";
             <article class="repair-card">
                 <header class="repair-card-header"><div><span class="inventory-code">@Model.Value(row, "N° Gestion")</span><h3><i class="bi bi-truck" aria-hidden="true"></i> @Model.Value(row, "Codigo de Equipo")</h3></div><span class="repair-badge @stateStyle">@state</span></header>
@@ -92,6 +100,16 @@
                     <div class="repair-detail-grid"><section><h4>Diagnóstico</h4><p>@Model.Value(row, "Diagnóstico")</p></section><section><h4>Trabajo realizado</h4><p>@Model.Value(row, "Descripción del trabajo realizado")</p></section><section><h4>Elemento</h4><p>@Model.Value(row, "Elemento")</p></section></div>
                     <dl class="inventory-facts"><div><dt>Cliente</dt><dd>@Model.Value(row, "Cliente")</dd></div><div><dt>Responsable</dt><dd>@Model.Value(row, "Responsable")</dd></div><div><dt>Kilometraje de entrada</dt><dd>@Model.Value(row, "Km Entrada")</dd></div><div><dt>Kilometraje de salida</dt><dd>@Model.Value(row, "Km Salida")</dd></div></dl>
                 </details>
+                <div class="d-flex gap-2 flex-wrap mt-3">
+                    @if (canEditRepairs)
+                    {
+                        <a class="btn btn-primary btn-sm" asp-action="EditExternal" asp-route-repairNumber="@repairNumber"><i class="bi bi-pencil-square"></i> Editar reparación</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(localOverride?.DeliveryDocumentPath))
+                    {
+                        <a class="btn btn-outline-success btn-sm" href="@localOverride.DeliveryDocumentPath" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Documento de entrega</a>
+                    }
+                </div>
             </article>
         }
         </div>

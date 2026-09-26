@@ -1,0 +1,19 @@
+@model ITServiceDeskApp.ViewModels.Maintenance.ExternalRepairEditViewModel
+@{ ViewData["Title"] = "Editar reparación externa"; }
+<div class="container mt-4" style="max-width:900px">
+    <div class="card shadow-sm"><div class="card-header bg-primary text-white"><h4 class="mb-0">Editar reparación @Model.SourceRepairNumber</h4></div>
+        <div class="card-body"><form asp-action="EditExternal" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input asp-for="SourceRepairNumber" type="hidden" /><input asp-for="DeliveryDocumentPath" type="hidden" />
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Equipo</label><input class="form-control" value="@Model.EquipmentCode" readonly /></div>
+                <div class="col-md-6"><label asp-for="Status" class="form-label">Estado</label><select asp-for="Status" class="form-select"><option>Pendiente</option><option>En reparacion</option><option>Terminado</option><option>Entregado</option></select><span asp-validation-for="Status" class="text-danger"></span></div>
+                <div class="col-12"><label class="form-label">Problema reportado</label><textarea class="form-control" rows="2" readonly>@Model.ProblemDescription</textarea></div>
+                <div class="col-md-6"><label asp-for="AssignedMechanic" class="form-label">Mecánico asignado</label><input asp-for="AssignedMechanic" class="form-control" /></div>
+                <div class="col-md-6"><label class="form-label">Documento de entrega / salida (PDF)</label><input type="file" name="deliveryDocumentFile" accept="application/pdf,.pdf" class="form-control" /><div class="form-text">Obligatorio para marcar como Entregado.</div><span asp-validation-for="DeliveryDocumentPath" class="text-danger"></span></div>
+                <div class="col-12"><label asp-for="WorkPerformed" class="form-label">Trabajo realizado</label><textarea asp-for="WorkPerformed" class="form-control" rows="4"></textarea></div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4"><a asp-action="Index" class="btn btn-secondary">Cancelar</a><button class="btn btn-primary">Guardar cambios</button></div>
+        </form></div>
+    </div>
+</div>
