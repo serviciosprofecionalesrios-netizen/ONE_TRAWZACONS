@@ -4188,15 +4188,8 @@ namespace ITServiceDeskApp.Controllers
                         });
                     }
 
-                    TempData["TicketsMessage"] = $"Orden {ticket.TicketNumber} creada correctamente.";
-                    return RedirectToAction(nameof(Index), new
-                    {
-                        department = "Mantenimiento",
-                        search = ticket.TicketNumber,
-                        maintenanceView = "detail",
-                        page = 1,
-                        pageSize = 25
-                    });
+                    TempData["ExternalRepairMessage"] = $"Orden {ticket.TicketNumber} creada correctamente y disponible en Reparaciones.";
+                    return RedirectToAction("Index", "MaintenanceRepairs", new { q = ticket.TicketNumber });
                 }
                 catch (DbUpdateException) when (attempt < maxAttempts)
                 {
@@ -4206,6 +4199,13 @@ namespace ITServiceDeskApp.Controllers
                 {
                     _context.ChangeTracker.Clear();
                     ModelState.AddModelError(string.Empty, "No se pudo guardar la orden de mantenimiento por un conflicto de datos.");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _context.ChangeTracker.Clear();
+                    _logger.LogError(ex, "No se pudo guardar la orden de mantenimiento.");
+                    ModelState.AddModelError(string.Empty, "No fue posible guardar la orden de mantenimiento. Intente nuevamente.");
                     break;
                 }
             }
