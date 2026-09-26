@@ -4203,6 +4203,41 @@ namespace ITServiceDeskApp.Controllers
             return View(ticket);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateMaintenanceDraft(Ticket ticket, DateTime? intakeDate)
+        {
+            // Alta inicial: no bloquea el ingreso de la unidad por asignaciones, costos o datos técnicos
+            // que se completan durante la reparación.
+            ticket.TicketNumber = await GenerateTicketNumberAsync();
+            ticket.CreatedDate = intakeDate?.Date ?? DateTime.UtcNow;
+            ticket.ClosedDate = null;
+            ticket.Status = TicketStatus.Open;
+            ticket.Department = "Mantenimiento";
+            ticket.RequestingUser = string.IsNullOrWhiteSpace(ticket.RequestingUser) ? GetChangedBy() : ticket.RequestingUser.Trim();
+            ticket.Site = string.IsNullOrWhiteSpace(ticket.Site) ? MaintenanceSites.First() : ticket.Site.Trim();
+            ticket.IncidentType = string.IsNullOrWhiteSpace(ticket.IncidentType) ? "Mantenimiento Correctivo" : ticket.IncidentType.Trim();
+            ticket.Priority = Enum.IsDefined(ticket.Priority) ? ticket.Priority : PriorityLevel.Medium;
+            ticket.MaintenanceStage = string.IsNullOrWhiteSpace(ticket.MaintenanceStage) ? "Recibida" : ticket.MaintenanceStage.Trim();
+            ticket.Description = string.IsNullOrWhiteSpace(ticket.Description) ? "Orden de mantenimiento registrada." : ticket.Description.Trim();
+            ticket.SLADeadline = CalculateSLA(ticket.Priority);
+
+            try
+            {
+                _context.Tickets.Add(ticket);
+                await _context.SaveChangesAsync();
+                TempData["ExternalRepairMessage"] = $"Orden {ticket.TicketNumber} creada correctamente y disponible para edición.";
+                return RedirectToAction("Index", "MaintenanceRepairs", new { q = ticket.TicketNumber });
+            }
+            catch (Exception ex)
+            {
+                _context.ChangeTracker.Clear();
+                _logger.LogError(ex, "No se pudo crear el alta inicial de mantenimiento.");
+                TempData["TicketsError"] = "No se pudo guardar la orden. Intente nuevamente.";
+                return RedirectToAction(nameof(CreateMaintenance));
+            }
+        }
+
         public async Task<IActionResult> CreateFinance(string? site = null, string? requestType = null, string? ocStage = null, int? sourceOcTicketId = null)
         {
             var normalizedRequestType = string.IsNullOrWhiteSpace(requestType) ? string.Empty : requestType.Trim();

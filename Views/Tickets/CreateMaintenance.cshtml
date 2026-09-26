@@ -64,7 +64,7 @@
         <a asp-action="Index" asp-route-department="Mantenimiento" class="btn-close" title="Cerrar"></a>
     </div>
 
-    <form asp-action="CreateMaintenance" method="post" enctype="multipart/form-data" id="maintenanceCreateForm" novalidate>
+    <form asp-action="CreateMaintenanceDraft" method="post" enctype="multipart/form-data" id="maintenanceCreateForm" novalidate>
         <div class="m-body">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
