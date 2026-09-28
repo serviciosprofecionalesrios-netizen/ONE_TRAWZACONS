@@ -1,0 +1,52 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+
+namespace ITServiceDeskApp.Security;
+
+public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
+{
+    private static readonly HashSet<string> InventoryAndMaintenanceControllers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Inventory", "InventoryHub", "InventoryMaster", "MaintenanceAppointments",
+        "MaintenanceInventory", "MaintenanceRepairs", "MaintenanceReports", "MaintenanceTechnicians", "Tickets"
+    };
+
+    public void OnAuthorization(AuthorizationFilterContext context)
+    {
+        var user = context.HttpContext.User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        var profile = user.FindFirst(UserAccessProfiles.ClaimType)?.Value;
+        if (string.IsNullOrWhiteSpace(profile) || profile == UserAccessProfiles.Administrator)
+        {
+            return;
+        }
+
+        var controller = context.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+        if (controller.Equals("Account", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var isReadRequest = HttpMethods.IsGet(context.HttpContext.Request.Method) ||
+                            HttpMethods.IsHead(context.HttpContext.Request.Method);
+
+        var permitted = profile switch
+        {
+            UserAccessProfiles.InventoryMaintenance => InventoryAndMaintenanceControllers.Contains(controller),
+            UserAccessProfiles.OperationsEditor => controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase),
+            UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter =>
+                isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
+                                  controller.Equals("Hs", StringComparison.OrdinalIgnoreCase)),
+            _ => false
+        };
+
+        if (!permitted)
+        {
+            context.Result = new ForbidResult();
+        }
+    }
+}

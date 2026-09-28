@@ -2,6 +2,7 @@
 using ITServiceDeskApp.Models;
 using ITServiceDeskApp.Services;
 using ITServiceDeskApp.Services.Interfaces;
+using ITServiceDeskApp.Security;
 using System.Data.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
@@ -26,7 +27,8 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestHeadersTotalSize = 128 * 1024;
 });
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<AccessProfileAuthorizationFilter>();
+builder.Services.AddControllersWithViews(options => options.Filters.AddService<AccessProfileAuthorizationFilter>());
 builder.Services.AddHttpClient("PublishedInventory", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<PublishedInventoryService>();
 

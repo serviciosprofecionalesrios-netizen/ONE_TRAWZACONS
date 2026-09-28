@@ -7,6 +7,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using ITServiceDeskApp.Security;
 
 namespace ITServiceDeskApp.Controllers
 {
@@ -87,13 +88,20 @@ namespace ITServiceDeskApp.Controllers
                 return View();
             }
 
+            var accessProfile = UserAccessProfiles.Resolve(user.Email);
+            var effectiveRole = accessProfile is null ? user.Role.ToString() : UserRole.Administrator.ToString();
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim(ClaimTypes.Role, effectiveRole),
                 new Claim("UserId", user.Id.ToString())
             };
+
+            if (accessProfile is not null)
+            {
+                claims.Add(new Claim(UserAccessProfiles.ClaimType, accessProfile));
+            }
 
             var identity = new ClaimsIdentity(
                 claims,
@@ -105,12 +113,15 @@ namespace ITServiceDeskApp.Controllers
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 principal);
 
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            // Los perfiles configurados deben iniciar siempre en su módulo permitido,
+            // aunque hayan llegado al login desde una URL que no les corresponde.
+            if (accessProfile is null && !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
 
-            return RedirectToAction("Dashboard", "Operaciones");
+            var home = UserAccessProfiles.Home(accessProfile);
+            return RedirectToAction(home.Action, home.Controller);
         }
 
         [HttpPost]
@@ -123,6 +134,10 @@ namespace ITServiceDeskApp.Controllers
 
         public IActionResult AccessDenied()
         {
+            var profile = User.FindFirst(UserAccessProfiles.ClaimType)?.Value;
+            var home = UserAccessProfiles.Home(profile);
+            ViewData["HomeController"] = home.Controller;
+            ViewData["HomeAction"] = home.Action;
             return View();
         }
     }
