@@ -54,7 +54,10 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
 
         var permitted = profile switch
         {
-            UserAccessProfiles.InventoryMaintenance => InventoryAndMaintenanceControllers.Contains(controller),
+            UserAccessProfiles.InventoryMaintenance =>
+                InventoryAndMaintenanceControllers.Contains(controller) ||
+                (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
+                 action.Equals("Dashboard", StringComparison.OrdinalIgnoreCase)),
             UserAccessProfiles.OperationsEditor => controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase),
             UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter =>
                 isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||

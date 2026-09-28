@@ -1204,8 +1204,6 @@
     var showHsMenu = !hasManagedProfile || isConfiguredAdministrator ||
         accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter;
     var showInventoryMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
-    var showPortalMenu = !hasManagedProfile || isConfiguredAdministrator;
-    var homeRoute = UserAccessProfiles.Home(accessProfile);
     var isFinanceRequester = isAuthenticated;
     var isFinanceApprover =
         isAuthenticated &&
@@ -1451,8 +1449,8 @@
         <div class="container-fluid">
 
             <a class="navbar-brand"
-               asp-controller="@homeRoute.Controller"
-               asp-action="@homeRoute.Action">
+               asp-controller="Operaciones"
+               asp-action="Dashboard">
 
                 <span class="brand-logo-shell">
                     <img class="brand-logo"
@@ -2192,16 +2190,6 @@
                     </li>
                     }
 
-                    @if (showPortalMenu)
-                    {
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @(currentController == "Servicios" ? "active fw-bold" : "")"
-                           asp-controller="Servicios"
-                           asp-action="Index">
-                            <span class="menu-text">Portal</span>
-                        </a>
-                    </li>
-                    }
                 </ul>
 
                 <ul class="navbar-nav ms-auto mt-3 mt-lg-0 align-items-lg-center account-strip">
