@@ -2775,6 +2775,28 @@
                     });
             }
 
+            @if (User.HasClaim("AccessProfile", "Administrator"))
+            {
+                <text>
+                function addAuditMenuEntries() {
+                    var entries = [
+                        ["usuariosMenuTrigger", "Usuarios"], ["operacionesMenuTrigger", "Operaciones"],
+                        ["mantenimientoMenuTrigger", "Mantenimiento"], ["finanzasMenuTrigger", "Finanzas"],
+                        ["hsMenuTrigger", "Hs"], ["inventarioMenuTrigger", "Inventario"]
+                    ];
+                    entries.forEach(function (entry) {
+                        var trigger = document.getElementById(entry[0]);
+                        var menu = trigger && trigger.closest(".area-dropdown")?.querySelector(".dropdown-menu");
+                        if (!menu || menu.querySelector(".audit-menu-link")) return;
+                        var item = document.createElement("li");
+                        item.innerHTML = '<hr class="dropdown-divider"><a class="dropdown-item op-menu-item audit-menu-link" href="/Audit/Index?module=' + encodeURIComponent(entry[1]) + '"><span class="op-item-main"><i class="bi bi-journal-check"></i>Auditoría</span></a>';
+                        menu.appendChild(item);
+                    });
+                }
+                addAuditMenuEntries();
+                </text>
+            }
+
             setupOperacionesPrimaryNavigation();
             setupMantenimientoPrimaryNavigation();
             setupFinanzasPrimaryNavigation();
