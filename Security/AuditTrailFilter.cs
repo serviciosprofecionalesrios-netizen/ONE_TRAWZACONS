@@ -24,7 +24,7 @@ public sealed class AuditTrailFilter(ApplicationDbContext database) : IAsyncActi
             var actionLabel = action.Contains("delete", StringComparison.OrdinalIgnoreCase) || action.Contains("remove", StringComparison.OrdinalIgnoreCase)
                 ? "Eliminación" : isGeneration ? "Generación" : "Actualización";
             var id = context.RouteData.Values.TryGetValue("id", out var routeId) && int.TryParse(routeId?.ToString(), out var parsedId)
-                ? parsedId : null;
+                ? (int?)parsedId : null;
             database.FinanceAuditLogs.Add(new FinanceAuditLog
             {
                 EntityName = controller,
