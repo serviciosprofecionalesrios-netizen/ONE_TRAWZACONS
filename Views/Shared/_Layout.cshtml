@@ -1496,6 +1496,16 @@
                         </li>
                     }
 
+                    @if (User.HasClaim("AccessProfile", "Administrator"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link menu-link @(currentController == "Audit" ? "active fw-bold" : "")"
+                               asp-controller="Audit" asp-action="Index">
+                                <span class="menu-text"><i class="bi bi-journal-check me-1"></i>Auditoría</span>
+                            </a>
+                        </li>
+                    }
+
                     <li class="nav-item dropdown area-dropdown">
                         <a id="operacionesMenuTrigger"
                            class="nav-link menu-link dropdown-toggle @(isOperacionesMenuActive ? "active fw-bold" : "")"

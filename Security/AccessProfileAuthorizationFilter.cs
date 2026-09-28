@@ -20,13 +20,23 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
         }
 
         var profile = user.FindFirst(UserAccessProfiles.ClaimType)?.Value;
-        if (string.IsNullOrWhiteSpace(profile) || profile == UserAccessProfiles.Administrator)
+        var controller = context.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+        if (controller.Equals("Account", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        var controller = context.RouteData.Values["controller"]?.ToString() ?? string.Empty;
-        if (controller.Equals("Account", StringComparison.OrdinalIgnoreCase))
+        var action = context.ActionDescriptor.RouteValues["action"] ?? string.Empty;
+        var isDeletion = HttpMethods.IsDelete(context.HttpContext.Request.Method) ||
+            action.Contains("delete", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("remove", StringComparison.OrdinalIgnoreCase);
+        if (isDeletion && profile != UserAccessProfiles.Administrator)
+        {
+            context.Result = new ForbidResult();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(profile) || profile == UserAccessProfiles.Administrator)
         {
             return;
         }

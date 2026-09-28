@@ -28,7 +28,12 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddScoped<AccessProfileAuthorizationFilter>();
-builder.Services.AddControllersWithViews(options => options.Filters.AddService<AccessProfileAuthorizationFilter>());
+builder.Services.AddScoped<AuditTrailFilter>();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.AddService<AccessProfileAuthorizationFilter>();
+    options.Filters.AddService<AuditTrailFilter>();
+});
 builder.Services.AddHttpClient("PublishedInventory", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<PublishedInventoryService>();
 
