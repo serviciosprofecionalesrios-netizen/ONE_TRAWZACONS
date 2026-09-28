@@ -1192,6 +1192,20 @@
             User.IsInRole("GerenciaGeneral"));
 
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var currentEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+    var accessProfile = string.IsNullOrWhiteSpace(currentEmail) ? null : UserAccessProfiles.Resolve(currentEmail);
+    var hasManagedProfile = accessProfile is not null;
+    var isConfiguredAdministrator = UserAccessProfiles.IsAdministrator(currentEmail);
+    var showUsersMenu = !hasManagedProfile && (canSeeUsersMenu || canSeeCredentialsMenu);
+    var showOperationsMenu = !hasManagedProfile || isConfiguredAdministrator ||
+        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsEditor or UserAccessProfiles.OperationsHsReporter;
+    var showMaintenanceMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
+    var showFinanceMenu = !hasManagedProfile || isConfiguredAdministrator;
+    var showHsMenu = !hasManagedProfile || isConfiguredAdministrator ||
+        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter;
+    var showInventoryMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
+    var showPortalMenu = !hasManagedProfile || isConfiguredAdministrator;
+    var homeRoute = UserAccessProfiles.Home(accessProfile);
     var isFinanceRequester = isAuthenticated;
     var isFinanceApprover =
         isAuthenticated &&
@@ -1437,8 +1451,8 @@
         <div class="container-fluid">
 
             <a class="navbar-brand"
-               asp-controller="Dashboard"
-               asp-action="Index">
+               asp-controller="@homeRoute.Controller"
+               asp-action="@homeRoute.Action">
 
                 <span class="brand-logo-shell">
                     <img class="brand-logo"
@@ -1459,7 +1473,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
 
                 <ul class="navbar-nav ms-2 main-menu">
-                    @if (canSeeUsersMenu || canSeeCredentialsMenu)
+                    @if (showUsersMenu)
                     {
                         <li class="nav-item dropdown area-dropdown">
                             <a id="usuariosMenuTrigger"
@@ -1508,6 +1522,8 @@
                         </li>
                     }
 
+                    @if (showOperationsMenu)
+                    {
                     <li class="nav-item dropdown area-dropdown">
                         <a id="operacionesMenuTrigger"
                            class="nav-link menu-link dropdown-toggle @(isOperacionesMenuActive ? "active fw-bold" : "")"
@@ -1600,7 +1616,10 @@
                             <li class="operations-no-results d-none" id="operacionesMenuNoResults">Sin resultados para la búsqueda.</li>
                         </ul>
                     </li>
+                    }
 
+                    @if (showMaintenanceMenu)
+                    {
                     <li class="nav-item dropdown area-dropdown">
                         <a id="mantenimientoMenuTrigger"
                            class="nav-link menu-link dropdown-toggle @(isMantenimientoMenuActive ? "active fw-bold" : "")"
@@ -1899,8 +1918,9 @@
                             </li>
                         </ul>
                     </li>
+                    }
 
-                    @if (isFinanceRequester || isFinanceApprover || isFinanceAdmin)
+                    @if (showFinanceMenu && (isFinanceRequester || isFinanceApprover || isFinanceAdmin))
                     {
                         <li class="nav-item dropdown area-dropdown">
                             <a id="finanzasMenuTrigger"
@@ -2007,6 +2027,8 @@
                         </li>
                     }
 
+                    @if (showHsMenu)
+                    {
                     <li class="nav-item dropdown area-dropdown">
                         <a id="hsMenuTrigger"
                            class="nav-link menu-link dropdown-toggle @(isHsMenuActive ? "active fw-bold" : "")"
@@ -2090,7 +2112,10 @@
                             </li>
                         </ul>
                     </li>
+                    }
 
+                    @if (showInventoryMenu)
+                    {
                     <li class="nav-item dropdown area-dropdown">
                         <a id="inventarioMenuTrigger"
                            class="nav-link menu-link dropdown-toggle @(isInventarioMenuActive ? "active fw-bold" : "")"
@@ -2165,7 +2190,10 @@
                             </li>
                         </ul>
                     </li>
+                    }
 
+                    @if (showPortalMenu)
+                    {
                     <li class="nav-item">
                         <a class="nav-link menu-link @(currentController == "Servicios" ? "active fw-bold" : "")"
                            asp-controller="Servicios"
@@ -2173,6 +2201,7 @@
                             <span class="menu-text">Portal</span>
                         </a>
                     </li>
+                    }
                 </ul>
 
                 <ul class="navbar-nav ms-auto mt-3 mt-lg-0 align-items-lg-center account-strip">
