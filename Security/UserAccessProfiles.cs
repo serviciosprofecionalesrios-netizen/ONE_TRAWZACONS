@@ -11,7 +11,7 @@ public static class UserAccessProfiles
 
     private static readonly HashSet<string> Administrators = new(StringComparer.OrdinalIgnoreCase)
     {
-        "jzamora@trawzacons.com", "trawza12@hotmail.com", "ezamora@trawzacons.com"
+        "admin@trawzacons.com", "jzamora@trawzacons.com", "trawza12@hotmail.com", "ezamora@trawzacons.com"
     };
 
     private static readonly HashSet<string> InventoryMaintenanceUsers = new(StringComparer.OrdinalIgnoreCase)
