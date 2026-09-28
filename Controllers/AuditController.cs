@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ITServiceDeskApp.Controllers;
 
-[Authorize(Roles = "Administrator")]
+[Authorize]
 public class AuditController(ApplicationDbContext context) : Controller
 {
     public async Task<IActionResult> Index(string? module, int page = 1)

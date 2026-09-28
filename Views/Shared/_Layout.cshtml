@@ -1,3 +1,5 @@
+@using ITServiceDeskApp.Security
+@using System.Security.Claims
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1496,7 +1498,7 @@
                         </li>
                     }
 
-                    @if (User.HasClaim("AccessProfile", "Administrator"))
+                    @if (UserAccessProfiles.IsAdministrator(User.FindFirst(ClaimTypes.Email)?.Value))
                     {
                         <li class="nav-item">
                             <a class="nav-link menu-link @(currentController == "Audit" ? "active fw-bold" : "")"
@@ -2775,7 +2777,7 @@
                     });
             }
 
-            @if (User.HasClaim("AccessProfile", "Administrator"))
+            @if (UserAccessProfiles.IsAdministrator(User.FindFirst(ClaimTypes.Email)?.Value))
             {
                 <text>
                 function addAuditMenuEntries() {

@@ -20,6 +20,8 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
         }
 
         var profile = user.FindFirst(UserAccessProfiles.ClaimType)?.Value;
+        var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var isConfiguredAdministrator = UserAccessProfiles.IsAdministrator(email);
         var controller = context.RouteData.Values["controller"]?.ToString() ?? string.Empty;
         if (controller.Equals("Account", StringComparison.OrdinalIgnoreCase))
         {
@@ -30,13 +32,19 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
         var isDeletion = HttpMethods.IsDelete(context.HttpContext.Request.Method) ||
             action.Contains("delete", StringComparison.OrdinalIgnoreCase) ||
             action.Contains("remove", StringComparison.OrdinalIgnoreCase);
-        if (isDeletion && profile != UserAccessProfiles.Administrator)
+        if (isDeletion && !isConfiguredAdministrator)
         {
             context.Result = new ForbidResult();
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(profile) || profile == UserAccessProfiles.Administrator)
+        if (controller.Equals("Audit", StringComparison.OrdinalIgnoreCase) && !isConfiguredAdministrator)
+        {
+            context.Result = new ForbidResult();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(profile) || isConfiguredAdministrator)
         {
             return;
         }

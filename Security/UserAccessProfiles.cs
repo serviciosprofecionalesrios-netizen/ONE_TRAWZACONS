@@ -45,6 +45,9 @@ public static class UserAccessProfiles
         return null;
     }
 
+    public static bool IsAdministrator(string? email) =>
+        !string.IsNullOrWhiteSpace(email) && Administrators.Contains(email.Trim());
+
     public static (string Controller, string Action) Home(string? profile) => profile switch
     {
         InventoryMaintenance => ("InventoryHub", "Index"),
