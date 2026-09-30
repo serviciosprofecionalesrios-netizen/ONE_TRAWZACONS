@@ -238,7 +238,7 @@ namespace ITServiceDeskApp.Controllers
                     .GroupBy(x => CategorizePurchaseItem(x.Description), StringComparer.OrdinalIgnoreCase)
                     .Select(g => new PurchaseDashboardCategory(g.Key, g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
-                RecentOrders = orders.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
+                RecentOrders = orders.OrderByDescending(x => x.Cordobas + x.Usd).ThenByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
                 OrdersWithoutAmountDetail = ordersWithoutAmount.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(12).ToList(),
                 Warning = source.Warning
             });
