@@ -156,6 +156,11 @@ namespace ITServiceDeskApp.Controllers
                 .Where(x => (!from.HasValue || x.Date.HasValue && x.Date.Value >= from.Value.Date) &&
                             (!to.HasValue || x.Date.HasValue && x.Date.Value <= to.Value.Date))
                 .ToList();
+            var ordersWithoutAmount = purchases
+                .Where(x => x.Cordobas <= 0m && x.Usd <= 0m)
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.OrderNumber) ? $"fila-{purchases.IndexOf(x)}" : x.OrderNumber, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(x => x.Date ?? DateTime.MinValue).First())
+                .ToList();
 
             return View(new PurchaseDashboardViewModel
             {
@@ -163,6 +168,7 @@ namespace ITServiceDeskApp.Controllers
                 LatestPurchaseDate = purchases.Where(x => x.Date.HasValue).Select(x => x.Date).Max(),
                 PurchaseLines = purchases.Count,
                 PurchaseOrders = purchases.Select((x, index) => string.IsNullOrWhiteSpace(x.OrderNumber) ? $"fila-{index}" : x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(),
+                OrdersWithoutAmount = ordersWithoutAmount.Count,
                 TotalCordobas = purchases.Sum(x => x.Cordobas), TotalUsd = purchases.Sum(x => x.Usd),
                 ByStatus = purchases.GroupBy(x => string.IsNullOrWhiteSpace(x.Status) ? "Sin estado" : x.Status)
                     .Select(g => new PurchaseDashboardStatus(g.Key, g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
@@ -170,7 +176,9 @@ namespace ITServiceDeskApp.Controllers
                 TopSuppliers = purchases.GroupBy(x => string.IsNullOrWhiteSpace(x.Supplier) ? "Sin proveedor" : x.Supplier)
                     .Select(g => new PurchaseDashboardSupplier(g.Key, g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
-                RecentOrders = purchases.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(), Warning = source.Warning
+                RecentOrders = purchases.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
+                OrdersWithoutAmountDetail = ordersWithoutAmount.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(12).ToList(),
+                Warning = source.Warning
             });
         }
     }

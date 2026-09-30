@@ -18,11 +18,13 @@ namespace ITServiceDeskApp.ViewModels.Inventory
         public DateTime? LatestPurchaseDate { get; init; }
         public int PurchaseOrders { get; init; }
         public int PurchaseLines { get; init; }
+        public int OrdersWithoutAmount { get; init; }
         public decimal TotalCordobas { get; init; }
         public decimal TotalUsd { get; init; }
         public IReadOnlyList<PurchaseDashboardStatus> ByStatus { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardSupplier> TopSuppliers { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> RecentOrders { get; init; } = [];
+        public IReadOnlyList<PurchaseDashboardOrder> OrdersWithoutAmountDetail { get; init; } = [];
         public string? Warning { get; init; }
     }
 
