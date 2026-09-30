@@ -3659,6 +3659,33 @@ namespace ITServiceDeskApp.Controllers
 
         private List<OperacionesMetaProduccionMensualEntry> LoadOperacionesMetasProduccionMensual()
         {
+            try
+            {
+                var persisted = _context.OperacionesMetasProduccionMensual
+                    .AsNoTracking()
+                    .OrderByDescending(x => x.Year)
+                    .ThenByDescending(x => x.Month)
+                    .Select(x => new OperacionesMetaProduccionMensualEntry
+                    {
+                        Year = x.Year,
+                        Month = x.Month,
+                        MetaMensualTriton = x.MetaMensualTriton,
+                        MetaDiariaTritonObjetivo = x.MetaDiariaTritonObjetivo,
+                        MetaDiariaObjetivo = x.MetaDiariaTritonObjetivo,
+                        UpdatedAt = x.UpdatedAt,
+                        UpdatedBy = x.UpdatedBy
+                    })
+                    .ToList();
+                if (persisted.Any())
+                {
+                    return persisted;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No fue posible consultar las metas de toneladas persistidas.");
+            }
+
             var path = GetOperacionesMetasProduccionMensualPath();
             if (!System.IO.File.Exists(path) && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PERSISTENT_STORAGE_PATH")))
             {
@@ -3692,18 +3719,53 @@ namespace ITServiceDeskApp.Controllers
 
         private void SaveOperacionesMetasProduccionMensual(List<OperacionesMetaProduccionMensualEntry> entries)
         {
+            var cleanEntries = entries
+                .Where(x => x.Year > 0 && x.Month >= 1 && x.Month <= 12)
+                .OrderByDescending(x => x.Year)
+                .ThenByDescending(x => x.Month)
+                .ToList();
+
+            try
+            {
+                foreach (var entry in cleanEntries)
+                {
+                    var persisted = _context.OperacionesMetasProduccionMensual
+                        .SingleOrDefault(x => x.Year == entry.Year && x.Month == entry.Month);
+                    if (persisted is null)
+                    {
+                        _context.OperacionesMetasProduccionMensual.Add(new OperacionesMetaProduccionMensual
+                        {
+                            Year = entry.Year,
+                            Month = entry.Month,
+                            MetaMensualTriton = entry.MetaMensualTriton,
+                            MetaDiariaTritonObjetivo = entry.MetaDiariaTritonObjetivo,
+                            UpdatedAt = entry.UpdatedAt,
+                            UpdatedBy = entry.UpdatedBy
+                        });
+                    }
+                    else
+                    {
+                        persisted.MetaMensualTriton = entry.MetaMensualTriton;
+                        persisted.MetaDiariaTritonObjetivo = entry.MetaDiariaTritonObjetivo;
+                        persisted.UpdatedAt = entry.UpdatedAt;
+                        persisted.UpdatedBy = entry.UpdatedBy;
+                    }
+                }
+
+                _context.SaveChanges();
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No fue posible guardar las metas de toneladas en la base de datos; se usará el respaldo local.");
+            }
+
             var path = GetOperacionesMetasProduccionMensualPath();
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory))
             {
                 Directory.CreateDirectory(directory);
             }
-
-            var cleanEntries = entries
-                .Where(x => x.Year > 0 && x.Month >= 1 && x.Month <= 12)
-                .OrderByDescending(x => x.Year)
-                .ThenByDescending(x => x.Month)
-                .ToList();
 
             var json = JsonSerializer.Serialize(cleanEntries, new JsonSerializerOptions
             {

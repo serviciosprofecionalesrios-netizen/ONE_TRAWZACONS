@@ -25,4 +25,15 @@ namespace ITServiceDeskApp.Models
         public DateTime? FechaOperativa { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
+
+    public sealed class OperacionesMetaProduccionMensual
+    {
+        public int Id { get; set; }
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public decimal MetaMensualTriton { get; set; }
+        public decimal MetaDiariaTritonObjetivo { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string UpdatedBy { get; set; } = string.Empty;
+    }
 }

@@ -32,6 +32,7 @@ namespace ITServiceDeskApp.Data
         public DbSet<Credential> Credentials => Set<Credential>();
         public DbSet<OperacionesSeguimientoRegistro> OperacionesSeguimientoRegistros => Set<OperacionesSeguimientoRegistro>();
         public DbSet<OperacionesSeguimientoCarga> OperacionesSeguimientoCargas => Set<OperacionesSeguimientoCarga>();
+        public DbSet<OperacionesMetaProduccionMensual> OperacionesMetasProduccionMensual => Set<OperacionesMetaProduccionMensual>();
         public DbSet<OperacionesIngresoPersonalTareaPadre> OperacionesIngresoPersonalTareasPadre => Set<OperacionesIngresoPersonalTareaPadre>();
         public DbSet<OperacionesIngresoPersonalSolicitud> OperacionesIngresoPersonalSolicitudes => Set<OperacionesIngresoPersonalSolicitud>();
         public DbSet<OperacionesIngresoEquipoGondolaTareaPadre> OperacionesIngresoEquipoGondolaTareasPadre => Set<OperacionesIngresoEquipoGondolaTareaPadre>();
@@ -250,6 +251,22 @@ namespace ITServiceDeskApp.Data
             modelBuilder.Entity<OperacionesSeguimientoCarga>()
                 .Property(c => c.SourceFileName)
                 .HasMaxLength(260);
+
+            modelBuilder.Entity<OperacionesMetaProduccionMensual>()
+                .HasIndex(x => new { x.Year, x.Month })
+                .IsUnique();
+
+            modelBuilder.Entity<OperacionesMetaProduccionMensual>()
+                .Property(x => x.MetaMensualTriton)
+                .HasColumnType("decimal(18,1)");
+
+            modelBuilder.Entity<OperacionesMetaProduccionMensual>()
+                .Property(x => x.MetaDiariaTritonObjetivo)
+                .HasColumnType("decimal(18,1)");
+
+            modelBuilder.Entity<OperacionesMetaProduccionMensual>()
+                .Property(x => x.UpdatedBy)
+                .HasMaxLength(180);
 
             modelBuilder.Entity<OperacionesIngresoPersonalTareaPadre>()
                 .HasIndex(x => x.SolicitanteKey)
