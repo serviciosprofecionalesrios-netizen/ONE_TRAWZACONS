@@ -15,6 +15,9 @@ namespace ITServiceDeskApp.ViewModels.Inventory
     {
         public DateTime? From { get; init; }
         public DateTime? To { get; init; }
+        public int? SelectedYear { get; init; }
+        public int? SelectedMonth { get; init; }
+        public IReadOnlyList<int> AvailableYears { get; init; } = [];
         public DateTime? LatestPurchaseDate { get; init; }
         public int PurchaseOrders { get; init; }
         public int PurchaseLines { get; init; }
@@ -25,6 +28,7 @@ namespace ITServiceDeskApp.ViewModels.Inventory
         public IReadOnlyList<PurchaseDashboardSupplier> TopSuppliers { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardItem> TopItems { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardCategory> TopCategories { get; init; } = [];
+        public IReadOnlyList<PurchaseDashboardMonthlySpend> MonthlySpend { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> RecentOrders { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> OrdersWithoutAmountDetail { get; init; } = [];
         public string? Warning { get; init; }
@@ -34,5 +38,6 @@ namespace ITServiceDeskApp.ViewModels.Inventory
     public record PurchaseDashboardSupplier(string Name, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardItem(string Name, string Category, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardCategory(string Name, decimal Cordobas, decimal Usd);
+    public record PurchaseDashboardMonthlySpend(int Year, int Month, string Label, decimal Cordobas, decimal Usd, int Orders);
     public record PurchaseDashboardOrder(string OrderNumber, string Supplier, string Status, DateTime? Date, decimal Cordobas, decimal Usd, string Description);
 }

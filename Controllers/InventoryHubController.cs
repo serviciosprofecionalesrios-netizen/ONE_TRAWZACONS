@@ -127,8 +127,14 @@ namespace ITServiceDeskApp.Controllers
             return View(model);
         }
 
-        public async Task<IActionResult> ComprasDashboard(DateTime? from = null, DateTime? to = null, bool refresh = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> ComprasDashboard(DateTime? from = null, DateTime? to = null, int? year = null, int? month = null, bool refresh = false, CancellationToken cancellationToken = default)
         {
+            if (year is >= 2000 and <= 2100)
+            {
+                var selectedMonth = month is >= 1 and <= 12 ? month.Value : 1;
+                from = new DateTime(year.Value, selectedMonth, 1);
+                to = month is >= 1 and <= 12 ? from.Value.AddMonths(1).AddDays(-1) : new DateTime(year.Value, 12, 31);
+            }
             if (from.HasValue && to.HasValue && from.Value.Date > to.Value.Date)
             {
                 (from, to) = (to, from);
@@ -215,10 +221,18 @@ namespace ITServiceDeskApp.Controllers
                 .Where(x => (!from.HasValue || x.Date.HasValue && x.Date.Value >= from.Value.Date) &&
                             (!to.HasValue || x.Date.HasValue && x.Date.Value <= to.Value.Date))
                 .ToList();
+            var availableYears = detailLines.Where(x => x.Date.HasValue).Select(x => x.Date!.Value.Year).Distinct().OrderByDescending(x => x).ToList();
+            var trendYear = year ?? availableYears.FirstOrDefault();
+            var monthlySpend = detailLines
+                .Where(x => x.Date.HasValue && (trendYear == 0 || x.Date!.Value.Year == trendYear))
+                .GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month })
+                .Select(g => new PurchaseDashboardMonthlySpend(g.Key.Year, g.Key.Month, CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(g.Key.Month), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd), g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count()))
+                .OrderBy(x => x.Month)
+                .ToList();
 
             return View(new PurchaseDashboardViewModel
             {
-                From = from, To = to,
+                From = from, To = to, SelectedYear = year, SelectedMonth = month, AvailableYears = availableYears,
                 LatestPurchaseDate = purchases.Where(x => x.Date.HasValue).Select(x => x.Date).Max(),
                 PurchaseLines = purchases.Count,
                 PurchaseOrders = orders.Count,
@@ -238,6 +252,7 @@ namespace ITServiceDeskApp.Controllers
                     .GroupBy(x => CategorizePurchaseItem(x.Description), StringComparer.OrdinalIgnoreCase)
                     .Select(g => new PurchaseDashboardCategory(g.Key, g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
+                MonthlySpend = monthlySpend,
                 RecentOrders = orders.OrderByDescending(x => x.Cordobas + x.Usd).ThenByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
                 OrdersWithoutAmountDetail = ordersWithoutAmount.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(12).ToList(),
                 Warning = source.Warning
@@ -246,7 +261,7 @@ namespace ITServiceDeskApp.Controllers
 
         public async Task<IActionResult> ExportComprasPdf(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
         {
-            var result = await ComprasDashboard(from, to, true, cancellationToken);
+            var result = await ComprasDashboard(from, to, null, null, true, cancellationToken);
             var model = ((ViewResult)result).Model as PurchaseDashboardViewModel ?? new PurchaseDashboardViewModel();
             var bytes = PurchaseDashboardPdfReportService.GeneratePdf(model, _environment.WebRootPath);
             return File(bytes, "application/pdf", $"DashboardCompras_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
