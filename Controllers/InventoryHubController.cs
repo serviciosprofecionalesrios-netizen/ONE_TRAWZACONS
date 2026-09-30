@@ -133,7 +133,11 @@ namespace ITServiceDeskApp.Controllers
             }
 
             var sheet = PublishedInventoryService.Sheets.Single(x => x.Key == "compras");
-            var source = await _published.GetAsync(sheet, cancellationToken, refresh);
+            var sources = await Task.WhenAll(
+                _published.GetAsync(sheet, cancellationToken, refresh),
+                _published.GetAsync(PublishedInventoryService.PurchaseRequestDetails, cancellationToken, refresh));
+            var source = sources[0];
+            var detailSource = sources[1];
             var table = source.Table;
             if (table == null)
             {
@@ -153,10 +157,51 @@ namespace ITServiceDeskApp.Controllers
                     Value(row, orderColumn), Value(row, supplierColumn), Value(row, statusColumn),
                     dateColumn >= 0 && TryDate(Value(row, dateColumn), out var date) ? date.Date : null,
                     ParseAmount(Value(row, cordobasColumn)), ParseAmount(Value(row, usdColumn)), Value(row, descriptionColumn)))
+                .ToList();
+
+            var detailTotals = new Dictionary<string, PurchaseDashboardOrder>(StringComparer.OrdinalIgnoreCase);
+            if (detailSource.Table is { } detailTable)
+            {
+                int DetailColumn(string name) => Array.FindIndex(detailTable.Headers, h => string.Equals(h.Trim(), name, StringComparison.OrdinalIgnoreCase));
+                string DetailValue(InventorySourceRow row, int index) => index >= 0 && index < row.Cells.Length ? row.Cells[index].Trim() : string.Empty;
+                var detailOrderColumn = DetailColumn("Orden de Compra");
+                var detailDateColumn = Array.FindIndex(detailTable.Headers, h => h.Contains("FECHA", StringComparison.OrdinalIgnoreCase));
+                var detailSupplierColumn = DetailColumn("PROVEEDOR");
+                var detailStatusColumn = DetailColumn("ESTADO OC");
+                var detailCordobasColumn = DetailColumn("TOTAL C$");
+                var detailUsdColumn = DetailColumn("TOTAL $");
+                var detailDescriptionColumn = DetailColumn("DESCRIPCION");
+                foreach (var group in detailTable.Rows
+                    .Select(row => new PurchaseDashboardOrder(
+                        DetailValue(row, detailOrderColumn), DetailValue(row, detailSupplierColumn), DetailValue(row, detailStatusColumn),
+                        detailDateColumn >= 0 && TryDate(DetailValue(row, detailDateColumn), out var detailDate) ? detailDate.Date : null,
+                        ParseAmount(DetailValue(row, detailCordobasColumn)), ParseAmount(DetailValue(row, detailUsdColumn)), DetailValue(row, detailDescriptionColumn)))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.OrderNumber))
+                    .GroupBy(x => NormalizeOrderNumber(x.OrderNumber), StringComparer.OrdinalIgnoreCase))
+                {
+                    var first = group.First();
+                    detailTotals[group.Key] = first with
+                    {
+                        Cordobas = group.Sum(x => x.Cordobas),
+                        Usd = group.Sum(x => x.Usd),
+                        Date = group.Where(x => x.Date.HasValue).Select(x => x.Date).Max() ?? first.Date
+                    };
+                }
+            }
+
+            var orders = purchases
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.OrderNumber) ? $"fila-{purchases.IndexOf(x)}" : NormalizeOrderNumber(x.OrderNumber), StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var first = group.OrderByDescending(x => x.Date ?? DateTime.MinValue).First();
+                    return detailTotals.TryGetValue(group.Key, out var detail)
+                        ? first with { Cordobas = detail.Cordobas, Usd = detail.Usd, Date = detail.Date ?? first.Date, Supplier = string.IsNullOrWhiteSpace(first.Supplier) ? detail.Supplier : first.Supplier, Description = detail.Description }
+                        : first with { Cordobas = group.Sum(x => x.Cordobas), Usd = group.Sum(x => x.Usd) };
+                })
                 .Where(x => (!from.HasValue || x.Date.HasValue && x.Date.Value >= from.Value.Date) &&
                             (!to.HasValue || x.Date.HasValue && x.Date.Value <= to.Value.Date))
                 .ToList();
-            var ordersWithoutAmount = purchases
+            var ordersWithoutAmount = orders
                 .Where(x => x.Cordobas <= 0m && x.Usd <= 0m)
                 .GroupBy(x => string.IsNullOrWhiteSpace(x.OrderNumber) ? $"fila-{purchases.IndexOf(x)}" : x.OrderNumber, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.OrderByDescending(x => x.Date ?? DateTime.MinValue).First())
@@ -167,19 +212,21 @@ namespace ITServiceDeskApp.Controllers
                 From = from, To = to,
                 LatestPurchaseDate = purchases.Where(x => x.Date.HasValue).Select(x => x.Date).Max(),
                 PurchaseLines = purchases.Count,
-                PurchaseOrders = purchases.Select((x, index) => string.IsNullOrWhiteSpace(x.OrderNumber) ? $"fila-{index}" : x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(),
+                PurchaseOrders = orders.Count,
                 OrdersWithoutAmount = ordersWithoutAmount.Count,
-                TotalCordobas = purchases.Sum(x => x.Cordobas), TotalUsd = purchases.Sum(x => x.Usd),
-                ByStatus = purchases.GroupBy(x => string.IsNullOrWhiteSpace(x.Status) ? "Sin estado" : x.Status)
+                TotalCordobas = orders.Sum(x => x.Cordobas), TotalUsd = orders.Sum(x => x.Usd),
+                ByStatus = orders.GroupBy(x => string.IsNullOrWhiteSpace(x.Status) ? "Sin estado" : x.Status)
                     .Select(g => new PurchaseDashboardStatus(g.Key, g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(6).ToList(),
-                TopSuppliers = purchases.GroupBy(x => string.IsNullOrWhiteSpace(x.Supplier) ? "Sin proveedor" : x.Supplier)
+                TopSuppliers = orders.GroupBy(x => string.IsNullOrWhiteSpace(x.Supplier) ? "Sin proveedor" : x.Supplier)
                     .Select(g => new PurchaseDashboardSupplier(g.Key, g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
-                RecentOrders = purchases.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
+                RecentOrders = orders.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
                 OrdersWithoutAmountDetail = ordersWithoutAmount.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(12).ToList(),
                 Warning = source.Warning
             });
         }
+
+        private static string NormalizeOrderNumber(string value) => value.Trim().TrimStart('0');
     }
 }

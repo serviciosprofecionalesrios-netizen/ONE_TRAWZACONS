@@ -10,6 +10,7 @@ public sealed class PublishedInventoryService(IHttpClientFactory clients, ILogge
     public const string SourceUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9UL6D90oBYQxXoKBRow9Zhvlmd7D7dL7QYwMgUYMLafBE9eHDkFcQFQfmXcK4v799GiSboWOm3hKC/pubhtml";
     public const string RepairsSourceUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaXxESkG30H_6igTHWwFQSv2h-i8zqbZ6e9X_tiR5ggvrY6incp4R7TF9RXcr1UZYwa54_Z7ba4rgs/pubhtml";
     public static readonly InventorySheet Repairs = new("reparaciones", "Reparaciones", "1524236300", ["ID Reparación", "N° Gestion", "Codigo de Equipo"]);
+    public static readonly InventorySheet PurchaseRequestDetails = new("descripcion-solicitud", "Descripción solicitud", "2037909177", ["ID", "IDSOLICITUD", "ID_OC"]);
     public static readonly IReadOnlyList<InventorySheet> Sheets = Array.AsReadOnly(new[]
     {
         new InventorySheet("inventario", "Inventario", "1210627928", ["ID_PRODUCTO", "ITEM", "DESCRIPCION"]),
