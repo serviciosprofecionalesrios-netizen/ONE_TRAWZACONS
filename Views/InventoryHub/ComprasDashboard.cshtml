@@ -15,6 +15,7 @@
         <label class="visually-hidden" for="to">Hasta</label><input id="to" type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
         <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Aplicar rango</button>
         <button class="btn btn-outline-primary" type="submit" name="refresh" value="true"><i class="bi bi-arrow-repeat me-1"></i>Actualizar datos</button>
+        <a class="btn btn-outline-danger" asp-action="ExportComprasPdf" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</a>
         <a class="btn btn-outline-secondary" asp-action="ComprasDashboard">Limpiar</a>
     </form>
     <div class="row g-3 mb-4">
@@ -22,6 +23,10 @@
         <div class="col-md-3"><div class="card shadow-sm h-100 border-success"><div class="card-body"><small class="text-muted">Gasto total C$</small><div class="h3 fw-bold text-success">C$ @Model.TotalCordobas.ToString("N2", CultureInfo.CurrentCulture)</div><small>Órdenes dentro del rango</small></div></div></div>
         <div class="col-md-3"><div class="card shadow-sm h-100 border-primary"><div class="card-body"><small class="text-muted">Gasto total USD</small><div class="h3 fw-bold text-primary">$ @Model.TotalUsd.ToString("N2", CultureInfo.CurrentCulture)</div><small>Órdenes dentro del rango</small></div></div></div>
         <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><small class="text-muted">Última compra</small><div class="h4 fw-bold">@(Model.LatestPurchaseDate?.ToString("dd/MM/yyyy") ?? "Sin fecha")</div><small>Según la hoja de órdenes de compra</small></div></div></div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8"><div class="card shadow-sm h-100"><div class="card-header fw-bold">Artículos de mayor gasto</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Artículo</th><th>Categoría</th><th>Órdenes</th><th>C$</th><th>USD</th></tr></thead><tbody>@foreach (var item in Model.TopItems) { <tr><td>@item.Name</td><td><span class="badge text-bg-light border">@item.Category</span></td><td>@item.Orders</td><td>C$ @item.Cordobas.ToString("N2")</td><td>$ @item.Usd.ToString("N2")</td></tr> } @if (!Model.TopItems.Any()) { <tr><td colspan="5" class="text-muted">No hay líneas de compra para este período.</td></tr> }</tbody></table></div></div></div>
+        <div class="col-lg-4"><div class="card shadow-sm h-100"><div class="card-header fw-bold">Gasto por categoría</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Categoría</th><th>C$</th><th>USD</th></tr></thead><tbody>@foreach (var item in Model.TopCategories) { <tr><td>@item.Name</td><td>C$ @item.Cordobas.ToString("N2")</td><td>$ @item.Usd.ToString("N2")</td></tr> } @if (!Model.TopCategories.Any()) { <tr><td colspan="3" class="text-muted">Sin categorías.</td></tr> }</tbody></table></div></div></div>
     </div>
     <div class="row g-3 mb-4">
         <div class="col-lg-5"><div class="card shadow-sm h-100"><div class="card-header fw-bold">Gasto por estado</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Estado</th><th>Órdenes</th><th>C$</th><th>USD</th></tr></thead><tbody>@foreach (var item in Model.ByStatus) { <tr><td>@item.Name</td><td>@item.Orders</td><td>C$ @item.Cordobas.ToString("N2")</td><td>$ @item.Usd.ToString("N2")</td></tr> } @if (!Model.ByStatus.Any()) { <tr><td colspan="4" class="text-muted">No hay órdenes para este rango.</td></tr> }</tbody></table></div></div></div>

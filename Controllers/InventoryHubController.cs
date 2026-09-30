@@ -14,11 +14,13 @@ namespace ITServiceDeskApp.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly PublishedInventoryService _published;
+        private readonly IWebHostEnvironment _environment;
 
-        public InventoryHubController(ApplicationDbContext context, PublishedInventoryService published)
+        public InventoryHubController(ApplicationDbContext context, PublishedInventoryService published, IWebHostEnvironment environment)
         {
             _context = context;
             _published = published;
+            _environment = environment;
         }
 
         public async Task<IActionResult> Fuente(string section = "inventario", string? q = null, DateTime? from = null, DateTime? to = null, int page = 1, CancellationToken cancellationToken = default)
@@ -160,6 +162,7 @@ namespace ITServiceDeskApp.Controllers
                 .ToList();
 
             var detailTotals = new Dictionary<string, PurchaseDashboardOrder>(StringComparer.OrdinalIgnoreCase);
+            var detailLines = new List<PurchaseDashboardOrder>();
             if (detailSource.Table is { } detailTable)
             {
                 int DetailColumn(string name) => Array.FindIndex(detailTable.Headers, h => string.Equals(h.Trim(), name, StringComparison.OrdinalIgnoreCase));
@@ -171,13 +174,15 @@ namespace ITServiceDeskApp.Controllers
                 var detailCordobasColumn = DetailColumn("TOTAL C$");
                 var detailUsdColumn = DetailColumn("TOTAL $");
                 var detailDescriptionColumn = DetailColumn("DESCRIPCION");
-                foreach (var group in detailTable.Rows
+                var rawDetailLines = detailTable.Rows
                     .Select(row => new PurchaseDashboardOrder(
                         DetailValue(row, detailOrderColumn), DetailValue(row, detailSupplierColumn), DetailValue(row, detailStatusColumn),
                         detailDateColumn >= 0 && TryDate(DetailValue(row, detailDateColumn), out var detailDate) ? detailDate.Date : null,
                         ParseAmount(DetailValue(row, detailCordobasColumn)), ParseAmount(DetailValue(row, detailUsdColumn)), DetailValue(row, detailDescriptionColumn)))
                     .Where(x => !string.IsNullOrWhiteSpace(x.OrderNumber))
-                    .GroupBy(x => NormalizeOrderNumber(x.OrderNumber), StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+                detailLines.AddRange(rawDetailLines);
+                foreach (var group in rawDetailLines.GroupBy(x => NormalizeOrderNumber(x.OrderNumber), StringComparer.OrdinalIgnoreCase))
                 {
                     var first = group.First();
                     detailTotals[group.Key] = first with
@@ -206,6 +211,10 @@ namespace ITServiceDeskApp.Controllers
                 .GroupBy(x => string.IsNullOrWhiteSpace(x.OrderNumber) ? $"fila-{purchases.IndexOf(x)}" : x.OrderNumber, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.OrderByDescending(x => x.Date ?? DateTime.MinValue).First())
                 .ToList();
+            var periodDetailLines = detailLines
+                .Where(x => (!from.HasValue || x.Date.HasValue && x.Date.Value >= from.Value.Date) &&
+                            (!to.HasValue || x.Date.HasValue && x.Date.Value <= to.Value.Date))
+                .ToList();
 
             return View(new PurchaseDashboardViewModel
             {
@@ -221,12 +230,40 @@ namespace ITServiceDeskApp.Controllers
                 TopSuppliers = orders.GroupBy(x => string.IsNullOrWhiteSpace(x.Supplier) ? "Sin proveedor" : x.Supplier)
                     .Select(g => new PurchaseDashboardSupplier(g.Key, g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
+                TopItems = periodDetailLines
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.Description) ? "Sin descripción" : x.Description.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Select(g => new PurchaseDashboardItem(g.Key, CategorizePurchaseItem(g.Key), g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count(), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
+                    .OrderByDescending(x => x.Cordobas + x.Usd).Take(12).ToList(),
+                TopCategories = periodDetailLines
+                    .GroupBy(x => CategorizePurchaseItem(x.Description), StringComparer.OrdinalIgnoreCase)
+                    .Select(g => new PurchaseDashboardCategory(g.Key, g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
+                    .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
                 RecentOrders = orders.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
                 OrdersWithoutAmountDetail = ordersWithoutAmount.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(12).ToList(),
                 Warning = source.Warning
             });
         }
 
+        public async Task<IActionResult> ExportComprasPdf(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        {
+            var result = await ComprasDashboard(from, to, true, cancellationToken);
+            var model = ((ViewResult)result).Model as PurchaseDashboardViewModel ?? new PurchaseDashboardViewModel();
+            var bytes = PurchaseDashboardPdfReportService.GeneratePdf(model, _environment.WebRootPath);
+            return File(bytes, "application/pdf", $"DashboardCompras_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+        }
+
         private static string NormalizeOrderNumber(string value) => value.Trim().TrimStart('0');
+
+        private static string CategorizePurchaseItem(string? description)
+        {
+            var text = description ?? string.Empty;
+            if (text.Contains("LLANTA", StringComparison.OrdinalIgnoreCase) || text.Contains("NEUMATIC", StringComparison.OrdinalIgnoreCase)) return "Llantas";
+            if (text.Contains("ACEITE", StringComparison.OrdinalIgnoreCase) || text.Contains("LUBRIC", StringComparison.OrdinalIgnoreCase)) return "Aceites y lubricantes";
+            if (text.Contains("FILTRO", StringComparison.OrdinalIgnoreCase)) return "Filtros";
+            if (text.Contains("FRENO", StringComparison.OrdinalIgnoreCase) || text.Contains("BALATA", StringComparison.OrdinalIgnoreCase)) return "Frenos";
+            if (text.Contains("BATER", StringComparison.OrdinalIgnoreCase) || text.Contains("ELECTR", StringComparison.OrdinalIgnoreCase)) return "Eléctrico";
+            if (text.Contains("MOTOR", StringComparison.OrdinalIgnoreCase) || text.Contains("PISTON", StringComparison.OrdinalIgnoreCase)) return "Motor";
+            return "Otros repuestos";
+        }
     }
 }

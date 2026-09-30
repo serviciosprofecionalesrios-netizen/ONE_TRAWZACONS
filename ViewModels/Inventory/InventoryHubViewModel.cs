@@ -23,6 +23,8 @@ namespace ITServiceDeskApp.ViewModels.Inventory
         public decimal TotalUsd { get; init; }
         public IReadOnlyList<PurchaseDashboardStatus> ByStatus { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardSupplier> TopSuppliers { get; init; } = [];
+        public IReadOnlyList<PurchaseDashboardItem> TopItems { get; init; } = [];
+        public IReadOnlyList<PurchaseDashboardCategory> TopCategories { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> RecentOrders { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> OrdersWithoutAmountDetail { get; init; } = [];
         public string? Warning { get; init; }
@@ -30,5 +32,7 @@ namespace ITServiceDeskApp.ViewModels.Inventory
 
     public record PurchaseDashboardStatus(string Name, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardSupplier(string Name, int Orders, decimal Cordobas, decimal Usd);
+    public record PurchaseDashboardItem(string Name, string Category, int Orders, decimal Cordobas, decimal Usd);
+    public record PurchaseDashboardCategory(string Name, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardOrder(string OrderNumber, string Supplier, string Status, DateTime? Date, decimal Cordobas, decimal Usd, string Description);
 }
