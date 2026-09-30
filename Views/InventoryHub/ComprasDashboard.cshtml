@@ -14,6 +14,7 @@
         <label class="visually-hidden" for="from">Desde</label><input id="from" type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" />
         <label class="visually-hidden" for="to">Hasta</label><input id="to" type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
         <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Aplicar rango</button>
+        <button class="btn btn-outline-primary" type="submit" name="refresh" value="true"><i class="bi bi-arrow-repeat me-1"></i>Actualizar datos</button>
         <a class="btn btn-outline-secondary" asp-action="ComprasDashboard">Limpiar</a>
     </form>
     <div class="row g-3 mb-4">

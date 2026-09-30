@@ -47,10 +47,37 @@ namespace ITServiceDeskApp.Controllers
         private static decimal ParseAmount(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return 0m;
-            var clean = value.Replace("C$", "", StringComparison.OrdinalIgnoreCase).Replace("US$", "", StringComparison.OrdinalIgnoreCase).Replace("$", "").Trim();
-            return decimal.TryParse(clean, NumberStyles.Number | NumberStyles.AllowCurrencySymbol, new CultureInfo("es-NI"), out var result) ||
-                   decimal.TryParse(clean, NumberStyles.Number | NumberStyles.AllowCurrencySymbol, CultureInfo.InvariantCulture, out result)
-                ? result : 0m;
+            var clean = value.Replace('\u00A0', ' ').Replace("C$", "", StringComparison.OrdinalIgnoreCase).Replace("US$", "", StringComparison.OrdinalIgnoreCase).Replace("$", "").Trim();
+            if (decimal.TryParse(clean, NumberStyles.Number | NumberStyles.AllowCurrencySymbol, new CultureInfo("es-NI"), out var result) ||
+                decimal.TryParse(clean, NumberStyles.Number | NumberStyles.AllowCurrencySymbol, CultureInfo.InvariantCulture, out result))
+            {
+                return result;
+            }
+
+            var numeric = new string(clean.Where(c => char.IsDigit(c) || c is ',' or '.' or '-').ToArray());
+            if (string.IsNullOrWhiteSpace(numeric)) return 0m;
+            var lastComma = numeric.LastIndexOf(',');
+            var lastDot = numeric.LastIndexOf('.');
+            if (lastComma >= 0 && lastDot >= 0)
+            {
+                numeric = lastComma > lastDot
+                    ? numeric.Replace(".", string.Empty).Replace(',', '.')
+                    : numeric.Replace(",", string.Empty);
+            }
+            else if (lastComma >= 0 && numeric.Length - lastComma - 1 == 3)
+            {
+                numeric = numeric.Replace(",", string.Empty);
+            }
+            else if (lastDot >= 0 && numeric.Length - lastDot - 1 == 3)
+            {
+                numeric = numeric.Replace(".", string.Empty);
+            }
+            else
+            {
+                numeric = numeric.Replace(',', '.');
+            }
+
+            return decimal.TryParse(numeric, NumberStyles.Number | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out result) ? result : 0m;
         }
 
         public async Task<IActionResult> Index()
@@ -98,7 +125,7 @@ namespace ITServiceDeskApp.Controllers
             return View(model);
         }
 
-        public async Task<IActionResult> ComprasDashboard(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> ComprasDashboard(DateTime? from = null, DateTime? to = null, bool refresh = false, CancellationToken cancellationToken = default)
         {
             if (from.HasValue && to.HasValue && from.Value.Date > to.Value.Date)
             {
@@ -106,14 +133,14 @@ namespace ITServiceDeskApp.Controllers
             }
 
             var sheet = PublishedInventoryService.Sheets.Single(x => x.Key == "compras");
-            var source = await _published.GetAsync(sheet, cancellationToken);
+            var source = await _published.GetAsync(sheet, cancellationToken, refresh);
             var table = source.Table;
             if (table == null)
             {
                 return View(new PurchaseDashboardViewModel { From = from, To = to, Warning = source.Warning });
             }
 
-            int Column(string name) => Array.FindIndex(table.Headers, h => h.Equals(name, StringComparison.OrdinalIgnoreCase));
+            int Column(string name) => Array.FindIndex(table.Headers, h => string.Equals(h.Trim(), name, StringComparison.OrdinalIgnoreCase));
             string Value(InventorySourceRow row, int index) => index >= 0 && index < row.Cells.Length ? row.Cells[index].Trim() : string.Empty;
             var dateColumn = Array.FindIndex(table.Headers, h => h.Contains("FECHA", StringComparison.OrdinalIgnoreCase));
             var orderColumn = Column("ORDEN DE COMPRA");

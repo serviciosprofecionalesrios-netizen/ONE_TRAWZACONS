@@ -21,16 +21,16 @@ public sealed class PublishedInventoryService(IHttpClientFactory clients, ILogge
     private readonly ConcurrentDictionary<string, DateTimeOffset> retryAfter = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> gates = new();
 
-    public async Task<InventorySourceResult> GetAsync(InventorySheet sheet, CancellationToken cancellationToken)
+    public async Task<InventorySourceResult> GetAsync(InventorySheet sheet, CancellationToken cancellationToken, bool forceRefresh = false)
     {
         var gate = gates.GetOrAdd(sheet.Key, _ => new SemaphoreSlim(1, 1));
         await gate.WaitAsync(cancellationToken);
         try
         {
             cache.TryGetValue(sheet.Key, out var previous);
-            if (previous?.RetrievedAt > DateTimeOffset.UtcNow.AddMinutes(-5) && previous.Warning == null)
+            if (!forceRefresh && previous?.RetrievedAt > DateTimeOffset.UtcNow.AddMinutes(-5) && previous.Warning == null)
                 return previous;
-            if (retryAfter.TryGetValue(sheet.Key, out var retry) && retry > DateTimeOffset.UtcNow)
+            if (!forceRefresh && retryAfter.TryGetValue(sheet.Key, out var retry) && retry > DateTimeOffset.UtcNow)
                 return previous ?? new(null, null, "No se pudo consultar Google Sheets. Intenta de nuevo en un minuto.");
             try
             {
