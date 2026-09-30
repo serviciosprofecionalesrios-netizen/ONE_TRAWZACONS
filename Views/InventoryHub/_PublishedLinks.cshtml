@@ -1,5 +1,6 @@
 @using ITServiceDeskApp.Services
 <nav class="inventory-tabs" aria-label="Secciones de inventario">
+    <a class="@(Context.Request.Path.Value?.EndsWith("ComprasDashboard", StringComparison.OrdinalIgnoreCase) == true ? "selected" : "")" asp-controller="InventoryHub" asp-action="ComprasDashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard de compras</a>
     @foreach (var sheet in PublishedInventoryService.Sheets)
     {
         var active = Context.Request.Query["section"].ToString() == sheet.Key || (string.IsNullOrEmpty(Context.Request.Query["section"]) && sheet.Key == "inventario");

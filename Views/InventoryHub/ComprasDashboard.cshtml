@@ -1,0 +1,30 @@
+@model ITServiceDeskApp.ViewModels.Inventory.PurchaseDashboardViewModel
+@using System.Globalization
+@{ ViewData["Title"] = "Dashboard de compras"; }
+<link rel="stylesheet" href="~/css/inventory-workspace.css" asp-append-version="true" />
+<div class="container-fluid inventory-workspace py-3">
+    <a asp-action="Index" class="inventory-back">← Centro de inventario</a>
+    <header class="inventory-heading mb-3">
+        <div class="inventory-symbol"><i class="bi bi-graph-up-arrow"></i></div>
+        <div><div class="inventory-eyebrow">CONTROL DE COMPRAS</div><h2>Dashboard de órdenes de compra</h2><p>Gasto enviado a compra, órdenes y proveedores según el período seleccionado.</p></div>
+    </header>
+    <partial name="_PublishedLinks" />
+    @if (!string.IsNullOrWhiteSpace(Model.Warning)) { <div class="alert alert-warning">@Model.Warning</div> }
+    <form method="get" class="inventory-search mb-3">
+        <label class="visually-hidden" for="from">Desde</label><input id="from" type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" />
+        <label class="visually-hidden" for="to">Hasta</label><input id="to" type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Aplicar rango</button>
+        <a class="btn btn-outline-secondary" asp-action="ComprasDashboard">Limpiar</a>
+    </form>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><small class="text-muted">Órdenes de compra</small><div class="display-6 fw-bold">@Model.PurchaseOrders</div><small>@Model.PurchaseLines líneas registradas</small></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100 border-success"><div class="card-body"><small class="text-muted">Gasto total C$</small><div class="h3 fw-bold text-success">C$ @Model.TotalCordobas.ToString("N2", CultureInfo.CurrentCulture)</div><small>Órdenes dentro del rango</small></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100 border-primary"><div class="card-body"><small class="text-muted">Gasto total USD</small><div class="h3 fw-bold text-primary">$ @Model.TotalUsd.ToString("N2", CultureInfo.CurrentCulture)</div><small>Órdenes dentro del rango</small></div></div></div>
+        <div class="col-md-3"><div class="card shadow-sm h-100"><div class="card-body"><small class="text-muted">Última compra</small><div class="h4 fw-bold">@(Model.LatestPurchaseDate?.ToString("dd/MM/yyyy") ?? "Sin fecha")</div><small>Según la hoja de órdenes de compra</small></div></div></div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-lg-5"><div class="card shadow-sm h-100"><div class="card-header fw-bold">Gasto por estado</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Estado</th><th>Órdenes</th><th>C$</th><th>USD</th></tr></thead><tbody>@foreach (var item in Model.ByStatus) { <tr><td>@item.Name</td><td>@item.Orders</td><td>C$ @item.Cordobas.ToString("N2")</td><td>$ @item.Usd.ToString("N2")</td></tr> } @if (!Model.ByStatus.Any()) { <tr><td colspan="4" class="text-muted">No hay órdenes para este rango.</td></tr> }</tbody></table></div></div></div>
+        <div class="col-lg-7"><div class="card shadow-sm h-100"><div class="card-header fw-bold">Principales proveedores por gasto</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Proveedor</th><th>Órdenes</th><th>C$</th><th>USD</th></tr></thead><tbody>@foreach (var item in Model.TopSuppliers) { <tr><td>@item.Name</td><td>@item.Orders</td><td>C$ @item.Cordobas.ToString("N2")</td><td>$ @item.Usd.ToString("N2")</td></tr> } @if (!Model.TopSuppliers.Any()) { <tr><td colspan="4" class="text-muted">No hay compras para mostrar.</td></tr> }</tbody></table></div></div></div>
+    </div>
+    <div class="card shadow-sm"><div class="card-header d-flex justify-content-between"><strong>Órdenes más recientes</strong><a asp-action="Fuente" asp-route-section="compras">Ver todas</a></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Fecha</th><th>Orden</th><th>Proveedor</th><th>Estado</th><th>Descripción</th><th>C$</th><th>USD</th></tr></thead><tbody>@foreach (var item in Model.RecentOrders) { <tr><td>@(item.Date?.ToString("dd/MM/yyyy") ?? "—")</td><td>@item.OrderNumber</td><td>@item.Supplier</td><td>@item.Status</td><td>@item.Description</td><td>C$ @item.Cordobas.ToString("N2")</td><td>$ @item.Usd.ToString("N2")</td></tr> } @if (!Model.RecentOrders.Any()) { <tr><td colspan="7" class="text-muted">No hay órdenes de compra en el período seleccionado.</td></tr> }</tbody></table></div></div>
+</div>

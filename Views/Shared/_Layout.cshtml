@@ -2126,6 +2126,7 @@
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu">
                             <li><span class="menu-group-label">Almacén y compras</span></li>
+                            <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="ComprasDashboard"><span class="op-item-main"><i class="bi bi-graph-up-arrow"></i>Dashboard de compras</span></a></li>
                             @foreach (var sheet in ITServiceDeskApp.Services.PublishedInventoryService.Sheets)
                             {
                                 <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key"><span class="op-item-main">@sheet.Name</span></a></li>
