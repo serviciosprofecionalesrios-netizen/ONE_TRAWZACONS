@@ -3,16 +3,29 @@
 @using System.Text.Json
 @{
     ViewData["Title"] = "Seguimiento de Toneladas";
+    var operationalRows = Model.Rows.Where(r =>
+    {
+        var procedencia = !string.IsNullOrWhiteSpace(r.Procedencia)
+            ? r.Procedencia
+            : r.Ruta ?? string.Empty;
+        var separatorIndex = procedencia.IndexOf(" - ", StringComparison.Ordinal);
+        if (separatorIndex > 0)
+        {
+            procedencia = procedencia[..separatorIndex];
+        }
+
+        return procedencia.Contains("TRITON", StringComparison.OrdinalIgnoreCase);
+    }).ToList();
     var rowsBase = Model.FechaOperativa.HasValue
-        ? Model.Rows.Where(r => r.FechaEvento.HasValue && r.FechaEvento.Value.Date == Model.FechaOperativa.Value).ToList()
-        : Model.Rows.ToList();
+        ? operationalRows.Where(r => r.FechaEvento.HasValue && r.FechaEvento.Value.Date == Model.FechaOperativa.Value).ToList()
+        : operationalRows.ToList();
     var mesReferencia = Model.FechaOperativa
-        ?? Model.Rows
+        ?? operationalRows
             .Where(r => r.FechaEvento.HasValue)
             .Select(r => r.FechaEvento!.Value.Date)
             .DefaultIfEmpty(DateTime.Now.Date)
             .Max();
-    var rowsMesAcumuladas = Model.Rows
+    var rowsMesAcumuladas = operationalRows
         .Where(r =>
             r.FechaEvento.HasValue &&
             r.FechaEvento.Value.Year == mesReferencia.Year &&
@@ -20,7 +33,7 @@
         .ToList();
     if (!rowsMesAcumuladas.Any())
     {
-        rowsMesAcumuladas = Model.Rows.ToList();
+        rowsMesAcumuladas = operationalRows.ToList();
     }
     var hasFechaValida = Model.FechaOperativa.HasValue;
     var fechaOperativaLabel = Model.FechaOperativa?.ToString("dd/MM/yyyy", CultureInfo.CurrentCulture) ?? "Sin fecha";
@@ -77,8 +90,7 @@
             .Trim()
             .ToUpperInvariant()
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var normalized = string.Join(" ", tokens);
-        return normalized == "PAVON ASM" ? "TRITON" : normalized;
+        return string.Join(" ", tokens);
     }
 
     string ResolveProcedencia(ITServiceDeskApp.ViewModels.Operaciones.SeguimientoToneladasRowViewModel row)
@@ -195,7 +207,7 @@
         .Where(x => x.Procedencia != "PAVON ASM" && x.Procedencia != "TRITON")
         .ToList();
 
-    var analyticsRowsPayload = Model.Rows.Select(r =>
+    var analyticsRowsPayload = operationalRows.Select(r =>
     {
         var fecha = r.FechaEvento?.Date;
         var procedencia = NormalizeProcedencia(ResolveProcedencia(r));
@@ -223,9 +235,7 @@
         fechaCorte = mesReferencia.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         fechaOperativa = Model.FechaOperativa?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         metaDiariaTriton,
-        metaDiariaPavonAsm = 0m,
         metaMensualTriton,
-        metaMensualPavonAsm = 0m,
         sourceFileName = Model.SourceFileName ?? "Datos operativos",
         rows = analyticsRowsPayload
     };
@@ -1235,8 +1245,6 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="metaAnio" value="@Model.MetaAnio" />
             <input type="hidden" name="metaMes" value="@Model.MetaMes" />
-            <input type="hidden" name="metaMensualPavonAsm" value="0" />
-            <input type="hidden" name="metaDiariaPavonAsmObjetivo" value="0" />
 
             <div class="col-lg-2 col-md-6">
                 <label class="form-label fw-semibold mb-1">Meta TRITON (mes)</label>

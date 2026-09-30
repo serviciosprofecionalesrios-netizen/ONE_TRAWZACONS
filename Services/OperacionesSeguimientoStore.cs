@@ -26,6 +26,7 @@ namespace ITServiceDeskApp.Services
             var uploadedAt = DateTime.Now;
 
             var normalizedRows = model.Rows
+                .Where(IsTritonRow)
                 .Select(r => MapToEntity(r, baseDate, uploadedAt))
                 .Where(r => !string.IsNullOrWhiteSpace(r.Equipo))
                 .ToList();
@@ -90,6 +91,8 @@ namespace ITServiceDeskApp.Services
                     Eficiencia = r.Eficiencia
                 })
                 .ToList();
+
+            rows = rows.Where(IsTritonRow).ToList();
 
             if (!rows.Any())
             {
@@ -195,6 +198,7 @@ namespace ITServiceDeskApp.Services
 
         private static SeguimientoToneladasViewModel BuildToneladasModel(List<SeguimientoToneladasRowViewModel> rows)
         {
+            rows = rows.Where(IsTritonRow).ToList();
             var totalToneladas = rows.Sum(r => r.Toneladas);
             var totalViajes = rows.Sum(r => r.Viajes);
             var totalCombustibleGalones = rows.Sum(r => r.CombustibleLitros);
@@ -250,6 +254,20 @@ namespace ITServiceDeskApp.Services
                 ToneladasEnRuta = toneladasEnRuta,
                 FechaOperativa = fechaOperativa
             };
+        }
+
+        private static bool IsTritonRow(SeguimientoToneladasRowViewModel row)
+        {
+            var procedencia = string.IsNullOrWhiteSpace(row.Procedencia)
+                ? row.Ruta ?? string.Empty
+                : row.Procedencia;
+            var separatorIndex = procedencia.IndexOf(" - ", StringComparison.Ordinal);
+            if (separatorIndex > 0)
+            {
+                procedencia = procedencia[..separatorIndex];
+            }
+
+            return procedencia.Contains("TRITON", StringComparison.OrdinalIgnoreCase);
         }
 
         private static List<SeguimientoToneladasEstadoResumenViewModel> BuildEstadoResumen(IEnumerable<SeguimientoToneladasRowViewModel> rows)

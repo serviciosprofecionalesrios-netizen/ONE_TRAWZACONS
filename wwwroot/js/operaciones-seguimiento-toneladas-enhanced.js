@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 fecha: parsedDate,
                 procedencia: (function () {
                     var normalized = ((row && row.procedencia) || "").toUpperCase().trim();
-                    return normalized === "PAVON ASM" ? "TRITON" : normalized;
+                    return normalized === "TRITON" ? normalized : "";
                 })(),
                 estado: ((row && row.estado) || "OTRO").toUpperCase(),
                 equipo: ((row && row.equipo) || "").trim(),
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 viajes: Number((row && row.viajes) || 0),
                 incompleto: !!(row && row.incompleto)
             };
-        })
+        }).filter(function (row) { return row.procedencia === "TRITON"; })
         : [];
 
     var nf = new Intl.NumberFormat("es-NI", { minimumFractionDigits: 1, maximumFractionDigits: 1 });

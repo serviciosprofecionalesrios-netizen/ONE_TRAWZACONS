@@ -199,9 +199,11 @@ namespace ITServiceDeskApp.Controllers
                     return View(fallbackModel);
                 }
 
+                rows = rows.Where(IsSitioTriton).ToList();
+
                 if (!rows.Any())
                 {
-                    fallbackModel.ErrorMessage = "No se encontraron filas validas con Equipo y Toneladas en el Excel.";
+                    fallbackModel.ErrorMessage = "No se encontraron filas validas de TRITON con Equipo y Toneladas en el Excel.";
                     return View(fallbackModel);
                 }
 
@@ -2839,8 +2841,7 @@ namespace ITServiceDeskApp.Controllers
 
             var resumenSitios = new List<OperacionesReporteSitioResumenViewModel>
             {
-                BuildSitioResumen("TRITON", finalizadosMes, metaObjetivo.MetaMensualTriton, metaObjetivo.MetaDiariaTriton),
-                BuildSitioResumen("PAVON ASM", finalizadosMes, metaObjetivo.MetaMensualPavonAsm, metaObjetivo.MetaDiariaPavonAsm)
+                BuildSitioResumen("TRITON", finalizadosMes, metaObjetivo.MetaMensualTriton, metaObjetivo.MetaDiariaTriton)
             };
 
             var topOperadores = BuildRankingRows(
@@ -2875,15 +2876,6 @@ namespace ITServiceDeskApp.Controllers
                 monthEnd,
                 cumplimientoPorSitio,
                 diasCumplidos);
-            BuildCumplimientoSitio(
-                "PAVON ASM",
-                finalizadosMes,
-                metaObjetivo.MetaDiariaPavonAsm,
-                monthStart,
-                monthEnd,
-                cumplimientoPorSitio,
-                diasCumplidos);
-
             return new OperacionesReporteGerencialMensualToneladasViewModel
             {
                 Year = monthStart.Year,
@@ -3945,19 +3937,6 @@ namespace ITServiceDeskApp.Controllers
             {
                 new()
                 {
-                    Equipo = "Cabezal 12",
-                    Procedencia = "PAVON ASM",
-                    Ruta = "Managua - Puerto",
-                    Toneladas = 128.4m,
-                    Viajes = 6,
-                    CombustibleLitros = 420m,
-                    FechaEvento = DateTime.Now,
-                    Conductor = "Luis Perez",
-                    Estado = "FINALIZADO",
-                    Eficiencia = "Alta"
-                },
-                new()
-                {
                     Equipo = "Cabezal 18",
                     Procedencia = "TRITON",
                     Ruta = "Leon - Managua",
@@ -3970,19 +3949,6 @@ namespace ITServiceDeskApp.Controllers
                     Estado = "EN RUTA",
                     Eficiencia = "Media"
                 },
-                new()
-                {
-                    Equipo = "Volqueta 05",
-                    Procedencia = "PAVON ASM",
-                    Ruta = "Chinandega - Puerto",
-                    Toneladas = 76.8m,
-                    Viajes = 3,
-                    CombustibleLitros = 265m,
-                    FechaEvento = DateTime.Now,
-                    Conductor = "Carlos Mejia",
-                    Estado = "FINALIZADO",
-                    Eficiencia = "Alta"
-                }
             };
 
             return BuildToneladasModel(rows);
@@ -3990,6 +3956,7 @@ namespace ITServiceDeskApp.Controllers
 
         private static SeguimientoToneladasViewModel BuildToneladasModel(List<SeguimientoToneladasRowViewModel> rows)
         {
+            rows = rows.Where(IsSitioTriton).ToList();
             var totalToneladas = rows.Sum(r => r.Toneladas);
             var totalViajes = rows.Sum(r => r.Viajes);
             var totalCombustibleLitros = rows.Sum(r => r.CombustibleLitros);

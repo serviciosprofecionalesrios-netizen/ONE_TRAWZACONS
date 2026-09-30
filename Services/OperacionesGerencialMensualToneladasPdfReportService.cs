@@ -100,7 +100,6 @@ namespace ITServiceDeskApp.Services
                         row.RelativeItem().Element(c => ComposeMetricCard(c, "Diesel mes", $"{model.TotalDieselGalones:N2} gal", "#0F766E"));
                         row.RelativeItem().Element(c => ComposeMetricCard(c, "Registros", model.TotalRegistros.ToString(CultureInfo.InvariantCulture), "#334155"));
                         row.RelativeItem().Element(c => ComposeMetricCard(c, "Meta diaria TRITON", $"{model.MetaDiariaTriton:N1}", "#11439A"));
-                        row.RelativeItem().Element(c => ComposeMetricCard(c, "Meta diaria PAVON ASM", $"{model.MetaDiariaPavonAsm:N1}", "#1D4ED8"));
                     });
                 }));
 

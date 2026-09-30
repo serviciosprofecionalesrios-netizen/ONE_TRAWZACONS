@@ -20,7 +20,9 @@ namespace ITServiceDeskApp.Services
 
             var generatedAt = DateTime.Now;
             var logo = TryLoadLogo(webRootPath);
-            var allRows = model.Rows ?? new List<SeguimientoToneladasRowViewModel>();
+            var allRows = (model.Rows ?? new List<SeguimientoToneladasRowViewModel>())
+                .Where(IsTritonRow)
+                .ToList();
             var cutoffDate = ResolveCutoffDate(model, allRows);
             var rangeInfo = ResolveRangeInfo(cutoffDate, range, from, to);
             var rowsRange = allRows
@@ -262,7 +264,7 @@ namespace ITServiceDeskApp.Services
                             "Toneladas periodo",
                             $"{data.Metrics.TotalToneladas:N1} Tn",
                             "#0B1D3A",
-                            $"TRITON {data.Metrics.TritonToneladas:N1} | PAVON ASM {data.Metrics.PavonToneladas:N1}"));
+                            $"TRITON {data.Metrics.TritonToneladas:N1}"));
                     row.RelativeItem().Element(c =>
                         ComposeMetricCard(
                             c,
@@ -306,14 +308,14 @@ namespace ITServiceDeskApp.Services
                         "Total vs ayer",
                         $"{FormatSigned(comparison.TotalVsAyerToneladas)} Tn ({FormatSigned(comparison.TotalVsAyerPct)}%)",
                         comparison.TotalVsAyerToneladas >= 0m ? "#15803D" : "#11439A",
-                        $"TRITON {FormatSigned(comparison.TritonVsAyerToneladas)} | PAVON ASM {FormatSigned(comparison.PavonVsAyerToneladas)}"));
+                        $"TRITON {FormatSigned(comparison.TritonVsAyerToneladas)}"));
                 row.RelativeItem().Element(c =>
                     ComposeMetricCard(
                         c,
                         "Total vs promedio 7 dias",
                         $"{FormatSigned(comparison.TotalVsPromedio7Toneladas)} Tn ({FormatSigned(comparison.TotalVsPromedio7Pct)}%)",
                         comparison.TotalVsPromedio7Toneladas >= 0m ? "#15803D" : "#11439A",
-                        $"TRITON {FormatSigned(comparison.TritonVsPromedio7Toneladas)} | PAVON ASM {FormatSigned(comparison.PavonVsPromedio7Toneladas)}"));
+                        $"TRITON {FormatSigned(comparison.TritonVsPromedio7Toneladas)}"));
                 row.RelativeItem().Element(c =>
                     ComposeMetricCard(
                         c,
@@ -341,15 +343,6 @@ namespace ITServiceDeskApp.Services
                             snapshot.TritonVsAyer,
                             snapshot.TritonVsPromedio7,
                             "#11439A"));
-                    row.RelativeItem().Element(c =>
-                        ComposeDailyGoalCard(
-                            c,
-                            "Toneladas al dia PAVON ASM",
-                            snapshot.ToneladasPavonHoy,
-                            metaDiariaPavon,
-                            snapshot.PavonVsAyer,
-                            snapshot.PavonVsPromedio7,
-                            "#1D4ED8"));
                 });
 
                 column.Item().Row(row =>
@@ -364,7 +357,6 @@ namespace ITServiceDeskApp.Services
                 {
                     row.Spacing(6);
                     row.RelativeItem().Element(c => ComposeMetricCard(c, "Toneladas TRITON (mes)", $"{snapshot.ToneladasTritonMes:N1}", "#0F766E"));
-                    row.RelativeItem().Element(c => ComposeMetricCard(c, "Toneladas PAVON ASM (mes)", $"{snapshot.ToneladasPavonMes:N1}", "#1D4ED8"));
                     row.RelativeItem().Element(c => ComposeMetricCard(c, "Toneladas promedio por viaje", $"{snapshot.PromedioPorViaje:N1}", "#2563EB"));
                     row.RelativeItem().Element(c => ComposeMetricCard(c, "Toneladas acumuladas del mes", $"{snapshot.ToneladasAcumuladasMes:N1}", "#7C3AED"));
                 });
@@ -378,7 +370,7 @@ namespace ITServiceDeskApp.Services
                 return;
             }
 
-            var maxReferencia = Math.Max(1m, trend.Max(x => Math.Max(x.Triton, x.Pavon)));
+            var maxReferencia = Math.Max(1m, trend.Max(x => x.Triton));
             var maxTotal = Math.Max(1m, trend.Max(x => x.Total));
 
             container.Column(column =>
@@ -397,16 +389,6 @@ namespace ITServiceDeskApp.Services
                         .FontSize(7.5f)
                         .SemiBold()
                         .FontColor("#11439A");
-                    legend.ConstantItem(102)
-                        .Border(1)
-                        .BorderColor("#BFD8FA")
-                        .Background("#F2F8FF")
-                        .PaddingVertical(2)
-                        .PaddingHorizontal(6)
-                        .Text("PAVON ASM")
-                        .FontSize(7.5f)
-                        .SemiBold()
-                        .FontColor("#1D4ED8");
                 });
 
                 foreach (var day in trend.OrderBy(x => x.Date))
@@ -433,7 +415,6 @@ namespace ITServiceDeskApp.Services
                             });
 
                             dayColumn.Item().Element(bar => ComposeBarLine(bar, "TRITON", day.Triton, maxReferencia, "#11439A"));
-                            dayColumn.Item().Element(bar => ComposeBarLine(bar, "PAVON ASM", day.Pavon, maxReferencia, "#1D4ED8"));
                         });
                 }
             });
@@ -445,7 +426,6 @@ namespace ITServiceDeskApp.Services
             {
                 column.Spacing(5);
                 column.Item().Element(item => ComposeProjectionCard(item, "TRITON", projection.RealTriton, projection.EsperadaTriton, projection.MetaMensualTriton, "#11439A"));
-                column.Item().Element(item => ComposeProjectionCard(item, "PAVON ASM", projection.RealPavon, projection.EsperadaPavon, projection.MetaMensualPavon, "#1D4ED8"));
                 column.Item().Element(item => ComposeProjectionCard(item, "TOTAL", projection.RealTotal, projection.EsperadaTotal, projection.MetaMensualTotal, "#0B1D3A"));
 
                 column.Item().PaddingTop(2).Text($"Dias transcurridos del mes: {projection.DiasTranscurridos}")
@@ -1063,14 +1043,6 @@ namespace ITServiceDeskApp.Services
                     Action: "Accion: redistribuir equipos hacia rutas TRITON en el siguiente turno."));
             }
 
-            if (metrics.PavonCumpl < 90m)
-            {
-                alerts.Add(new AlertItem(
-                    Level: "BAJA",
-                    Message: $"PAVON ASM por debajo del 90% de cumplimiento ({metrics.PavonCumpl:N1}%).",
-                    Action: "Accion: validar disponibilidad de equipos PAVON ASM y frecuencia de viajes."));
-            }
-
             var incompletos = allRows.Count(IsIncomplete);
             var incompletosPct = allRows.Count > 0 ? (decimal)incompletos / allRows.Count * 100m : 0m;
             if (incompletosPct >= 5m)
@@ -1433,6 +1405,11 @@ namespace ITServiceDeskApp.Services
         private static decimal GetToneladasEnRuta(SeguimientoToneladasRowViewModel row)
         {
             return row.PesoSugerido > 0 ? row.PesoSugerido : row.Toneladas;
+        }
+
+        private static bool IsTritonRow(SeguimientoToneladasRowViewModel row)
+        {
+            return NormalizeProcedencia(ResolveProcedencia(row)) == "TRITON";
         }
 
         private static string ResolveProcedencia(SeguimientoToneladasRowViewModel row)
