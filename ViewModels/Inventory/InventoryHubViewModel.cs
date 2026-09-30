@@ -39,7 +39,7 @@ namespace ITServiceDeskApp.ViewModels.Inventory
     public record PurchaseDashboardSupplier(string Name, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardItem(string Name, string Category, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardCategory(string Name, decimal Cordobas, decimal Usd);
-    public record PurchaseDashboardMonthlySpend(int Year, int Month, string Label, decimal Cordobas, decimal Usd, int Orders, decimal VariationPct);
+    public record PurchaseDashboardMonthlySpend(int Year, int Month, string Label, decimal Cordobas, decimal Usd, int Orders, decimal VariationPct, decimal Budget, decimal DifferenceFromBudget);
     public record PurchaseDashboardPriceChange(string Item, decimal PreviousPrice, decimal CurrentPrice, decimal VariationPct, DateTime CurrentDate);
     public record PurchaseDashboardOrder(string OrderNumber, string Supplier, string Status, DateTime? Date, decimal Cordobas, decimal Usd, string Description);
 }

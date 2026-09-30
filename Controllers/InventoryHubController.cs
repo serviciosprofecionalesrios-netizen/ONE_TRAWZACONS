@@ -12,6 +12,7 @@ namespace ITServiceDeskApp.Controllers
     [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
     public class InventoryHubController : Controller
     {
+        private const decimal MonthlyPurchaseBudgetCordobas = 500_000m;
         private readonly ApplicationDbContext _context;
         private readonly PublishedInventoryService _published;
         private readonly IWebHostEnvironment _environment;
@@ -236,12 +237,21 @@ namespace ITServiceDeskApp.Controllers
                 .Select(g => new { g.Key.Year, g.Key.Month, Cordobas = g.Sum(x => x.Cordobas), Usd = g.Sum(x => x.Usd), Orders = g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count() })
                 .OrderBy(x => x.Month)
                 .ToList();
-            var monthlySpend = monthlyRows.Select((item, index) => new PurchaseDashboardMonthlySpend(item.Year, item.Month, CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(item.Month), item.Cordobas, item.Usd, item.Orders, index > 0 && monthlyRows[index - 1].Cordobas > 0m ? (item.Cordobas - monthlyRows[index - 1].Cordobas) * 100m / monthlyRows[index - 1].Cordobas : 0m)).ToList();
+            var monthlySpend = monthlyRows.Select((item, index) => new PurchaseDashboardMonthlySpend(item.Year, item.Month, CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(item.Month), item.Cordobas, item.Usd, item.Orders, index > 0 && monthlyRows[index - 1].Cordobas > 0m ? (item.Cordobas - monthlyRows[index - 1].Cordobas) * 100m / monthlyRows[index - 1].Cordobas : 0m, MonthlyPurchaseBudgetCordobas, item.Cordobas - MonthlyPurchaseBudgetCordobas)).ToList();
             var priceIncreases = pricePoints
                 .GroupBy(x => x.Item.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.OrderByDescending(x => x.Date).Take(2).OrderBy(x => x.Date).ToList())
                 .Where(history => history.Count == 2 && history[0].Price > 0m && history[1].Price > history[0].Price)
-                .Select(history => new PurchaseDashboardPriceChange(history[1].Item, history[0].Price, history[1].Price, (history[1].Price - history[0].Price) * 100m / history[0].Price, history[1].Date!.Value))
+                .Select(history =>
+                {
+                    var previousPrice = history[0].Price;
+                    if (previousPrice <= 100m && history[1].Price >= 1_000m)
+                    {
+                        previousPrice *= 1_000m;
+                    }
+                    return new PurchaseDashboardPriceChange(history[1].Item, previousPrice, history[1].Price, (history[1].Price - previousPrice) * 100m / previousPrice, history[1].Date!.Value);
+                })
+                .Where(x => x.VariationPct > 0m)
                 .OrderByDescending(x => x.VariationPct).Take(8).ToList();
 
             return View(new PurchaseDashboardViewModel
