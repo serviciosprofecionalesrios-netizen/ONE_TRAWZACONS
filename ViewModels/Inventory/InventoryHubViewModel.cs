@@ -29,6 +29,7 @@ namespace ITServiceDeskApp.ViewModels.Inventory
         public IReadOnlyList<PurchaseDashboardItem> TopItems { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardCategory> TopCategories { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardMonthlySpend> MonthlySpend { get; init; } = [];
+        public IReadOnlyList<PurchaseDashboardPriceChange> PriceIncreases { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> RecentOrders { get; init; } = [];
         public IReadOnlyList<PurchaseDashboardOrder> OrdersWithoutAmountDetail { get; init; } = [];
         public string? Warning { get; init; }
@@ -38,6 +39,7 @@ namespace ITServiceDeskApp.ViewModels.Inventory
     public record PurchaseDashboardSupplier(string Name, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardItem(string Name, string Category, int Orders, decimal Cordobas, decimal Usd);
     public record PurchaseDashboardCategory(string Name, decimal Cordobas, decimal Usd);
-    public record PurchaseDashboardMonthlySpend(int Year, int Month, string Label, decimal Cordobas, decimal Usd, int Orders);
+    public record PurchaseDashboardMonthlySpend(int Year, int Month, string Label, decimal Cordobas, decimal Usd, int Orders, decimal VariationPct);
+    public record PurchaseDashboardPriceChange(string Item, decimal PreviousPrice, decimal CurrentPrice, decimal VariationPct, DateTime CurrentDate);
     public record PurchaseDashboardOrder(string OrderNumber, string Supplier, string Status, DateTime? Date, decimal Cordobas, decimal Usd, string Description);
 }

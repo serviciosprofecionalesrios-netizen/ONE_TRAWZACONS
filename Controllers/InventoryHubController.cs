@@ -169,6 +169,7 @@ namespace ITServiceDeskApp.Controllers
 
             var detailTotals = new Dictionary<string, PurchaseDashboardOrder>(StringComparer.OrdinalIgnoreCase);
             var detailLines = new List<PurchaseDashboardOrder>();
+            var pricePoints = new List<PurchasePricePoint>();
             if (detailSource.Table is { } detailTable)
             {
                 int DetailColumn(string name) => Array.FindIndex(detailTable.Headers, h => string.Equals(h.Trim(), name, StringComparison.OrdinalIgnoreCase));
@@ -180,6 +181,7 @@ namespace ITServiceDeskApp.Controllers
                 var detailCordobasColumn = DetailColumn("TOTAL C$");
                 var detailUsdColumn = DetailColumn("TOTAL $");
                 var detailDescriptionColumn = DetailColumn("DESCRIPCION");
+                var detailUnitPriceColumn = DetailColumn("PRECIO UNITARIO C$");
                 var rawDetailLines = detailTable.Rows
                     .Select(row => new PurchaseDashboardOrder(
                         DetailValue(row, detailOrderColumn), DetailValue(row, detailSupplierColumn), DetailValue(row, detailStatusColumn),
@@ -188,6 +190,11 @@ namespace ITServiceDeskApp.Controllers
                     .Where(x => !string.IsNullOrWhiteSpace(x.OrderNumber))
                     .ToList();
                 detailLines.AddRange(rawDetailLines);
+                pricePoints.AddRange(detailTable.Rows.Select(row => new PurchasePricePoint(
+                    DetailValue(row, detailDescriptionColumn),
+                    detailDateColumn >= 0 && TryDate(DetailValue(row, detailDateColumn), out var priceDate) ? priceDate.Date : null,
+                    ParseAmount(DetailValue(row, detailUnitPriceColumn))))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Item) && x.Date.HasValue && x.Price > 0m));
                 foreach (var group in rawDetailLines.GroupBy(x => NormalizeOrderNumber(x.OrderNumber), StringComparer.OrdinalIgnoreCase))
                 {
                     var first = group.First();
@@ -223,12 +230,19 @@ namespace ITServiceDeskApp.Controllers
                 .ToList();
             var availableYears = detailLines.Where(x => x.Date.HasValue).Select(x => x.Date!.Value.Year).Distinct().OrderByDescending(x => x).ToList();
             var trendYear = year ?? availableYears.FirstOrDefault();
-            var monthlySpend = detailLines
+            var monthlyRows = detailLines
                 .Where(x => x.Date.HasValue && (trendYear == 0 || x.Date!.Value.Year == trendYear))
                 .GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month })
-                .Select(g => new PurchaseDashboardMonthlySpend(g.Key.Year, g.Key.Month, CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(g.Key.Month), g.Sum(x => x.Cordobas), g.Sum(x => x.Usd), g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count()))
+                .Select(g => new { g.Key.Year, g.Key.Month, Cordobas = g.Sum(x => x.Cordobas), Usd = g.Sum(x => x.Usd), Orders = g.Select(x => x.OrderNumber).Distinct(StringComparer.OrdinalIgnoreCase).Count() })
                 .OrderBy(x => x.Month)
                 .ToList();
+            var monthlySpend = monthlyRows.Select((item, index) => new PurchaseDashboardMonthlySpend(item.Year, item.Month, CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(item.Month), item.Cordobas, item.Usd, item.Orders, index > 0 && monthlyRows[index - 1].Cordobas > 0m ? (item.Cordobas - monthlyRows[index - 1].Cordobas) * 100m / monthlyRows[index - 1].Cordobas : 0m)).ToList();
+            var priceIncreases = pricePoints
+                .GroupBy(x => x.Item.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.OrderByDescending(x => x.Date).Take(2).OrderBy(x => x.Date).ToList())
+                .Where(history => history.Count == 2 && history[0].Price > 0m && history[1].Price > history[0].Price)
+                .Select(history => new PurchaseDashboardPriceChange(history[1].Item, history[0].Price, history[1].Price, (history[1].Price - history[0].Price) * 100m / history[0].Price, history[1].Date!.Value))
+                .OrderByDescending(x => x.VariationPct).Take(8).ToList();
 
             return View(new PurchaseDashboardViewModel
             {
@@ -253,6 +267,7 @@ namespace ITServiceDeskApp.Controllers
                     .Select(g => new PurchaseDashboardCategory(g.Key, g.Sum(x => x.Cordobas), g.Sum(x => x.Usd)))
                     .OrderByDescending(x => x.Cordobas + x.Usd).Take(8).ToList(),
                 MonthlySpend = monthlySpend,
+                PriceIncreases = priceIncreases,
                 RecentOrders = orders.OrderByDescending(x => x.Cordobas + x.Usd).ThenByDescending(x => x.Date ?? DateTime.MinValue).Take(15).ToList(),
                 OrdersWithoutAmountDetail = ordersWithoutAmount.OrderByDescending(x => x.Date ?? DateTime.MinValue).Take(12).ToList(),
                 Warning = source.Warning
@@ -280,5 +295,7 @@ namespace ITServiceDeskApp.Controllers
             if (text.Contains("MOTOR", StringComparison.OrdinalIgnoreCase) || text.Contains("PISTON", StringComparison.OrdinalIgnoreCase)) return "Motor";
             return "Otros repuestos";
         }
+
+        private sealed record PurchasePricePoint(string Item, DateTime? Date, decimal Price);
     }
 }
