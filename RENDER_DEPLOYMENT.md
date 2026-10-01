@@ -31,6 +31,15 @@ Esta variante debe utilizarse únicamente para mostrar el proyecto al cliente.
 6. Espera a que `/health` responda correctamente y entra con
    `admin@trawzacons.com` y la contraseña indicada.
 
+## Restablecer la contraseña del administrador
+
+Si se pierde la contraseña de `admin@trawzacons.com`, abre el servicio en
+Render y, en **Environment**, configura una nueva contraseña en
+`BootstrapAdmin__Password`. Cambia temporalmente
+`BootstrapAdmin__ResetExistingPassword` a `true` y ejecuta un despliegue
+manual. Cuando el despliegue termine, ingresa con la nueva contraseña y vuelve
+esa variable a `false` para que futuros reinicios no vuelvan a restablecerla.
+
 ## Variables opcionales
 
 Las notificaciones se despliegan deshabilitadas. Para activarlas, configura en

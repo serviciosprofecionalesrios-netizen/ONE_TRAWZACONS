@@ -27,6 +27,8 @@ services:
         value: admin@trawzacons.com
       - key: BootstrapAdmin__Password
         sync: false
+      - key: BootstrapAdmin__ResetExistingPassword
+        value: "false"
       - key: EmailNotifications__Enabled
         value: "false"
       - key: WhatsAppNotifications__Enabled

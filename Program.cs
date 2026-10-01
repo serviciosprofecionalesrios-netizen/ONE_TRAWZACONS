@@ -189,10 +189,13 @@ using (var scope = app.Services.CreateScope())
 
         var bootstrapEmail = builder.Configuration["BootstrapAdmin:Email"]?.Trim().ToLowerInvariant()
             ?? "admin@trawzacons.com";
+        var bootstrapPassword = builder.Configuration["BootstrapAdmin:Password"];
+        var resetExistingAdminPassword = builder.Configuration.GetValue<bool>("BootstrapAdmin:ResetExistingPassword");
 
-        if (!context.Users.Any(u => u.Email == bootstrapEmail))
+        var admin = context.Users.FirstOrDefault(u => u.Email == bootstrapEmail);
+        if (admin == null)
         {
-            var admin = new User
+            admin = new User
             {
                 FullName = "Administrador",
                 Email = bootstrapEmail,
@@ -202,7 +205,6 @@ using (var scope = app.Services.CreateScope())
                 CreatedAt = DateTime.UtcNow
             };
 
-            var bootstrapPassword = builder.Configuration["BootstrapAdmin:Password"];
             if (string.IsNullOrWhiteSpace(bootstrapPassword))
             {
                 if (!app.Environment.IsDevelopment())
@@ -218,6 +220,23 @@ using (var scope = app.Services.CreateScope())
 
             context.Users.Add(admin);
             context.SaveChanges();
+        }
+        else if (resetExistingAdminPassword)
+        {
+            if (string.IsNullOrWhiteSpace(bootstrapPassword))
+            {
+                throw new InvalidOperationException(
+                    "Falta BootstrapAdmin__Password para restablecer la contraseña del administrador.");
+            }
+
+            var verification = hasher.VerifyHashedPassword(admin, admin.PasswordHash, bootstrapPassword);
+            if (verification == PasswordVerificationResult.Failed)
+            {
+                admin.PasswordHash = hasher.HashPassword(admin, bootstrapPassword);
+                admin.IsActive = true;
+                context.SaveChanges();
+                logger.LogInformation("Se restableció la contraseña del administrador configurado.");
+            }
         }
     }
     catch (DbException ex)
