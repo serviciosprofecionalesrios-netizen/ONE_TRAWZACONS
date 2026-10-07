@@ -133,13 +133,25 @@ namespace ITServiceDeskApp.Controllers
             var heat = topDrivers.SelectMany(d => topTypes.Select(t => new { Driver = d, Event = t, Count = events.Count(x => x.Driver.Equals(d, StringComparison.OrdinalIgnoreCase) && x.EventType.Equals(t, StringComparison.OrdinalIgnoreCase)) })).ToList();
             var maxHeat = Math.Max(1, heat.Max(x => x.Count));
             var scorecards = source.Scores.Where(x => string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)).Select(x => new DriverScoreSummaryViewModel(x.Driver, x.Vehicle, x.Kilometers, x.Speeding + x.Fatigue + x.Distraction + x.PhoneUse + x.HarshBraking + x.HarshAcceleration, x.Status)).OrderByDescending(x => x.Events).Take(20).ToList();
-            return View(new DriverScoreViewModel { From = from, To = to, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards });
+            var mapPoints = events.Select(x => TryParseDriverScoreLocation(x.Location, out var latitude, out var longitude)
+                    ? new DriverScoreMapPointViewModel(latitude, longitude, x.Driver, x.EventType, x.Vehicle, x.Date, x.Observation) : null)
+                .Where(x => x is not null).Cast<DriverScoreMapPointViewModel>().ToList();
+            return View(new DriverScoreViewModel { From = from, To = to, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards, MapPoints = mapPoints });
         }
 
         private static DateTime? ParseDriverScoreDate(string value)
         {
             var formats = new[] { "dd/MM/yyyy H:mm", "d/M/yyyy H:mm", "dd/MM/yyyy HH:mm", "d/M/yyyy HH:mm:ss" };
             return DateTime.TryParseExact(value, formats, CultureInfo.GetCultureInfo("es-NI"), DateTimeStyles.AllowWhiteSpaces, out var result) || DateTime.TryParse(value, out result) ? result : null;
+        }
+
+        private static bool TryParseDriverScoreLocation(string value, out decimal latitude, out decimal longitude)
+        {
+            latitude = longitude = 0m;
+            var matches = Regex.Matches(value ?? string.Empty, @"-?\d{1,3}(?:\.\d+)?");
+            return matches.Count >= 2 && decimal.TryParse(matches[0].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out latitude)
+                && decimal.TryParse(matches[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out longitude)
+                && latitude is >= -90m and <= 90m && longitude is >= -180m and <= 180m;
         }
 
         public IActionResult CalendarioOperativo(
