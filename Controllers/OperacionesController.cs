@@ -132,7 +132,12 @@ namespace ITServiceDeskApp.Controllers
             var topTypes = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Take(8).Select(g => g.Key).ToList();
             var heat = topDrivers.SelectMany(d => topTypes.Select(t => new { Driver = d, Event = t, Count = events.Count(x => x.Driver.Equals(d, StringComparison.OrdinalIgnoreCase) && x.EventType.Equals(t, StringComparison.OrdinalIgnoreCase)) })).ToList();
             var maxHeat = Math.Max(1, heat.Max(x => x.Count));
-            var scorecards = source.Scores.Where(x => string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)).Select(x => new DriverScoreSummaryViewModel(x.Driver, x.Vehicle, x.Kilometers, x.Speeding + x.Fatigue + x.Distraction + x.PhoneUse + x.HarshBraking + x.HarshAcceleration, x.Status)).OrderByDescending(x => x.Events).Take(20).ToList();
+            var scoreLookup = source.Scores.GroupBy(x => x.Driver.Trim(), StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
+            var scorecards = events.GroupBy(x => x.Driver, StringComparer.OrdinalIgnoreCase).Select(group =>
+            {
+                scoreLookup.TryGetValue(group.Key, out var score);
+                return new DriverScoreSummaryViewModel(group.Key, score?.Vehicle ?? group.Select(x => x.Vehicle).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "—", score?.Kilometers ?? 0m, group.Count(), score?.Status ?? "Sin estado en BD");
+            }).OrderByDescending(x => x.Events).Take(20).ToList();
             var mapPoints = events.Select(x => TryParseDriverScoreLocation(x.Location, out var latitude, out var longitude)
                     ? new DriverScoreMapPointViewModel(latitude, longitude, x.Driver, x.EventType, x.Vehicle, x.Date, x.Observation) : null)
                 .Where(x => x is not null).Cast<DriverScoreMapPointViewModel>().ToList();
