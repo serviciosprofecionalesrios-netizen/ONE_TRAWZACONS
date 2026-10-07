@@ -43,6 +43,7 @@ namespace ITServiceDeskApp.Data
         public DbSet<HsTrainingRecord> HsTrainingRecords => Set<HsTrainingRecord>();
         public DbSet<HsWorkPermit> HsWorkPermits => Set<HsWorkPermit>();
         public DbSet<HsDocument> HsDocuments => Set<HsDocument>();
+        public DbSet<DriverScoreManualEvent> DriverScoreManualEvents => Set<DriverScoreManualEvent>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -211,6 +212,9 @@ namespace ITServiceDeskApp.Data
 
             modelBuilder.Entity<OperacionesSeguimientoRegistro>()
                 .HasIndex(r => r.FechaOperativa);
+
+            modelBuilder.Entity<DriverScoreManualEvent>()
+                .HasIndex(x => x.EventAt);
 
             modelBuilder.Entity<OperacionesSeguimientoRegistro>()
                 .Property(r => r.Equipo)

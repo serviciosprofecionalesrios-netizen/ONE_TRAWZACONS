@@ -118,15 +118,26 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> DriverScore(DateTime? from, DateTime? to, string? driver, bool refresh = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> DriverScore(string? period, DateTime? from, DateTime? to, string? driver, bool refresh = false, CancellationToken cancellationToken = default)
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken, refresh);
-            var events = source.Events.Select(x => new DriverScoreEventViewModel(ParseDriverScoreDate(x.DateText), x.EventType, x.Driver.Trim(), x.Vehicle, x.Group, x.Location, x.Observation,
+            var manualEvents = await _context.DriverScoreManualEvents.AsNoTracking().ToListAsync(cancellationToken);
+            var allEvents = source.Events.Select(x => new DriverScoreEventViewModel(ParseDriverScoreDate(x.DateText), x.EventType, x.Driver.Trim(), x.Vehicle, x.Group, x.Location, x.Observation,
                     x.Timely.Equals("A TIEMPO", StringComparison.OrdinalIgnoreCase), x.Coaching.Equals("Si", StringComparison.OrdinalIgnoreCase)))
+                .Concat(manualEvents.Select(x => new DriverScoreEventViewModel(x.EventAt, x.EventType, x.Driver, x.Vehicle, x.Group ?? string.Empty, x.Location ?? string.Empty, x.Observation ?? string.Empty, x.TimelyManaged, x.CoachingCompleted)))
+                .ToList();
+            var availablePeriods = allEvents.Where(x => x.Date.HasValue).Select(x => new DateTime(x.Date!.Value.Year, x.Date.Value.Month, 1)).Distinct().OrderByDescending(x => x).ToList();
+            if (string.IsNullOrWhiteSpace(period)) period = DateTime.Today.ToString("yyyy-MM");
+            if (DateTime.TryParseExact(period + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var selectedMonth))
+            {
+                from = selectedMonth;
+                to = selectedMonth.AddMonths(1).AddDays(-1);
+            }
+            var events = allEvents
                 .Where(x => (!from.HasValue || (x.Date?.Date >= from.Value.Date)) && (!to.HasValue || (x.Date?.Date <= to.Value.Date)) &&
                     (string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)))
                 .OrderByDescending(x => x.Date).ToList();
-            var names = source.Events.Select(x => x.Driver.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            var names = allEvents.Select(x => x.Driver.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             var ranking = events.GroupBy(x => x.Driver, StringComparer.OrdinalIgnoreCase).Select(g => new DriverScoreRankingViewModel(g.Key, g.Count(), g.Count(x => x.Timely), g.Count(x => x.Coaching), g.Select(x => x.Vehicle).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "—")).OrderByDescending(x => x.Events).Take(12).ToList();
             var topDrivers = ranking.Select(x => x.Driver).Take(12).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var topTypes = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Take(8).Select(g => g.Key).ToList();
@@ -157,7 +168,35 @@ namespace ITServiceDeskApp.Controllers
                 .Where(x => x is not null).Cast<DriverScoreMapPointViewModel>().ToList();
             var distribution = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).Select(g => new DriverScoreEventDistributionViewModel(g.Key, g.Count(), string.Join(", ", g.Select(x => x.Vehicle).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).Take(4)))).OrderByDescending(x => x.Count).Take(10).ToList();
             var monthlyEvents = events.Where(x => x.Date.HasValue).GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month, x.EventType }).Select(g => new DriverScoreMonthlyEventViewModel(g.Key.Year, g.Key.Month, g.Key.EventType, g.Count())).OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
-            return View(new DriverScoreViewModel { From = from, To = to, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards, MapPoints = mapPoints, EventDistribution = distribution, MonthlyEvents = monthlyEvents });
+            return View(new DriverScoreViewModel { From = from, To = to, SelectedPeriod = period, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Periods = availablePeriods.Select(x => new DriverScorePeriodOptionViewModel(x.ToString("yyyy-MM"), x.ToString("MMMM yyyy", EsCulture))).ToList(), Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards, MapPoints = mapPoints, EventDistribution = distribution, MonthlyEvents = monthlyEvents });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> NuevaInfraccion(CancellationToken cancellationToken)
+        {
+            var source = await _driverScoreSource.GetAsync(cancellationToken);
+            return View(CreateDriverScoreEventForm(source));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> NuevaInfraccion(DriverScoreEventCreateViewModel model, CancellationToken cancellationToken)
+        {
+            var source = await _driverScoreSource.GetAsync(cancellationToken);
+            if (!ModelState.IsValid) return View(CreateDriverScoreEventForm(source, model));
+            _context.DriverScoreManualEvents.Add(new DriverScoreManualEvent { EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = model.TimelyManaged, CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name });
+            await _context.SaveChangesAsync(cancellationToken);
+            TempData["DriverScoreOk"] = "La infracción fue registrada correctamente.";
+            return RedirectToAction(nameof(DriverScore), new { period = model.EventAt.ToString("yyyy-MM") });
+        }
+
+        private static DriverScoreEventCreateViewModel CreateDriverScoreEventForm(DriverScoreSourceResult source, DriverScoreEventCreateViewModel? model = null)
+        {
+            model ??= new DriverScoreEventCreateViewModel();
+            model.Drivers = source.Scores.Select(x => x.Driver).Concat(source.Events.Select(x => x.Driver)).Where(x => !string.IsNullOrWhiteSpace(x) && !x.Equals("Sin Conductor", StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            model.Vehicles = source.Scores.Select(x => x.Vehicle).Concat(source.Events.Select(x => x.Vehicle)).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            model.EventTypes = source.Events.Select(x => x.EventType).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            return model;
         }
 
         private static DateTime? ParseDriverScoreDate(string value)
