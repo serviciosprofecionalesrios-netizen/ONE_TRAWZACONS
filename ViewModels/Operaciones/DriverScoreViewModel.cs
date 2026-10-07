@@ -27,4 +27,4 @@ public sealed record DriverScoreRankingViewModel(string Driver, int Events, int 
 public sealed record DriverScoreMapPointViewModel(decimal Latitude, decimal Longitude, string Driver, string EventType, string Vehicle, DateTime? Date, string Observation);
 public sealed record DriverScoreEventDistributionViewModel(string EventType, int Count, string Vehicles);
 public sealed record DriverScoreMonthlyEventViewModel(int Year, int Month, string EventType, int Count);
-public sealed record DriverScoreSummaryViewModel(string Driver, string Vehicle, decimal Kilometers, decimal Events, string Status);
+public sealed record DriverScoreSummaryViewModel(string Driver, string Vehicle, decimal Kilometers, decimal Events, int Score, string Status);

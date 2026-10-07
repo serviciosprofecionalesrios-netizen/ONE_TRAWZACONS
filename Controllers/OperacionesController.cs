@@ -132,12 +132,26 @@ namespace ITServiceDeskApp.Controllers
             var topTypes = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Take(8).Select(g => g.Key).ToList();
             var heat = topDrivers.SelectMany(d => topTypes.Select(t => new { Driver = d, Event = t, Count = events.Count(x => x.Driver.Equals(d, StringComparison.OrdinalIgnoreCase) && x.EventType.Equals(t, StringComparison.OrdinalIgnoreCase)) })).ToList();
             var maxHeat = Math.Max(1, heat.Max(x => x.Count));
-            var scoreLookup = source.Scores.GroupBy(x => x.Driver.Trim(), StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
-            var scorecards = events.GroupBy(x => x.Driver, StringComparer.OrdinalIgnoreCase).Select(group =>
+            var profiles = source.Scores
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.Vehicle) ? x.Driver.Trim() : x.Vehicle.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(x => x.First()).ToList();
+            var profilesByVehicle = profiles.Where(x => !string.IsNullOrWhiteSpace(x.Vehicle)).ToDictionary(x => x.Vehicle.Trim(), StringComparer.OrdinalIgnoreCase);
+            var eventsByVehicle = events.GroupBy(x => string.IsNullOrWhiteSpace(x.Vehicle) ? x.Driver : x.Vehicle, StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.ToList(), StringComparer.OrdinalIgnoreCase);
+            var profileRows = profiles.Select(profile =>
             {
-                scoreLookup.TryGetValue(group.Key, out var score);
-                return new DriverScoreSummaryViewModel(group.Key, score?.Vehicle ?? group.Select(x => x.Vehicle).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "—", score?.Kilometers ?? 0m, group.Count(), score?.Status ?? "Sin estado en BD");
-            }).OrderByDescending(x => x.Events).Take(20).ToList();
+                var key = string.IsNullOrWhiteSpace(profile.Vehicle) ? profile.Driver : profile.Vehicle;
+                eventsByVehicle.TryGetValue(key.Trim(), out var profileEvents);
+                var incidenceCount = profileEvents?.Count ?? 0;
+                return new DriverScoreSummaryViewModel(profile.Driver, profile.Vehicle, profile.Kilometers, incidenceCount, incidenceCount, DriverScoreStatus(incidenceCount));
+            }).ToList();
+            foreach (var group in eventsByVehicle.Where(x => !profilesByVehicle.ContainsKey(x.Key)))
+            {
+                var item = group.Value.First();
+                profileRows.Add(new DriverScoreSummaryViewModel(item.Driver, item.Vehicle, 0m, group.Value.Count, group.Value.Count, DriverScoreStatus(group.Value.Count)));
+            }
+            var scorecards = profileRows
+                .Where(x => string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase) || events.Any(e => e.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase) && e.Vehicle.Equals(x.Vehicle, StringComparison.OrdinalIgnoreCase)))
+                .OrderByDescending(x => x.Score).ThenBy(x => x.Driver).Take(30).ToList();
             var mapPoints = events.Select(x => TryParseDriverScoreLocation(x.Location, out var latitude, out var longitude)
                     ? new DriverScoreMapPointViewModel(latitude, longitude, x.Driver, x.EventType, x.Vehicle, x.Date, x.Observation) : null)
                 .Where(x => x is not null).Cast<DriverScoreMapPointViewModel>().ToList();
@@ -160,6 +174,13 @@ namespace ITServiceDeskApp.Controllers
                 && decimal.TryParse(matches[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out longitude)
                 && latitude is >= -90m and <= 90m && longitude is >= -180m and <= 180m;
         }
+
+        private static string DriverScoreStatus(int score) => score switch
+        {
+            0 => "Condición Óptima",
+            <= 3 => "Riesgo Latente",
+            _ => "Ansiedad Evidente/Detener"
+        };
 
         public IActionResult CalendarioOperativo(
             int? year,
