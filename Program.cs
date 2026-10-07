@@ -36,6 +36,7 @@ builder.Services.AddControllersWithViews(options =>
 });
 builder.Services.AddHttpClient("PublishedInventory", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<PublishedInventoryService>();
+builder.Services.AddSingleton<DriverScoreSourceService>();
 
 var databaseProvider = builder.Configuration["Database:Provider"]?.Trim() ?? "SqlServer";
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

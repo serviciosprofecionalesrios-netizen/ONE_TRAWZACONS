@@ -82,6 +82,7 @@ namespace ITServiceDeskApp.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<OperacionesController> _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly DriverScoreSourceService _driverScoreSource;
 
         public OperacionesController(
             IOperacionesDashboardStore operacionesDashboardStore,
@@ -94,7 +95,8 @@ namespace ITServiceDeskApp.Controllers
             IConfiguration configuration,
             IHttpClientFactory httpClientFactory,
             ILogger<OperacionesController> logger,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            DriverScoreSourceService driverScoreSource)
         {
             _operacionesDashboardStore = operacionesDashboardStore;
             _operacionesSeguimientoStore = operacionesSeguimientoStore;
@@ -107,11 +109,37 @@ namespace ITServiceDeskApp.Controllers
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             _environment = environment;
+            _driverScoreSource = driverScoreSource;
         }
 
         public IActionResult Index()
         {
             return RedirectToAction(nameof(Dashboard));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DriverScore(DateTime? from, DateTime? to, string? driver, bool refresh = false, CancellationToken cancellationToken = default)
+        {
+            var source = await _driverScoreSource.GetAsync(cancellationToken, refresh);
+            var events = source.Events.Select(x => new DriverScoreEventViewModel(ParseDriverScoreDate(x.DateText), x.EventType, x.Driver.Trim(), x.Vehicle, x.Group, x.Location, x.Observation,
+                    x.Timely.Equals("A TIEMPO", StringComparison.OrdinalIgnoreCase), x.Coaching.Equals("Si", StringComparison.OrdinalIgnoreCase)))
+                .Where(x => (!from.HasValue || (x.Date?.Date >= from.Value.Date)) && (!to.HasValue || (x.Date?.Date <= to.Value.Date)) &&
+                    (string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)))
+                .OrderByDescending(x => x.Date).ToList();
+            var names = source.Events.Select(x => x.Driver.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            var ranking = events.GroupBy(x => x.Driver, StringComparer.OrdinalIgnoreCase).Select(g => new DriverScoreRankingViewModel(g.Key, g.Count(), g.Count(x => x.Timely), g.Count(x => x.Coaching), g.Select(x => x.Vehicle).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "—")).OrderByDescending(x => x.Events).Take(12).ToList();
+            var topDrivers = ranking.Select(x => x.Driver).Take(12).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var topTypes = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Take(8).Select(g => g.Key).ToList();
+            var heat = topDrivers.SelectMany(d => topTypes.Select(t => new { Driver = d, Event = t, Count = events.Count(x => x.Driver.Equals(d, StringComparison.OrdinalIgnoreCase) && x.EventType.Equals(t, StringComparison.OrdinalIgnoreCase)) })).ToList();
+            var maxHeat = Math.Max(1, heat.Max(x => x.Count));
+            var scorecards = source.Scores.Where(x => string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)).Select(x => new DriverScoreSummaryViewModel(x.Driver, x.Vehicle, x.Kilometers, x.Speeding + x.Fatigue + x.Distraction + x.PhoneUse + x.HarshBraking + x.HarshAcceleration, x.Status)).OrderByDescending(x => x.Events).Take(20).ToList();
+            return View(new DriverScoreViewModel { From = from, To = to, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards });
+        }
+
+        private static DateTime? ParseDriverScoreDate(string value)
+        {
+            var formats = new[] { "dd/MM/yyyy H:mm", "d/M/yyyy H:mm", "dd/MM/yyyy HH:mm", "d/M/yyyy HH:mm:ss" };
+            return DateTime.TryParseExact(value, formats, CultureInfo.GetCultureInfo("es-NI"), DateTimeStyles.AllowWhiteSpaces, out var result) || DateTime.TryParse(value, out result) ? result : null;
         }
 
         public IActionResult CalendarioOperativo(

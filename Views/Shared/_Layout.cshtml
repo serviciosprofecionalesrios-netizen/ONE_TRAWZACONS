@@ -1300,6 +1300,7 @@
     var opCalendarioActive = currentController == "Operaciones" && currentAction == "CalendarioOperativo";
     var opToneladasActive = currentController == "Operaciones" && currentAction == "SeguimientoToneladas";
     var opDieselActive = currentController == "Operaciones" && currentAction == "SeguimientoDiesel";
+    var opDriverScoreActive = currentController == "Operaciones" && currentAction == "DriverScore";
     var opReportesActive = currentController == "Operaciones" && currentAction == "Reportes";
 
     var mntDashboardActive =
@@ -1573,6 +1574,13 @@
                                    asp-action="SeguimientoDiesel">
                                     <span class="op-item-main"><i class="bi bi-fuel-pump-diesel"></i>Seguimiento de Diésel</span>
                                     <span class="op-item-badge badge-danger">Crítico</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="monitoreo" data-search="driver score conductores infracciones mapa calor seguridad">
+                                <a class="dropdown-item op-menu-item @(opDriverScoreActive ? "is-active" : "")"
+                                   asp-controller="Operaciones" asp-action="DriverScore">
+                                    <span class="op-item-main"><i class="bi bi-person-vcard"></i>Driver score</span>
+                                    <span class="op-item-badge">Nuevo</span>
                                 </a>
                             </li>
 
