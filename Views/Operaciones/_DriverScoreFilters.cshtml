@@ -1,0 +1,12 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.DriverScoreViewModel
+<form method="get" class="card shadow-sm border-0 mb-4" id="scoreFilterForm"><div class="card-body">
+<div class="d-flex gap-3 mb-3 flex-wrap"><label><input type="radio" name="dateMode" value="month" checked="@(!Model.UsingDateRange)"/> Mes completo</label><label><input type="radio" name="dateMode" value="range" checked="@Model.UsingDateRange"/> Día o rango de fechas</label></div>
+<div class="row g-3 align-items-end">
+<div class="col-md-3"><label for="scorePeriod" class="form-label fw-bold">Mes de análisis</label><select id="scorePeriod" class="form-select" name="period">@foreach(var item in Model.Periods){<option value="@item.Value" selected="@(Model.SelectedPeriod == item.Value)">@item.Label</option>}</select></div>
+<div class="col-md-2"><label for="scoreFrom" class="form-label fw-bold">Desde</label><input id="scoreFrom" class="form-control" type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")"/></div>
+<div class="col-md-2"><label for="scoreTo" class="form-label fw-bold">Hasta</label><input id="scoreTo" class="form-control" type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")"/></div>
+<div class="col-md-3"><label for="scoreDriver" class="form-label fw-bold">Conductor</label><select id="scoreDriver" class="form-select" name="driver"><option value="">Todos los conductores</option>@foreach(var item in Model.Drivers){<option value="@item" selected="@(Model.SelectedDriver == item)">@item</option>}</select></div>
+<div class="col-md-2 d-flex gap-2"><button class="btn btn-primary">Aplicar</button><a class="btn btn-outline-secondary" asp-action="DriverScore">Mes actual</a></div>
+</div><div class="small text-muted mt-3">Período activo: @Model.From?.ToString("dd/MM/yyyy") al @Model.To?.ToString("dd/MM/yyyy"). Para un solo día, selecciona la misma fecha en ambos campos. La gráfica anual conserva el año completo.</div>
+</div></form>
+<script>(()=>{const form=document.getElementById('scoreFilterForm');const from=form.querySelector('[name=from]');const to=form.querySelector('[name=to]');const period=form.querySelector('[name=period]');function update(){const range=form.querySelector('[name=dateMode]:checked').value==='range';from.disabled=to.disabled=!range;period.disabled=range;}form.querySelectorAll('[name=dateMode]').forEach(x=>x.addEventListener('change',update));update();})();</script>

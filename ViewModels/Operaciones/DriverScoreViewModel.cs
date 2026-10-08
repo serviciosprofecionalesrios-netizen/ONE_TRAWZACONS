@@ -2,6 +2,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones;
 
 public sealed class DriverScoreViewModel
 {
+    public bool UsingDateRange { get; init; }
     public DateTime? From { get; init; }
     public DateTime? To { get; init; }
     public string? SelectedDriver { get; init; }
@@ -49,6 +50,6 @@ public sealed record DriverScorePeriodOptionViewModel(string Value, string Label
 public sealed record DriverScoreHeatCellViewModel(string Driver, string EventType, int Count, int Level);
 public sealed record DriverScoreRankingViewModel(string Driver, int Events, int Timely, int Coaching, string Vehicle);
 public sealed record DriverScoreMapPointViewModel(decimal Latitude, decimal Longitude, string Driver, string EventType, string Vehicle, DateTime? Date, string Observation);
-public sealed record DriverScoreEventDistributionViewModel(string EventType, int Count, string Vehicles);
+public sealed record DriverScoreEventDistributionViewModel(string EventType, int Count, string Vehicles) { public IReadOnlyList<string> Involved { get; init; } = []; }
 public sealed record DriverScoreMonthlyEventViewModel(int Year, int Month, string EventType, int Count);
 public sealed record DriverScoreSummaryViewModel(string Driver, string Vehicle, decimal Kilometers, decimal Events, int Score, string Status);
