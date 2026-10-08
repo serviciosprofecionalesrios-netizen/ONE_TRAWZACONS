@@ -1293,7 +1293,7 @@
           string.Equals(queryArea, "Finanzas", StringComparison.OrdinalIgnoreCase) ||
           string.Equals(queryAreaFilter, "Finanzas", StringComparison.OrdinalIgnoreCase)));
 
-    var isHsMenuActive = currentController == "Hs" || hsControlDocumentosActive;
+    var isHsMenuActive = currentController == "Hs" || currentController == "HsDriverScore" || hsControlDocumentosActive;
 
     var usersListActive = currentController == "Users" && currentAction == "Index";
     var credentialsListActive = currentController == "Credentials" && currentAction == "Index";
@@ -2049,6 +2049,7 @@
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu">
                             <li><span class="menu-group-label">Gestion H&amp;S</span></li>
+                            <li><a class="dropdown-item op-menu-item @(currentController == "HsDriverScore" ? "is-active" : "")" asp-controller="HsDriverScore" asp-action="DriverScore"><span class="op-item-main"><i class="bi bi-shield-check"></i>Driver Score · Seguridad vial</span></a></li>
                             <li>
                                 <a class="dropdown-item op-menu-item @(hsDashboardActive ? "is-active" : "")"
                                    asp-controller="Hs"

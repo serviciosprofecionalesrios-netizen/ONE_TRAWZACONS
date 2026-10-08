@@ -61,7 +61,7 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
             UserAccessProfiles.OperationsEditor => controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase),
             UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter =>
                 isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
-                                  controller.Equals("Hs", StringComparison.OrdinalIgnoreCase)),
+                                  controller.Equals("Hs", StringComparison.OrdinalIgnoreCase) || controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase)),
             _ => false
         };
 
