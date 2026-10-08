@@ -1644,6 +1644,7 @@
                                                         @equipo.Equipo
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="fuera-ruta"><i class="bi bi-sign-turn-right me-2"></i>Fuera de Ruta</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
@@ -1674,6 +1675,7 @@
                                                         @equipo.Equipo
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="fuera-ruta"><i class="bi bi-sign-turn-right me-2"></i>Fuera de Ruta</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
@@ -1704,6 +1706,7 @@
                                                         @equipo.Equipo
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="fuera-ruta"><i class="bi bi-sign-turn-right me-2"></i>Fuera de Ruta</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
@@ -1743,6 +1746,7 @@
                                                         @equipo.Equipo
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="fuera-ruta"><i class="bi bi-sign-turn-right me-2"></i>Fuera de Ruta</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
@@ -1773,6 +1777,7 @@
                                                         @equipo.Equipo
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="fuera-ruta"><i class="bi bi-sign-turn-right me-2"></i>Fuera de Ruta</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
@@ -1803,6 +1808,7 @@
                                                         @equipo.Equipo
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="fuera-ruta"><i class="bi bi-sign-turn-right me-2"></i>Fuera de Ruta</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="carretera">Varado en Carretera</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-pct">En Taller - PCT</button></li>
                                                         <li><button class="dropdown-item js-mover-equipo" type="button" data-target-status="taller-psb">En Taller - PSB</button></li>
@@ -1826,6 +1832,7 @@
             </table>
         </div>
 
+        <div class="row g-3 mb-3"><div class="col-12"><div class="varado-panel border-secondary"><div class="varado-panel__title"><i class="bi bi-sign-turn-right me-2"></i>Equipos Fuera de Ruta (<span id="fuera-ruta-count">0</span>)</div><div class="equipos-chip-wrap" id="fuera-ruta-wrap"></div><div class="text-muted small mt-2" id="fuera-ruta-empty">Sin equipos fuera de ruta.</div></div></div></div>
         <div class="row g-3 varado-grid">
             <div class="col-lg-6">
                 <div class="varado-panel varado-panel--carretera">
@@ -1954,6 +1961,9 @@ else
     <script src="~/js/operaciones-seguimiento-toneladas-enhanced.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            var fueraRutaWrap = document.getElementById("fuera-ruta-wrap");
+            var fueraRutaCount = document.getElementById("fuera-ruta-count");
+            var fueraRutaEmpty = document.getElementById("fuera-ruta-empty");
             var carreteraWrap = document.getElementById("varado-carretera-wrap");
             var tallerPctWrap = document.getElementById("varado-taller-pct-wrap");
             var tallerPsbWrap = document.getElementById("varado-taller-psb-wrap");
@@ -2045,7 +2055,7 @@ else
                     return false;
                 }
 
-                return wrap === carreteraWrap || wrap.classList.contains("varado-taller-wrap");
+                return wrap === fueraRutaWrap || wrap === carreteraWrap || wrap.classList.contains("varado-taller-wrap");
             }
 
             function resolveTallerZoneFromChip(chipContainer) {
@@ -2108,6 +2118,9 @@ else
             }
 
             function refreshCounters() {
+                var fueraRutaTotal = countChips(fueraRutaWrap);
+                fueraRutaCount.textContent = fueraRutaTotal.toString();
+                fueraRutaEmpty.classList.toggle("d-none", fueraRutaTotal > 0);
                 var carreteraTotal = countChips(carreteraWrap);
                 var tallerTotal = tallerWraps.reduce(function (sum, wrap) {
                     return sum + countChips(wrap);
@@ -2166,7 +2179,9 @@ else
                         }
                     }
 
-                    if (status === "carretera") {
+                    if (status === "fuera-ruta") {
+                        fueraRutaWrap.appendChild(chipContainer);
+                    } else if (status === "carretera") {
                         carreteraWrap.appendChild(chipContainer);
                     } else {
                         var tallerDestino = resolveTallerWrapForStatus(status, chipContainer);
