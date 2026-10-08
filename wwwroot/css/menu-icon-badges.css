@@ -1,0 +1,22 @@
+.navbar .operations-menu .op-item-main > i.bi,
+.navbar .menu-text > i.bi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border-radius: .65rem;
+    background: linear-gradient(145deg, rgba(96,165,250,.2), rgba(37,99,235,.08));
+    border: 1px solid rgba(245,207,117,.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+.navbar .menu-text > i.bi { width: 1.65rem; height: 1.65rem; margin-right: .4rem; color: #f5cf75; border-radius: .5rem; }
+.navbar .operations-menu .op-menu-item:hover .op-item-main > i.bi,
+.navbar .operations-menu .op-menu-item.is-active .op-item-main > i.bi {
+    background: linear-gradient(145deg, rgba(96,165,250,.28), rgba(245,207,117,.12));
+    border-color: rgba(245,207,117,.6);
+}

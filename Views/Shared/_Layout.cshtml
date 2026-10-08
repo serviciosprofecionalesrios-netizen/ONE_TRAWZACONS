@@ -1173,6 +1173,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="~/css/menu-icon-badges.css" asp-append-version="true" />
 </head>
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
@@ -1482,7 +1483,7 @@
                                data-bs-toggle="dropdown"
                                data-dashboard-url="@(canSeeUsersMenu ? Url.Action("Index", "Users") : Url.Action("Index", "Credentials"))"
                                aria-expanded="false">
-                                <span class="menu-text">Usuarios</span><span class="menu-plus menu-plus-toggle">+</span>
+                                <span class="menu-text"><i class="bi bi-people" aria-hidden="true"></i>Usuarios</span><span class="menu-plus menu-plus-toggle">+</span>
                             </a>
                             <ul class="dropdown-menu area-menu operations-menu">
                                 @if (canSeeUsersMenu)
@@ -1531,7 +1532,7 @@
                            data-bs-toggle="dropdown"
                            data-dashboard-url="@Url.Action("Dashboard", "Operaciones")"
                            aria-expanded="false">
-                            <span class="menu-text">Operaciones</span><span class="menu-plus menu-plus-toggle">+</span>
+                            <span class="menu-text"><i class="bi bi-truck" aria-hidden="true"></i>Operaciones</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu" id="operacionesAreaMenu">
                             <li class="operations-search px-3">
@@ -1565,7 +1566,7 @@
                                 <a class="dropdown-item op-menu-item @(opToneladasActive ? "is-active" : "")"
                                    asp-controller="Operaciones"
                                    asp-action="SeguimientoToneladas">
-                                    <span class="op-item-main"><i class="bi bi-bar-chart-line"></i>Seguimiento de toneladas</span>
+                                    <span class="op-item-main"><i class="bi bi-truck-front" aria-hidden="true"></i>Seguimiento de toneladas</span>
                                 </a>
                             </li>
                             <li class="js-op-item" data-group="monitoreo" data-search="seguimiento diesel combustible consumo critico">
@@ -1579,7 +1580,7 @@
                             <li class="js-op-item" data-group="monitoreo" data-search="driver score conductores infracciones mapa calor seguridad">
                                 <a class="dropdown-item op-menu-item @(opDriverScoreActive ? "is-active" : "")"
                                    asp-controller="Operaciones" asp-action="DriverScore">
-                                    <span class="op-item-main"><i class="bi bi-person-vcard"></i>Driver score</span>
+                                    <span class="op-item-main"><i class="bi bi-shield-check" aria-hidden="true"></i>Driver score</span>
                                     <span class="op-item-badge">Nuevo</span>
                                 </a>
                             </li>
@@ -1634,7 +1635,7 @@
                            data-bs-toggle="dropdown"
                            data-dashboard-url="@Url.Action("Index", "Tickets", new { department = "Mantenimiento" })"
                            aria-expanded="false">
-                            <span class="menu-text">Mantenimiento</span><span class="menu-plus menu-plus-toggle">+</span>
+                            <span class="menu-text"><i class="bi bi-tools" aria-hidden="true"></i>Mantenimiento</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu maintenance-menu" id="mantenimientoAreaMenu" data-user="@User.Identity?.Name">
                             <li class="js-mnt-item" data-mnt-group="accesos" data-search="reparaciones equipo mecanico diagnostico taller" data-mnt-key="mnt-repairs">
@@ -1936,7 +1937,7 @@
                                data-bs-toggle="dropdown"
                                data-dashboard-url="@Url.Action("Dashboard", "Finance")"
                                aria-expanded="false">
-                                <span class="menu-text">Finanzas</span><span class="menu-plus menu-plus-toggle">+</span>
+                                <span class="menu-text"><i class="bi bi-cash-coin" aria-hidden="true"></i>Finanzas</span><span class="menu-plus menu-plus-toggle">+</span>
                             </a>
                             <ul class="dropdown-menu area-menu operations-menu">
                                 <li><span class="menu-group-label">Flujo financiero</span></li>
@@ -2043,7 +2044,7 @@
                            data-bs-toggle="dropdown"
                            data-dashboard-url="@Url.Action("Dashboard", "Hs")"
                            aria-expanded="false">
-                            <span class="menu-text">H&amp;S</span><span class="menu-plus menu-plus-toggle">+</span>
+                            <span class="menu-text"><i class="bi bi-shield-check" aria-hidden="true"></i>H&amp;S</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu">
                             <li><span class="menu-group-label">Gestion H&amp;S</span></li>
@@ -2130,14 +2131,14 @@
                            data-bs-toggle="dropdown"
                            data-dashboard-url="@Url.Action("Index", "InventoryHub")"
                            aria-expanded="false">
-                            <span class="menu-text">Inventario</span><span class="menu-plus menu-plus-toggle">+</span>
+                            <span class="menu-text"><i class="bi bi-box-seam" aria-hidden="true"></i>Inventario</span><span class="menu-plus menu-plus-toggle">+</span>
                         </a>
                         <ul class="dropdown-menu area-menu operations-menu">
                             <li><span class="menu-group-label">Almacén y compras</span></li>
                             <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="ComprasDashboard"><span class="op-item-main"><i class="bi bi-graph-up-arrow"></i>Dashboard de compras</span></a></li>
                             @foreach (var sheet in ITServiceDeskApp.Services.PublishedInventoryService.Sheets)
                             {
-                                <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key"><span class="op-item-main">@sheet.Name</span></a></li>
+                                <li><a class="dropdown-item op-menu-item" asp-controller="InventoryHub" asp-action="Fuente" asp-route-section="@sheet.Key"><span class="op-item-main"><i class="bi @(sheet.Key == "entradas" ? "bi-box-arrow-in-down" : sheet.Key == "salidas" ? "bi-box-arrow-up" : sheet.Key == "compras" ? "bi-receipt" : "bi-boxes")" aria-hidden="true"></i>@sheet.Name</span></a></li>
                             }
                             <li><hr class="dropdown-divider"></li>
                             <li><span class="menu-group-label">Inventarios</span></li>
