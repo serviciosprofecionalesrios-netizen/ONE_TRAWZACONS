@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Data.Common;
 using System.Net.Http.Headers;
@@ -196,7 +196,9 @@ namespace ITServiceDeskApp.Controllers
             if (evidence != null && (evidence.Length > 10 * 1024 * 1024 || !new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(Path.GetExtension(evidence.FileName).ToLowerInvariant())))
                 ModelState.AddModelError(string.Empty, "La evidencia debe ser PDF, PNG o JPG y no superar 10 MB.");
             if (!ModelState.IsValid) return View(CreateDriverScoreEventForm(source, model));
-            _context.DriverScoreManualEvents.Add(new DriverScoreManualEvent { EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = model.TimelyManaged, CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name });
+            var registeredAtUtc = DateTime.UtcNow;
+            var registeredAtNicaragua = registeredAtUtc.AddHours(-6);
+            _context.DriverScoreManualEvents.Add(new DriverScoreManualEvent { CreatedAt = registeredAtUtc, EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = registeredAtNicaragua <= model.EventAt.AddMinutes(10), CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name });
             try
             {
                 if (evidence != null)
@@ -220,7 +222,7 @@ namespace ITServiceDeskApp.Controllers
 
         private static DriverScoreEventCreateViewModel CreateDriverScoreEventForm(DriverScoreSourceResult source, DriverScoreEventCreateViewModel? model = null)
         {
-            model ??= new DriverScoreEventCreateViewModel();
+            model ??= new DriverScoreEventCreateViewModel { EventAt = DateTime.UtcNow.AddHours(-6) };
             model.Drivers = source.Scores.Select(x => x.Driver).Concat(source.Events.Select(x => x.Driver)).Where(x => !string.IsNullOrWhiteSpace(x) && !x.Equals("Sin Conductor", StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.Vehicles = source.Scores.Select(x => x.Vehicle).Concat(source.Events.Select(x => x.Vehicle)).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.EventTypes = source.Events.Select(x => x.EventType).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();

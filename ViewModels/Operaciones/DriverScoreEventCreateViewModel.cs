@@ -12,7 +12,7 @@ public sealed class DriverScoreEventCreateViewModel
     [Display(Name = "Grupo")] public string? Group { get; set; }
     [Display(Name = "Ubicación (latitud, longitud)")] public string? Location { get; set; }
     [Display(Name = "Descripción u observación")] public string? Observation { get; set; }
-    [Display(Name = "Gestionado a tiempo")] public bool TimelyManaged { get; set; }
+
     [Display(Name = "Se realizó coaching")] public bool CoachingCompleted { get; set; }
     public IReadOnlyList<string> Drivers { get; set; } = [];
     public IReadOnlyList<string> Vehicles { get; set; } = [];
