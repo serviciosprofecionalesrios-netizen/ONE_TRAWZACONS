@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net;
+using System.Data.Common;
 using System.Net.Http.Headers;
 using System.Net.Mail;
 using System.Text;
@@ -121,7 +122,15 @@ namespace ITServiceDeskApp.Controllers
         public async Task<IActionResult> DriverScore(string? period, DateTime? from, DateTime? to, string? driver, bool refresh = false, CancellationToken cancellationToken = default)
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken, refresh);
-            var manualEvents = await _context.DriverScoreManualEvents.AsNoTracking().ToListAsync(cancellationToken);
+            var manualEvents = new List<DriverScoreManualEvent>();
+            try
+            {
+                manualEvents = await _context.DriverScoreManualEvents.AsNoTracking().ToListAsync(cancellationToken);
+            }
+            catch (DbException ex)
+            {
+                _logger.LogWarning(ex, "La tabla de infracciones manuales aún no está disponible.");
+            }
             var allEvents = source.Events.Select(x => new DriverScoreEventViewModel(ParseDriverScoreDate(x.DateText), x.EventType, x.Driver.Trim(), x.Vehicle, x.Group, x.Location, x.Observation,
                     x.Timely.Equals("A TIEMPO", StringComparison.OrdinalIgnoreCase), x.Coaching.Equals("Si", StringComparison.OrdinalIgnoreCase)))
                 .Concat(manualEvents.Select(x => new DriverScoreEventViewModel(x.EventAt, x.EventType, x.Driver, x.Vehicle, x.Group ?? string.Empty, x.Location ?? string.Empty, x.Observation ?? string.Empty, x.TimelyManaged, x.CoachingCompleted)))
@@ -142,7 +151,7 @@ namespace ITServiceDeskApp.Controllers
             var topDrivers = ranking.Select(x => x.Driver).Take(12).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var topTypes = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Take(8).Select(g => g.Key).ToList();
             var heat = topDrivers.SelectMany(d => topTypes.Select(t => new { Driver = d, Event = t, Count = events.Count(x => x.Driver.Equals(d, StringComparison.OrdinalIgnoreCase) && x.EventType.Equals(t, StringComparison.OrdinalIgnoreCase)) })).ToList();
-            var maxHeat = Math.Max(1, heat.Max(x => x.Count));
+            var maxHeat = Math.Max(1, heat.Select(x => x.Count).DefaultIfEmpty(0).Max());
             var profiles = source.Scores
                 .GroupBy(x => string.IsNullOrWhiteSpace(x.Vehicle) ? x.Driver.Trim() : x.Vehicle.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(x => x.First()).ToList();
@@ -185,7 +194,15 @@ namespace ITServiceDeskApp.Controllers
             var source = await _driverScoreSource.GetAsync(cancellationToken);
             if (!ModelState.IsValid) return View(CreateDriverScoreEventForm(source, model));
             _context.DriverScoreManualEvents.Add(new DriverScoreManualEvent { EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = model.TimelyManaged, CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name });
-            await _context.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError(string.Empty, "La base de datos todavía está preparando el registro de infracciones. Intenta nuevamente en unos minutos.");
+                return View(CreateDriverScoreEventForm(source, model));
+            }
             TempData["DriverScoreOk"] = "La infracción fue registrada correctamente.";
             return RedirectToAction(nameof(DriverScore), new { period = model.EventAt.ToString("yyyy-MM") });
         }
