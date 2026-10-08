@@ -23,7 +23,7 @@ using QRCoder;
 namespace ITServiceDeskApp.Controllers
 {
     [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
-    public class OperacionesController : Controller
+    public partial class OperacionesController : Controller
     {
         private const decimal LitrosPorGalon = 3.78541m;
         private const string ControlDocumentosOverridesFileName = "ControlDocumentosOverrides.json";
@@ -133,7 +133,7 @@ namespace ITServiceDeskApp.Controllers
             }
             var allEvents = source.Events.Select(x => new DriverScoreEventViewModel(ParseDriverScoreDate(x.DateText), x.EventType, x.Driver.Trim(), x.Vehicle, x.Group, x.Location, x.Observation,
                     x.Timely.Equals("A TIEMPO", StringComparison.OrdinalIgnoreCase), x.Coaching.Equals("Si", StringComparison.OrdinalIgnoreCase)))
-                .Concat(manualEvents.Select(x => new DriverScoreEventViewModel(x.EventAt, x.EventType, x.Driver, x.Vehicle, x.Group ?? string.Empty, x.Location ?? string.Empty, x.Observation ?? string.Empty, x.TimelyManaged, x.CoachingCompleted)))
+                .Concat(manualEvents.Select(x => new DriverScoreEventViewModel(x.EventAt, x.EventType, x.Driver, x.Vehicle, x.Group ?? string.Empty, x.Location ?? string.Empty, x.Observation ?? string.Empty, x.TimelyManaged, x.CoachingCompleted) { ManualId = x.Id, HasEvidence = x.CoachingEvidenceName != null }))
                 .ToList();
             var availablePeriods = allEvents.Where(x => x.Date.HasValue).Select(x => new DateTime(x.Date!.Value.Year, x.Date.Value.Month, 1)).Distinct().OrderByDescending(x => x).ToList();
             if (string.IsNullOrWhiteSpace(period)) period = DateTime.Today.ToString("yyyy-MM");
@@ -169,15 +169,26 @@ namespace ITServiceDeskApp.Controllers
                 var item = group.Value.First();
                 profileRows.Add(new DriverScoreSummaryViewModel(item.Driver, item.Vehicle, 0m, group.Value.Count, group.Value.Count, DriverScoreStatus(group.Value.Count)));
             }
+            var tonnageRows = new List<SeguimientoToneladasRowViewModel>();
+            string? distanceWarning = null;
+            try { tonnageRows = _operacionesSeguimientoStore.Get()?.Rows ?? []; }
+            catch (DbException ex) { _logger.LogWarning(ex, "No se pudo consultar la distancia estimada desde toneladas."); distanceWarning = "Los kilómetros de toneladas no están disponibles; no se calcula la tasa de esos conductores."; }
+            profileRows = profileRows.Select(profile => { var km = DriverScoreDistanceService.Estimate(tonnageRows, profile.Driver, from, to); return profile with { Kilometers = km }; }).ToList();
             var scorecards = profileRows
                 .Where(x => string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase) || events.Any(e => e.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase) && e.Vehicle.Equals(x.Vehicle, StringComparison.OrdinalIgnoreCase)))
-                .OrderByDescending(x => x.Score).ThenBy(x => x.Driver).Take(30).ToList();
+                .OrderByDescending(x => x.Score).ThenBy(x => x.Driver).ToList();
             var mapPoints = events.Select(x => TryParseDriverScoreLocation(x.Location, out var latitude, out var longitude)
                     ? new DriverScoreMapPointViewModel(latitude, longitude, x.Driver, x.EventType, x.Vehicle, x.Date, x.Observation) : null)
                 .Where(x => x is not null).Cast<DriverScoreMapPointViewModel>().ToList();
             var distribution = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).Select(g => new DriverScoreEventDistributionViewModel(g.Key, g.Count(), string.Join(", ", g.Select(x => x.Vehicle).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).Take(4)))).OrderByDescending(x => x.Count).Take(10).ToList();
             var monthlyEvents = allEvents.Where(x => x.Date?.Year == from?.Year && (string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase))).GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month, x.EventType }).Select(g => new DriverScoreMonthlyEventViewModel(g.Key.Year, g.Key.Month, g.Key.EventType, g.Count())).OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
-            return View(new DriverScoreViewModel { From = from, To = to, SelectedPeriod = period, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Periods = availablePeriods.Select(x => new DriverScorePeriodOptionViewModel(x.ToString("yyyy-MM"), x.ToString("MMMM yyyy", EsCulture))).ToList(), Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards, MapPoints = mapPoints, EventDistribution = distribution, MonthlyEvents = monthlyEvents });
+            var cases = new Dictionary<string, DriverScoreCase>();
+            try { cases = await _context.DriverScoreCases.AsNoTracking().Select(x => new DriverScoreCase { EventKey = x.EventKey, Status = x.Status, Responsible = x.Responsible, Notes = x.Notes, EvidenceName = x.EvidenceName, UpdatedAt = x.UpdatedAt, UpdatedBy = x.UpdatedBy }).ToDictionaryAsync(x => x.EventKey, cancellationToken); }
+            catch (DbException ex) { _logger.LogWarning(ex, "Seguimiento de casos todavía no disponible."); }
+            var previousMonth = (from ?? DateTime.Today).AddMonths(-1);
+            var previousCount = allEvents.Count(x => x.Date?.Year == previousMonth.Year && x.Date?.Month == previousMonth.Month && (string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)));
+            var repeats = events.GroupBy(x => new { x.Driver, x.Vehicle, x.EventType }).Select(g => { var coaching = allEvents.Where(x => x.Driver.Equals(g.Key.Driver, StringComparison.OrdinalIgnoreCase) && x.EventType.Equals(g.Key.EventType, StringComparison.OrdinalIgnoreCase) && x.Coaching && x.Date.HasValue && x.Date < g.Max(e => e.Date)).OrderByDescending(x => x.Date).FirstOrDefault(); return coaching == null ? null : new DriverScoreRepeatViewModel(g.Key.Driver, g.Key.Vehicle, g.Key.EventType, g.Count(x => x.Date > coaching.Date), coaching.Date!.Value); }).Where(x => x != null && x.Count > 0).Cast<DriverScoreRepeatViewModel>().OrderByDescending(x => x.Count).ToList();
+            return View(new DriverScoreViewModel { DistanceWarning = distanceWarning, Cases = cases, AllPeriodEvents = events, PreviousMonthEvents = previousCount, RepeatedAfterCoaching = repeats, History = string.IsNullOrWhiteSpace(driver) ? [] : allEvents.Where(x => x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.Date).ToList(), From = from, To = to, SelectedPeriod = period, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Periods = availablePeriods.Append(new DateTime((from ?? DateTime.Today).Year, (from ?? DateTime.Today).Month, 1)).Distinct().OrderByDescending(x => x).Select(x => new DriverScorePeriodOptionViewModel(x.ToString("yyyy-MM"), x.ToString("MMMM yyyy", EsCulture))).ToList(), Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards, MapPoints = mapPoints, EventDistribution = distribution, MonthlyEvents = monthlyEvents });
         }
 
         [HttpGet]
