@@ -29,6 +29,9 @@
 .module-banner.module-banner .btn { border-radius: 10px; }
 .module-banner.module-banner .inventory-total { color: #fff; }
 .module-banner.module-banner .inventory-total span { color: #e1eaff; }
+.inventory-heading.module-banner.module-banner { justify-content: flex-start; }
+.inventory-heading.module-banner > div:not(.inventory-symbol):not(.inventory-total) { flex: 1 1 250px; min-width: 0; }
+.inventory-heading.module-banner .inventory-symbol { margin-right: 0; }
 .driver-score-ui .score-hero .score-actions {
     display: flex !important; flex-direction: row; flex-wrap: wrap; width: auto; max-width: 100%; flex-shrink: 0;
 }
