@@ -14,6 +14,8 @@ public class DriverScoreManualEvent
     [MaxLength(1000)] public string? Observation { get; set; }
     public bool TimelyManaged { get; set; }
     public bool CoachingCompleted { get; set; }
+    public byte[]? CoachingEvidence { get; set; }
+    [MaxLength(255)] public string? CoachingEvidenceName { get; set; }
     [MaxLength(150)] public string? RegisteredBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

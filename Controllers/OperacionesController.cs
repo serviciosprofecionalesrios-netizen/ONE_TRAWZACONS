@@ -176,7 +176,7 @@ namespace ITServiceDeskApp.Controllers
                     ? new DriverScoreMapPointViewModel(latitude, longitude, x.Driver, x.EventType, x.Vehicle, x.Date, x.Observation) : null)
                 .Where(x => x is not null).Cast<DriverScoreMapPointViewModel>().ToList();
             var distribution = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).Select(g => new DriverScoreEventDistributionViewModel(g.Key, g.Count(), string.Join(", ", g.Select(x => x.Vehicle).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).Take(4)))).OrderByDescending(x => x.Count).Take(10).ToList();
-            var monthlyEvents = events.Where(x => x.Date.HasValue).GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month, x.EventType }).Select(g => new DriverScoreMonthlyEventViewModel(g.Key.Year, g.Key.Month, g.Key.EventType, g.Count())).OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
+            var monthlyEvents = allEvents.Where(x => x.Date?.Year == from?.Year && (string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase))).GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month, x.EventType }).Select(g => new DriverScoreMonthlyEventViewModel(g.Key.Year, g.Key.Month, g.Key.EventType, g.Count())).OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
             return View(new DriverScoreViewModel { From = from, To = to, SelectedPeriod = period, SelectedDriver = driver, Warning = source.Warning, RetrievedAt = source.RetrievedAt, Drivers = names, Periods = availablePeriods.Select(x => new DriverScorePeriodOptionViewModel(x.ToString("yyyy-MM"), x.ToString("MMMM yyyy", EsCulture))).ToList(), Events = events.Take(100).ToList(), TotalEvents = events.Count, DriversWithEvents = events.Select(x => x.Driver).Distinct(StringComparer.OrdinalIgnoreCase).Count(), TimelyManaged = events.Count(x => x.Timely), CoachingCompleted = events.Count(x => x.Coaching), Rankings = ranking, HeatMap = heat.Select(x => new DriverScoreHeatCellViewModel(x.Driver, x.Event, x.Count, (int)Math.Ceiling(x.Count * 5m / maxHeat))).ToList(), Scorecards = scorecards, MapPoints = mapPoints, EventDistribution = distribution, MonthlyEvents = monthlyEvents });
         }
 
@@ -192,10 +192,21 @@ namespace ITServiceDeskApp.Controllers
         public async Task<IActionResult> NuevaInfraccion(DriverScoreEventCreateViewModel model, CancellationToken cancellationToken)
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken);
+            var evidence = model.CoachingCompleted ? model.CoachingEvidence : null;
+            if (evidence != null && (evidence.Length > 10 * 1024 * 1024 || !new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(Path.GetExtension(evidence.FileName).ToLowerInvariant())))
+                ModelState.AddModelError(string.Empty, "La evidencia debe ser PDF, PNG o JPG y no superar 10 MB.");
             if (!ModelState.IsValid) return View(CreateDriverScoreEventForm(source, model));
             _context.DriverScoreManualEvents.Add(new DriverScoreManualEvent { EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = model.TimelyManaged, CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name });
             try
             {
+                if (evidence != null)
+                {
+                    using var buffer = new MemoryStream();
+                    await evidence.CopyToAsync(buffer, cancellationToken);
+                    var entry = _context.ChangeTracker.Entries<DriverScoreManualEvent>().Single(x => x.State == EntityState.Added).Entity;
+                    entry.CoachingEvidence = buffer.ToArray();
+                    entry.CoachingEvidenceName = Path.GetFileName(evidence.FileName);
+                }
                 await _context.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException)

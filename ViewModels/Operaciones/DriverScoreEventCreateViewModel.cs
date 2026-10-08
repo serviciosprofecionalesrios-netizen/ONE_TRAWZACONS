@@ -4,7 +4,8 @@ namespace ITServiceDeskApp.ViewModels.Operaciones;
 
 public sealed class DriverScoreEventCreateViewModel
 {
-    [Required] public DateTime EventAt { get; set; } = DateTime.Now;
+    [Required, Display(Name = "Fecha y hora del evento")] public DateTime EventAt { get; set; } = DateTime.Now;
+    public IFormFile? CoachingEvidence { get; set; }
     [Required, Display(Name = "Conductor")] public string Driver { get; set; } = string.Empty;
     [Required, Display(Name = "Unidad")] public string Vehicle { get; set; } = string.Empty;
     [Required, Display(Name = "Tipo de infracción")] public string EventType { get; set; } = string.Empty;
