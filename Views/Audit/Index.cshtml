@@ -1,7 +1,7 @@
 @model IReadOnlyList<ITServiceDeskApp.Models.FinanceAuditLog>
 @{ ViewData["Title"] = "Auditoría"; var module = ViewBag.Module as string; }
 <div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="module-banner page-title-ribbon"><i class="bi bi-journal-check" aria-hidden="true"></i><span>Auditoría</span></h2><a class="btn btn-outline-primary" asp-action="Index">Todos los módulos</a></div>
+  <div class="d-flex justify-content-between align-items-center mb-3 module-banner"><h2 class=""><i class="bi bi-journal-check" aria-hidden="true"></i><span>Auditoría</span></h2><a class="btn btn-outline-primary" asp-action="Index">Todos los módulos</a></div>
   <div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Usuario</th><th>Detalle</th></tr></thead><tbody>
   @foreach (var item in Model) { <tr><td>@item.PerformedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td>@item.EntityName</td><td>@item.Action</td><td>@item.PerformedBy</td><td>@item.Details</td></tr> }
   @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-4">No hay movimientos registrados.</td></tr> }
