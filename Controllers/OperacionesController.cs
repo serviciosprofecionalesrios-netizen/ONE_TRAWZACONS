@@ -181,10 +181,10 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> NuevaInfraccion(CancellationToken cancellationToken)
+        public async Task<IActionResult> NuevaInfraccion(CancellationToken cancellationToken, string? vehicle = null, string? driver = null)
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken);
-            return View(CreateDriverScoreEventForm(source));
+            return View(CreateDriverScoreEventForm(source, new DriverScoreEventCreateViewModel { EventAt = DateTime.UtcNow.AddHours(-6), Vehicle = vehicle?.Trim() ?? string.Empty, Driver = driver?.Trim() ?? string.Empty }));
         }
 
         [HttpPost]
