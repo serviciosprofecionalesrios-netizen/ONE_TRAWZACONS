@@ -7,7 +7,7 @@
 }
 
 <div class="container mt-4" style="max-width:920px;">
-    <h3>@ViewData["Title"]</h3>
+    <h3 class="module-banner page-title-ribbon"><i class="bi bi-shield-check" aria-hidden="true"></i><span>@ViewData["Title"]</span></h3>
     <div class="card shadow-sm"><div class="card-body">
         <form asp-action="InspectionEdit" method="post">
             @Html.AntiForgeryToken()

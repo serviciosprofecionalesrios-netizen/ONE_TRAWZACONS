@@ -1,7 +1,7 @@
 <link rel="stylesheet" href="~/css/driver-score-icons.css" asp-append-version="true" />
 @model ITServiceDeskApp.ViewModels.Operaciones.DriverScoreCasesViewModel
 @{ ViewData["Title"] = "Seguimiento de casos"; }
-<div class="container py-4 driver-score-ui"><div class="d-flex justify-content-between mb-3"><h2>Seguimiento de casos · @Model.Period</h2><a class="btn btn-outline-primary" asp-action="DriverScore" asp-route-period="@Model.Period" asp-route-driver="@Model.Driver" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")">Volver a Driver Score</a></div>
+<div class="container py-4 driver-score-ui"><div class="d-flex justify-content-between mb-3"><h2 class="module-banner page-title-ribbon"><i class="bi bi-truck-front" aria-hidden="true"></i><span>Seguimiento de casos · @Model.Period</span></h2><a class="btn btn-outline-primary" asp-action="DriverScore" asp-route-period="@Model.Period" asp-route-driver="@Model.Driver" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")">Volver a Driver Score</a></div>
 @if(TempData["DriverScoreCaseError"] is string error){<div class="alert alert-warning">@error</div>}
 @if(TempData["DriverScoreOk"] is string message){<div class="alert alert-success">@message</div>}
 <p>En seguimiento requiere responsable. Para cerrar adjunta evidencia PDF o imagen (máximo 10 MB). Se muestran todos los eventos del período.</p>

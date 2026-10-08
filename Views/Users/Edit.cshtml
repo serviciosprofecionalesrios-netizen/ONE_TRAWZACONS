@@ -1,4 +1,4 @@
-﻿@model ITServiceDeskApp.ViewModels.Users.UserEditViewModel
+@model ITServiceDeskApp.ViewModels.Users.UserEditViewModel
 @using System.Linq
 @using Microsoft.AspNetCore.Mvc.Rendering
 
@@ -8,7 +8,7 @@
 
 <div class="container mt-4">
     <div class="card shadow-sm border-0 p-4">
-        <h3 class="mb-1">Editar Usuario</h3>
+        <h3 class="mb-1 module-banner page-title-ribbon"><i class="bi bi-people" aria-hidden="true"></i><span>Editar Usuario</span></h3>
         <small class="text-muted">Actualiza datos del usuario conservando el formulario base.</small>
 
         <form asp-action="Edit" method="post" class="mt-3" novalidate>

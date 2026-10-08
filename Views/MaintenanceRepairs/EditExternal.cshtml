@@ -1,7 +1,7 @@
 @model ITServiceDeskApp.ViewModels.Maintenance.ExternalRepairEditViewModel
 @{ ViewData["Title"] = "Editar reparación externa"; }
 <div class="container mt-4" style="max-width:900px">
-    <div class="card shadow-sm"><div class="card-header bg-primary text-white"><h4 class="mb-0">Editar reparación @Model.SourceRepairNumber</h4></div>
+    <div class="card shadow-sm"><div class="card-header bg-primary text-white"><h4 class="mb-0 module-banner page-title-ribbon"><i class="bi bi-tools" aria-hidden="true"></i><span>Editar reparación @Model.SourceRepairNumber</span></h4></div>
         <div class="card-body"><form asp-action="EditExternal" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input asp-for="SourceRepairNumber" type="hidden" /><input asp-for="DeliveryDocumentPath" type="hidden" />
