@@ -5,9 +5,9 @@
 }
 
 <div class="container-fluid mt-3">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 module-banner">
         <div>
-            <h2 class="mb-1">Dashboard Financiero</h2>
+            <h2 class="mb-1"><i class="bi bi-cash-coin" aria-hidden="true"></i>Dashboard Financiero</h2>
             <div class="text-muted">Control de presupuesto, aprobaciones, documentos y alertas.</div>
         </div>
         <a asp-action="Export" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" class="btn btn-success">

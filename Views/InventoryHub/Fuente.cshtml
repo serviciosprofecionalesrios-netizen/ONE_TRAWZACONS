@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="~/css/inventory-workspace.css" asp-append-version="true" />
 <div class="container-fluid inventory-workspace section-@Model.Sheet.Key">
     <a asp-action="Index" class="inventory-back">← Centro de inventario</a>
-    <header class="inventory-heading">
+    <header class="module-banner inventory-heading">
         <div class="inventory-symbol"><i class="bi @Model.Icon" aria-hidden="true"></i></div>
         <div><div class="inventory-eyebrow">GESTIÓN DE ALMACÉN</div><h2>@Model.Sheet.Name</h2><p>@Model.Description</p></div>
         <div class="inventory-total"><strong>@(Model.Source.Table?.Rows.Count.ToString("N0") ?? "—")</strong><span>registros</span></div>

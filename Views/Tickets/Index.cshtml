@@ -1,4 +1,4 @@
-﻿@model ITServiceDeskApp.ViewModels.Tickets.TicketsIndexViewModel
+@model ITServiceDeskApp.ViewModels.Tickets.TicketsIndexViewModel
 @using ITServiceDeskApp.Models
 @using System.Text.Json
 
@@ -481,9 +481,9 @@
 </style>
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 module-banner">
         <div>
-            <h2 class="fw-bold mb-1">@pageTitle</h2>
+            <h2 class="fw-bold mb-1"><i class="bi @(Model.IsMaintenanceView ? "bi-tools" : "bi-clipboard-check")" aria-hidden="true"></i>@pageTitle</h2>
             <small class="text-muted">@pageSubtitle</small>
         </div>
 
