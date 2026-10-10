@@ -1198,7 +1198,7 @@
     var accessProfile = string.IsNullOrWhiteSpace(currentEmail) ? null : UserAccessProfiles.Resolve(currentEmail);
     var hasManagedProfile = accessProfile is not null;
     var isConfiguredAdministrator = UserAccessProfiles.IsAdministrator(currentEmail);
-    var showUsersMenu = !hasManagedProfile && (canSeeUsersMenu || canSeeCredentialsMenu);
+    var showUsersMenu = (!hasManagedProfile || isConfiguredAdministrator) && (canSeeUsersMenu || canSeeCredentialsMenu);
     var showOperationsMenu = !hasManagedProfile || isConfiguredAdministrator ||
         accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsEditor or UserAccessProfiles.OperationsHsReporter;
     var showMaintenanceMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
