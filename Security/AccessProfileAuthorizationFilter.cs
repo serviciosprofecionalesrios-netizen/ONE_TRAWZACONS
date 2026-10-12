@@ -51,6 +51,9 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
 
         var isReadRequest = HttpMethods.IsGet(context.HttpContext.Request.Method) ||
                             HttpMethods.IsHead(context.HttpContext.Request.Method);
+        var isToneladasUpload = HttpMethods.IsPost(context.HttpContext.Request.Method) &&
+            controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
+            action.Equals("SeguimientoToneladas", StringComparison.OrdinalIgnoreCase);
 
         var permitted = profile switch
         {
@@ -60,8 +63,8 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
                  action.Equals("Dashboard", StringComparison.OrdinalIgnoreCase)),
             UserAccessProfiles.OperationsEditor => controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase),
             UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter =>
-                isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
-                                  controller.Equals("Hs", StringComparison.OrdinalIgnoreCase) || controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase)),
+                isToneladasUpload || (isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
+                                  controller.Equals("Hs", StringComparison.OrdinalIgnoreCase) || controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase))),
             _ => false
         };
 
