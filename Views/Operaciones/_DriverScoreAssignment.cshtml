@@ -1,0 +1,21 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.DriverScoreAssignmentFields
+@using ITServiceDeskApp.Services
+<div class="row g-3 driver-score-assignment">
+    <div class="col-md-5">
+        <label class="form-label fw-bold" for="site-@Model.Id">Sitio</label>
+        <select id="site-@Model.Id" name="@Model.SiteName" class="form-select assignment-site" required>
+            <option value="">Selecciona un sitio</option>
+            @foreach(var site in DriverScoreAssignmentCatalog.Sites){<option value="@site" selected="@(site == Model.Site)">@site</option>}
+        </select>
+    </div>
+    <div class="col-md-7">
+        <label class="form-label fw-bold" for="responsible-@Model.Id">Responsable</label>
+        <select id="responsible-@Model.Id" name="@Model.ResponsibleName" class="form-select assignment-responsible">
+            <option value="">Selecciona un responsable</option>
+            @foreach(var contact in DriverScoreAssignmentCatalog.Contacts)
+            {
+                <option value="@contact.Name" data-sites="@string.Join("|",contact.Sites)" selected="@(contact.Name == Model.Responsible)">@contact.Name (@contact.Email)</option>
+            }
+        </select>
+    </div>
+</div>

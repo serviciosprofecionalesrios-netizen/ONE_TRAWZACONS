@@ -10,11 +10,12 @@
 <form asp-action="SaveDriverScoreCase" method="post" enctype="multipart/form-data" class="card mb-3"><div class="card-header"><strong>@e.Driver · @e.Vehicle</strong> | @e.EventType | @e.Date?.ToString("dd/MM/yyyy HH:mm")</div><div class="card-body row g-3">
 <input type="hidden" name="from" value="@Model.From?.ToString("yyyy-MM-dd")"/><input type="hidden" name="to" value="@Model.To?.ToString("yyyy-MM-dd")"/><input type="hidden" name="eventKey" value="@e.CaseKey"/><input type="hidden" name="period" value="@Model.Period"/><input type="hidden" name="driver" value="@Model.Driver"/>
 <div class="col-md-3"><label class="form-label" for="status-@e.CaseKey">Estado</label><select id="status-@e.CaseKey" class="form-select" name="status">@foreach(var state in new[] { "Pendiente", "En seguimiento", "Cerrado" }){<option selected="@(state == currentStatus)">@state</option>}</select></div>
-<div class="col-md-4"><label class="form-label" for="responsible-@e.CaseKey">Responsable</label><input id="responsible-@e.CaseKey" class="form-control" name="responsible" maxlength="150" value="@item?.Responsible"/></div>
+<div class="col-md-9">@await Html.PartialAsync("~/Views/Operaciones/_DriverScoreAssignment.cshtml", new ITServiceDeskApp.ViewModels.Operaciones.DriverScoreAssignmentFields("site", "responsible", item?.Site, item?.Responsible, e.CaseKey))</div>
 <div class="col-md-5"><label class="form-label" for="evidence-@e.CaseKey">Evidencia de cierre</label><input id="evidence-@e.CaseKey" class="form-control" type="file" name="evidence" accept=".pdf,.png,.jpg,.jpeg"/>@if(item?.EvidenceName != null){<a asp-action="DriverScoreCaseEvidence" asp-route-eventKey="@e.CaseKey">@item.EvidenceName</a>}</div>
 <div class="col-12"><label class="form-label" for="notes-@e.CaseKey">Acciones y observaciones</label><textarea id="notes-@e.CaseKey" class="form-control" name="notes" maxlength="1000">@item?.Notes</textarea></div>
 <div class="col-12"><button class="btn btn-primary">Guardar seguimiento</button>@if(item != null){<small class="ms-3 text-muted">Última actualización: @item.UpdatedAt.AddHours(-6).ToString("dd/MM/yyyy HH:mm") · @item.UpdatedBy</small>}</div>
 </div></form>}
 </div>
+<script src="~/js/driver-score-assignment.js" asp-append-version="true"></script>
 @if(!Model.Events.Any()){<div class="alert alert-info">No hay eventos en el período seleccionado.</div>}
 </div>

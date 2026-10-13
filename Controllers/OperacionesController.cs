@@ -185,7 +185,7 @@ namespace ITServiceDeskApp.Controllers
             var distribution = events.GroupBy(x => x.EventType, StringComparer.OrdinalIgnoreCase).Select(g => new DriverScoreEventDistributionViewModel(g.Key, g.Count(), string.Join(", ", g.Select(x => x.Vehicle).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase))) { Involved = g.GroupBy(x => new { x.Driver, x.Vehicle }).Select(x => $"{x.Key.Driver} · {x.Key.Vehicle}: {x.Count()}").OrderBy(x => x).ToList() }).OrderByDescending(x => x.Count).ToList();
             var monthlyEvents = allEvents.Where(x => x.Date?.Year == from?.Year && (string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase))).GroupBy(x => new { x.Date!.Value.Year, x.Date.Value.Month, x.EventType }).Select(g => new DriverScoreMonthlyEventViewModel(g.Key.Year, g.Key.Month, g.Key.EventType, g.Count())).OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
             var cases = new Dictionary<string, DriverScoreCase>();
-            try { cases = await _context.DriverScoreCases.AsNoTracking().Select(x => new DriverScoreCase { EventKey = x.EventKey, Status = x.Status, Responsible = x.Responsible, Notes = x.Notes, EvidenceName = x.EvidenceName, UpdatedAt = x.UpdatedAt, UpdatedBy = x.UpdatedBy }).ToDictionaryAsync(x => x.EventKey, cancellationToken); }
+            try { cases = await _context.DriverScoreCases.AsNoTracking().Select(x => new DriverScoreCase { EventKey = x.EventKey, Status = x.Status, Site = x.Site, Responsible = x.Responsible, Notes = x.Notes, EvidenceName = x.EvidenceName, UpdatedAt = x.UpdatedAt, UpdatedBy = x.UpdatedBy }).ToDictionaryAsync(x => x.EventKey, cancellationToken); }
             catch (DbException ex) { _logger.LogWarning(ex, "Seguimiento de casos todavía no disponible."); }
             var previousMonth = (from ?? DateTime.Today).AddMonths(-1);
             var previousEnd = usingDateRange ? (to ?? DateTime.Today).AddMonths(-1).Date : new DateTime(previousMonth.Year, previousMonth.Month, 1).AddMonths(1).AddDays(-1);
@@ -207,23 +207,45 @@ namespace ITServiceDeskApp.Controllers
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken);
             var evidence = model.CoachingCompleted ? model.CoachingEvidence : null;
+            if (!DriverScoreAssignmentCatalog.IsValid(model.Site, model.Responsible))
+                ModelState.AddModelError(string.Empty, "Selecciona un sitio y un responsable válido para ese sitio.");
+            if (!DriverScoreCasePolicy.CanSave(model.Status, model.Responsible, model.ClosureEvidence != null))
+                ModelState.AddModelError(string.Empty, "En seguimiento requiere responsable. Cerrado requiere responsable y evidencia de cierre.");
+            if (model.ClosureEvidence is { } closure && (closure.Length == 0 || closure.Length > 10 * 1024 * 1024 || !new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(Path.GetExtension(closure.FileName).ToLowerInvariant())))
+                ModelState.AddModelError(string.Empty, "La evidencia de cierre debe ser PDF, PNG o JPG, de hasta 10 MB.");
             if (evidence != null && (evidence.Length > 10 * 1024 * 1024 || !new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(Path.GetExtension(evidence.FileName).ToLowerInvariant())))
                 ModelState.AddModelError(string.Empty, "La evidencia debe ser PDF, PNG o JPG y no superar 10 MB.");
             if (!ModelState.IsValid) return View(CreateDriverScoreEventForm(source, model));
             var registeredAtUtc = DateTime.UtcNow;
             var registeredAtNicaragua = registeredAtUtc.AddHours(-6);
-            _context.DriverScoreManualEvents.Add(new DriverScoreManualEvent { CreatedAt = registeredAtUtc, EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = registeredAtNicaragua <= model.EventAt.AddMinutes(10), CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name });
             try
             {
+                await _context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+                {
+                _context.ChangeTracker.Clear();
+                var record = new DriverScoreManualEvent { CreatedAt = registeredAtUtc, EventAt = model.EventAt, Driver = model.Driver.Trim(), Vehicle = model.Vehicle.Trim(), EventType = model.EventType.Trim(), Group = model.Group?.Trim(), Location = model.Location?.Trim(), Observation = model.Observation?.Trim(), TimelyManaged = registeredAtNicaragua <= model.EventAt.AddMinutes(10), CoachingCompleted = model.CoachingCompleted, RegisteredBy = User.Identity?.Name };
+                _context.DriverScoreManualEvents.Add(record);
+                await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
                 if (evidence != null)
                 {
                     using var buffer = new MemoryStream();
                     await evidence.CopyToAsync(buffer, cancellationToken);
-                    var entry = _context.ChangeTracker.Entries<DriverScoreManualEvent>().Single(x => x.State == EntityState.Added).Entity;
-                    entry.CoachingEvidence = buffer.ToArray();
-                    entry.CoachingEvidenceName = Path.GetFileName(evidence.FileName);
+                    record.CoachingEvidence = buffer.ToArray();
+                    record.CoachingEvidenceName = Path.GetFileName(evidence.FileName);
                 }
                 await _context.SaveChangesAsync(cancellationToken);
+                var caseEvent = new DriverScoreEventViewModel(record.EventAt, record.EventType, record.Driver, record.Vehicle, record.Group ?? "", record.Location ?? "", record.Observation ?? "", record.TimelyManaged, record.CoachingCompleted) { ManualId = record.Id };
+                var caseRecord = new DriverScoreCase { EventKey = caseEvent.CaseKey, Site = model.Site, Status = model.Status, Responsible = model.Responsible, Notes = model.CaseNotes?.Trim(), UpdatedAt = registeredAtUtc, UpdatedBy = User.Identity?.Name };
+                if (model.ClosureEvidence != null)
+                {
+                    using var buffer = new MemoryStream();
+                    await model.ClosureEvidence.CopyToAsync(buffer, cancellationToken);
+                    caseRecord.Evidence = buffer.ToArray(); caseRecord.EvidenceName = Path.GetFileName(model.ClosureEvidence.FileName);
+                }
+                _context.DriverScoreCases.Add(caseRecord);
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                });
             }
             catch (DbUpdateException)
             {

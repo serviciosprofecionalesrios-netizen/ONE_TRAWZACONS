@@ -25,8 +25,8 @@ public sealed class HsDriverScoreController(IServiceProvider services) : Control
     public async Task<IActionResult> DriverScoreCases(string? period, string? driver, CancellationToken cancellationToken, DateTime? from = null, DateTime? to = null) =>
         ViewFromOperations(await Shared().DriverScoreCases(period, driver, cancellationToken, from, to), "DriverScoreCases");
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> SaveDriverScoreCase(string eventKey, string status, string? responsible, string? notes, IFormFile? evidence, string? period, string? driver, CancellationToken cancellationToken, DateTime? from = null, DateTime? to = null) =>
-        Shared().SaveDriverScoreCase(eventKey, status, responsible, notes, evidence, period, driver, cancellationToken, from, to);
+    public Task<IActionResult> SaveDriverScoreCase(string eventKey, string status, string? responsible, string? notes, IFormFile? evidence, string? period, string? driver, CancellationToken cancellationToken, DateTime? from = null, DateTime? to = null, string? site = null) =>
+        Shared().SaveDriverScoreCase(eventKey, status, responsible, notes, evidence, period, driver, cancellationToken, from, to, site);
     [HttpGet]
     public Task<IActionResult> DriverScorePdf(string? period, string? driver, CancellationToken cancellationToken, DateTime? from = null, DateTime? to = null) => Shared().DriverScorePdf(period, driver, cancellationToken, from, to);
     [HttpGet]
