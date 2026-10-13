@@ -1200,11 +1200,11 @@
     var isConfiguredAdministrator = UserAccessProfiles.IsAdministrator(currentEmail);
     var showUsersMenu = (!hasManagedProfile || isConfiguredAdministrator) && (canSeeUsersMenu || canSeeCredentialsMenu);
     var showOperationsMenu = !hasManagedProfile || isConfiguredAdministrator ||
-        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsEditor or UserAccessProfiles.OperationsHsReporter;
+        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsEditor or UserAccessProfiles.OperationsHsReporter or UserAccessProfiles.OperationsHsEditor;
     var showMaintenanceMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
     var showFinanceMenu = !hasManagedProfile || isConfiguredAdministrator;
     var showHsMenu = !hasManagedProfile || isConfiguredAdministrator ||
-        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter;
+        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter or UserAccessProfiles.OperationsHsEditor;
     var showInventoryMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
     var isFinanceRequester = isAuthenticated;
     var isFinanceApprover =

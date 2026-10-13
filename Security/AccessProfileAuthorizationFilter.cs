@@ -21,6 +21,8 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
 
         var profile = user.FindFirst(UserAccessProfiles.ClaimType)?.Value;
         var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        // Use the current configured permissions even when a session has an older profile claim.
+        if (!string.IsNullOrWhiteSpace(email)) profile = UserAccessProfiles.Resolve(email) ?? profile;
         var isConfiguredAdministrator = UserAccessProfiles.IsAdministrator(email);
         var controller = context.RouteData.Values["controller"]?.ToString() ?? string.Empty;
         if (controller.Equals("Account", StringComparison.OrdinalIgnoreCase))
@@ -62,6 +64,14 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
                 (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
                  action.Equals("Dashboard", StringComparison.OrdinalIgnoreCase)),
             UserAccessProfiles.OperationsEditor => controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase),
+            UserAccessProfiles.OperationsHsEditor =>
+                controller.Equals("Hs", StringComparison.OrdinalIgnoreCase) ||
+                controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase) ||
+                (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
+                 (isReadRequest || isToneladasUpload ||
+                  (HttpMethods.IsPost(context.HttpContext.Request.Method) &&
+                   (action.Equals("NuevaInfraccion", StringComparison.OrdinalIgnoreCase) ||
+                    action.Equals("SaveDriverScoreCase", StringComparison.OrdinalIgnoreCase))))),
             UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter =>
                 isToneladasUpload || (isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
                                   controller.Equals("Hs", StringComparison.OrdinalIgnoreCase) || controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase))),

@@ -8,6 +8,7 @@ public static class UserAccessProfiles
     public const string OperationsHsReadOnly = "OperationsHsReadOnly";
     public const string OperationsEditor = "OperationsEditor";
     public const string OperationsHsReporter = "OperationsHsReporter";
+    public const string OperationsHsEditor = "OperationsHsEditor";
 
     private static readonly HashSet<string> Administrators = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -21,7 +22,12 @@ public static class UserAccessProfiles
 
     private static readonly HashSet<string> OperationsHsReadOnlyUsers = new(StringComparer.OrdinalIgnoreCase)
     {
-        "roldanzamora@trawzacons.com", "leslieantonioespinoza@trawzacons.com"
+        "roldanzamora@trawzacons.com"
+    };
+
+    private static readonly HashSet<string> OperationsHsEditorUsers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "leslieantonioespinoza@trawzacons.com", "Espinozaleslieantonioespinoza@trawzacons.com"
     };
 
     private static readonly HashSet<string> OperationsEditorUsers = new(StringComparer.OrdinalIgnoreCase)
@@ -39,6 +45,7 @@ public static class UserAccessProfiles
     {
         if (Administrators.Contains(email)) return Administrator;
         if (InventoryMaintenanceUsers.Contains(email)) return InventoryMaintenance;
+        if (OperationsHsEditorUsers.Contains(email)) return OperationsHsEditor;
         if (OperationsHsReadOnlyUsers.Contains(email)) return OperationsHsReadOnly;
         if (OperationsEditorUsers.Contains(email)) return OperationsEditor;
         if (OperationsHsReporterUsers.Contains(email)) return OperationsHsReporter;
@@ -51,7 +58,7 @@ public static class UserAccessProfiles
     public static (string Controller, string Action) Home(string? profile) => profile switch
     {
         InventoryMaintenance => ("InventoryHub", "Index"),
-        OperationsHsReadOnly or OperationsEditor or OperationsHsReporter => ("Operaciones", "Dashboard"),
+        OperationsHsReadOnly or OperationsEditor or OperationsHsReporter or OperationsHsEditor => ("Operaciones", "Dashboard"),
         _ => ("Operaciones", "Dashboard")
     };
 }
