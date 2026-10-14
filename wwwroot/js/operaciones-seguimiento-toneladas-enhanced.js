@@ -157,15 +157,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function statusInfo(cumplimiento) {
-        if (cumplimiento >= 100) {
-            return { text: "Cumplida", css: "exec-status exec-status--ok" };
+        if (cumplimiento >= 70) {
+            return { text: "Desempeño favorable", css: "exec-status exec-status--ok" };
         }
 
-        if (cumplimiento >= 90) {
-            return { text: "En riesgo", css: "exec-status exec-status--warn" };
+        if (cumplimiento > 50) {
+            return { text: "Operación en seguimiento", css: "exec-status exec-status--warn" };
         }
 
-        return { text: "Critica", css: "exec-status exec-status--danger" };
+        return { text: "Operación crítica", css: "exec-status exec-status--danger" };
     }
 
     function getBounds(rangeKey) {
@@ -597,7 +597,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (statusEl) {
             statusEl.className = status.css;
             statusEl.textContent = status.text;
-            statusEl.title = "Según la meta del período: Cumplida ≥100%; En riesgo ≥90%; Crítica <90%.";
+            statusEl.title = "Según la meta del período: Operación crítica ≤50%; Operación en seguimiento >50% y <70%; Desempeño favorable ≥70%. La meta se cumple al alcanzar 100%.";
         }
 
         renderComparatives(bounds.to);
