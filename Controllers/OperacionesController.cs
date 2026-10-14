@@ -207,6 +207,8 @@ namespace ITServiceDeskApp.Controllers
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken);
             var evidence = model.CoachingCompleted ? model.CoachingEvidence : null;
+            if (model.CoachingCompleted && evidence == null)
+                ModelState.AddModelError(string.Empty, "Adjunta la evidencia si marcas que se realizó coaching.");
             if (string.IsNullOrWhiteSpace(model.Responsible)) ModelState.AddModelError(string.Empty, "Asigna un responsable para completar el paso 2.");
             if (model.Status != "Pendiente" || model.ClosureEvidence != null || !string.IsNullOrWhiteSpace(model.CaseNotes))
                 ModelState.AddModelError(string.Empty, "Primero registra el paso 1. El responsable asignado completa el seguimiento y cierre en el paso 2.");

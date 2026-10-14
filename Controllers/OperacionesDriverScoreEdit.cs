@@ -26,6 +26,7 @@ public partial class OperacionesController
     {
         if (!CanEditDriverScoreStepOne()) return Forbid();
         ModelState.Remove(nameof(model.Site));
+        ModelState.Remove(nameof(model.Responsible));
         if (model.Driver.Length > 160 || model.Vehicle.Length > 40 || model.EventType.Length > 120 || model.Group?.Length > 120 || model.Location?.Length > 80 || model.Observation?.Length > 1000)
             ModelState.AddModelError(string.Empty, "Uno de los campos supera la longitud permitida.");
         if (!ModelState.IsValid) { ViewData["ManualId"] = id; return View(model); }
