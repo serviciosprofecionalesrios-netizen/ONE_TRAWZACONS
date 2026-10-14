@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var metaDiariaTriton = Number(seed.metaDiariaTriton || 0);
     var metaMensualTriton = Number(seed.metaMensualTriton || 0);
+    var monthlyGoals = Array.isArray(seed.monthlyGoals) ? seed.monthlyGoals : [];
+    var defaultGoal = seed.defaultGoal || { daily: metaDiariaTriton, monthly: metaMensualTriton };
     var currentRange = "hoy";
     var currentCustomBounds = null;
     var customRangeFromInput = document.getElementById("customRangeFrom");
@@ -225,8 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .reduce(function (sum, item) { return sum + item.toneladas; }, 0);
         var pavonTon = 0;
         var totalTon = tritonTon;
-        var metaDays = Math.max(1, diffDaysInclusive(bounds.from, bounds.to));
-        var metaTriton = metaDiariaTriton * metaDays;
+        var metaTriton = ToneladasGoals.rangeGoal(bounds.from, bounds.to, monthlyGoals, defaultGoal);
         var metaPavon = 0;
         var metaTotal = metaTriton;
         var cumplimiento = metaTotal > 0 ? (totalTon / metaTotal) * 100 : 0;
@@ -372,12 +373,13 @@ document.addEventListener("DOMContentLoaded", function () {
         var realTotal = realTriton;
 
         var daysElapsed = anchorDate.getDate();
-        var expectedTriton = metaDiariaTriton * daysElapsed;
+        var monthGoal = ToneladasGoals.monthGoal(anchorDate, monthlyGoals, defaultGoal);
+        var expectedTriton = ToneladasGoals.rangeGoal(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1), anchorDate, monthlyGoals, defaultGoal);
         var expectedTotal = expectedTriton;
-        var metaMensualTotal = metaMensualTriton;
+        var metaMensualTotal = Number(monthGoal.monthly || 0);
 
         wrap.innerHTML = [
-            buildProgressItem("TRITON", realTriton, expectedTriton, metaMensualTriton),
+            buildProgressItem("TRITON", realTriton, expectedTriton, metaMensualTotal),
             buildProgressItem("TOTAL", realTotal, expectedTotal, metaMensualTotal)
         ].join("");
     }
@@ -595,6 +597,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (statusEl) {
             statusEl.className = status.css;
             statusEl.textContent = status.text;
+            statusEl.title = "Según la meta del período: Cumplida ≥100%; En riesgo ≥90%; Crítica <90%.";
         }
 
         renderComparatives(bounds.to);

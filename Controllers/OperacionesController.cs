@@ -3719,7 +3719,11 @@ namespace ITServiceDeskApp.Controllers
                     .Select(r => r.FechaEvento!.Value.Date)
                     .DefaultIfEmpty(DateTime.Now.Date)
                     .Max();
-            var metaObjetivo = ResolveMetaObjetivo(fechaReferencia);
+            var savedGoals = LoadOperacionesMetasProduccionMensual();
+            var metaObjetivo = ResolveMetaObjetivo(fechaReferencia, savedGoals);
+            ViewData["ToneladasMonthlyGoals"] = savedGoals.Select(x => new { x.Year, x.Month }).Distinct()
+                .Select(x => { var goal = ResolveMetaObjetivo(new DateTime(x.Year, x.Month, 1), savedGoals); return new { year = x.Year, month = x.Month, daily = goal.MetaDiariaTriton, monthly = goal.MetaMensualTriton }; }).ToList();
+            ViewData["ToneladasDefaultGoal"] = new { daily = DefaultMetaDiariaTritonObjetivo, monthly = DefaultMetaMensualTriton };
             model.MetaAnio = metaObjetivo.Year;
             model.MetaMes = metaObjetivo.Month;
             model.MetaMensualTriton = metaObjetivo.MetaMensualTriton;
@@ -3731,9 +3735,9 @@ namespace ITServiceDeskApp.Controllers
             model.MetaMensualPersonalizada = metaObjetivo.IsCustom;
         }
 
-        private OperacionesMetaObjetivo ResolveMetaObjetivo(DateTime fechaReferencia)
+        private OperacionesMetaObjetivo ResolveMetaObjetivo(DateTime fechaReferencia, List<OperacionesMetaProduccionMensualEntry>? savedGoals = null)
         {
-            var metas = ResolveMetasProduccionMensual(fechaReferencia);
+            var metas = ResolveMetasProduccionMensual(fechaReferencia, savedGoals);
             var metaMensualTriton = Math.Max(0m, metas.MetaMensualTriton);
             var metaMensualPavonAsm = 0m;
             var metaMensualTotal = Math.Round(metaMensualTriton, 1, MidpointRounding.AwayFromZero);
@@ -3781,9 +3785,9 @@ namespace ITServiceDeskApp.Controllers
             decimal MetaMensualPavonAsm,
             decimal MetaDiariaTritonObjetivo,
             decimal MetaDiariaPavonAsmObjetivo,
-            bool IsCustom) ResolveMetasProduccionMensual(DateTime fechaReferencia)
+            bool IsCustom) ResolveMetasProduccionMensual(DateTime fechaReferencia, List<OperacionesMetaProduccionMensualEntry>? savedGoals = null)
         {
-            var entries = LoadOperacionesMetasProduccionMensual();
+            var entries = savedGoals ?? LoadOperacionesMetasProduccionMensual();
             var item = entries
                 .Where(x => x.Year == fechaReferencia.Year && x.Month == fechaReferencia.Month)
                 .OrderByDescending(x => x.UpdatedAt)

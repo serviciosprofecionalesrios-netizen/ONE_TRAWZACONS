@@ -236,6 +236,8 @@
         fechaOperativa = Model.FechaOperativa?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         metaDiariaTriton,
         metaMensualTriton,
+        monthlyGoals = ViewData["ToneladasMonthlyGoals"],
+        defaultGoal = ViewData["ToneladasDefaultGoal"],
         sourceFileName = Model.SourceFileName ?? "Datos operativos",
         rows = analyticsRowsPayload
     };
@@ -1958,6 +1960,7 @@ else
 </div>
 
 @section Scripts {
+    <script src="~/js/operaciones-toneladas-goals.js" asp-append-version="true"></script>
     <script src="~/js/operaciones-seguimiento-toneladas-enhanced.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
