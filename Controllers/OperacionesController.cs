@@ -207,6 +207,9 @@ namespace ITServiceDeskApp.Controllers
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken);
             var evidence = model.CoachingCompleted ? model.CoachingEvidence : null;
+            if (string.IsNullOrWhiteSpace(model.Responsible)) ModelState.AddModelError(string.Empty, "Asigna un responsable para completar el paso 2.");
+            if (model.Status != "Pendiente" || model.ClosureEvidence != null || !string.IsNullOrWhiteSpace(model.CaseNotes))
+                ModelState.AddModelError(string.Empty, "Primero registra el paso 1. El responsable asignado completa el seguimiento y cierre en el paso 2.");
             if (!DriverScoreAssignmentCatalog.IsValid(model.Site, model.Responsible))
                 ModelState.AddModelError(string.Empty, "Selecciona un sitio y un responsable válido para ese sitio.");
             if (!DriverScoreCasePolicy.CanSave(model.Status, model.Responsible, model.ClosureEvidence != null))
@@ -253,7 +256,7 @@ namespace ITServiceDeskApp.Controllers
                 return View(CreateDriverScoreEventForm(source, model));
             }
             TempData["DriverScoreOk"] = "La infracción fue registrada correctamente.";
-            return RedirectToAction(nameof(DriverScore), new { period = model.EventAt.ToString("yyyy-MM") });
+            return RedirectToAction(nameof(DriverScoreCases), new { period = model.EventAt.ToString("yyyy-MM"), driver = model.Driver.Trim() });
         }
 
         private static DriverScoreEventCreateViewModel CreateDriverScoreEventForm(DriverScoreSourceResult source, DriverScoreEventCreateViewModel? model = null)

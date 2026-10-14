@@ -1,0 +1,18 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.DriverScoreEventCreateViewModel
+@{ ViewData["Title"] = "Editar paso 1"; }
+<div class="container py-4">
+<div class="module-banner mb-3"><h2><i class="bi bi-lock"></i>Editar paso 1 · Administrador</h2></div>
+<form asp-action="EditDriverScoreEvent" method="post" class="card p-4">
+<input type="hidden" name="id" value="@ViewData["ManualId"]"/>
+<div asp-validation-summary="All" class="text-danger"></div>
+<div class="row g-3">
+<div class="col-md-6"><label asp-for="EventAt" class="form-label"></label><input asp-for="EventAt" type="datetime-local" class="form-control"/></div>
+<div class="col-md-6"><label asp-for="EventType" class="form-label"></label><input asp-for="EventType" class="form-control" maxlength="120"/></div>
+<div class="col-md-6"><label asp-for="Driver" class="form-label"></label><input asp-for="Driver" class="form-control" maxlength="160"/></div>
+<div class="col-md-6"><label asp-for="Vehicle" class="form-label"></label><input asp-for="Vehicle" class="form-control" maxlength="40"/></div>
+<div class="col-md-6"><label asp-for="Group" class="form-label"></label><input asp-for="Group" class="form-control" maxlength="120"/></div>
+<div class="col-md-6"><label asp-for="Location" class="form-label"></label><input asp-for="Location" class="form-control" maxlength="80"/></div>
+<div class="col-12"><label asp-for="Observation" class="form-label"></label><textarea asp-for="Observation" class="form-control" maxlength="1000"></textarea></div>
+<div class="col-12 form-check ms-2"><input asp-for="CoachingCompleted" class="form-check-input"/><label asp-for="CoachingCompleted" class="form-check-label"></label></div>
+<div class="col-12"><button class="btn btn-primary">Guardar corrección del paso 1</button><a asp-action="DriverScoreCases" class="btn btn-outline-secondary ms-2">Cancelar</a></div>
+</div></form></div>

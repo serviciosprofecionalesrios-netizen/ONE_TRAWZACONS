@@ -14,4 +14,8 @@ public static class DriverScoreAssignmentCatalog
     ];
     public static bool IsValid(string? site, string? responsible) => Sites.Contains(site) &&
         (string.IsNullOrWhiteSpace(responsible) || Contacts.Any(x => x.Name == responsible && x.Sites.Contains(site)));
+    public static bool CanComplete(string? site, string? responsible, string? email) =>
+        IsValid(site, responsible) && Contacts.Any(x => x.Name == responsible &&
+            (x.Email.Equals(email?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+             (x.Name == "Leslie" && "leslieantonioespinoza@trawzacons.com".Equals(email?.Trim(), StringComparison.OrdinalIgnoreCase))));
 }

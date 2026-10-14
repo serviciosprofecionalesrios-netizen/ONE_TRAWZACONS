@@ -73,7 +73,9 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
                    (action.Equals("NuevaInfraccion", StringComparison.OrdinalIgnoreCase) ||
                     action.Equals("SaveDriverScoreCase", StringComparison.OrdinalIgnoreCase))))),
             UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter =>
-                isToneladasUpload || (isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
+                isToneladasUpload || (profile == UserAccessProfiles.OperationsHsReporter && HttpMethods.IsPost(context.HttpContext.Request.Method) && action.Equals("SaveDriverScoreCase", StringComparison.OrdinalIgnoreCase) &&
+                    (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) || controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase))) ||
+                (isReadRequest && (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) ||
                                   controller.Equals("Hs", StringComparison.OrdinalIgnoreCase) || controller.Equals("HsDriverScore", StringComparison.OrdinalIgnoreCase))),
             _ => false
         };

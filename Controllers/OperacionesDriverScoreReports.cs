@@ -24,6 +24,9 @@ public partial class OperacionesController
         if (result is not ViewResult { Model: DriverScoreViewModel model } || !model.AllPeriodEvents.Any(x => x.CaseKey == eventKey)) return BadRequest();
         if (!new[] { "Pendiente", "En seguimiento", "Cerrado" }.Contains(status) || responsible?.Length > 150 || notes?.Length > 1000) return BadRequest();
         var item = await _context.DriverScoreCases.FindAsync(new object[] { eventKey }, cancellationToken);
+        var administrator = ITServiceDeskApp.Security.UserAccessProfiles.IsAdministrator(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value);
+        if (!administrator && (item == null || !DriverScoreAssignmentCatalog.CanComplete(item.Site, item.Responsible, User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value))) return Forbid();
+        if (!administrator && (site != item!.Site || responsible != item.Responsible)) return Forbid();
         if (!DriverScoreAssignmentCatalog.IsValid(site, responsible))
         { TempData["DriverScoreCaseError"] = "Selecciona un sitio y un responsable válido para ese sitio."; return RedirectToAction(nameof(DriverScoreCases), new { period, driver, from, to }); }
         if (evidence != null && (evidence.Length == 0 || evidence.Length > 10 * 1024 * 1024 || !new[] { ".pdf", ".jpg", ".jpeg", ".png" }.Contains(Path.GetExtension(evidence.FileName).ToLowerInvariant())))
@@ -36,6 +39,18 @@ public partial class OperacionesController
         await _context.SaveChangesAsync(cancellationToken);
         TempData["DriverScoreOk"] = "Seguimiento del caso actualizado.";
         return RedirectToAction(nameof(DriverScoreCases), new { period, driver, from, to });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DriverScoreEventPdf(string eventKey, string? period, string? driver, bool closure = false, CancellationToken cancellationToken = default)
+    {
+        var result = await DriverScore(period, null, null, driver, cancellationToken: cancellationToken);
+        if (result is not ViewResult { Model: DriverScoreViewModel model }) return result;
+        var incident = model.AllPeriodEvents.SingleOrDefault(x => x.CaseKey == eventKey);
+        if (incident == null) return NotFound();
+        model.Cases.TryGetValue(eventKey, out var item);
+        if (closure && item?.Status != "Cerrado") return BadRequest("El paso 2 todavía no está completado.");
+        return File(DriverScoreEventPdfService.Generate(incident, item, closure), "application/pdf", $"DriverScore_{(closure ? "Cierre" : "Registro")}_{incident.Vehicle}_{incident.Date:yyyyMMdd}.pdf");
     }
 
     [HttpGet]

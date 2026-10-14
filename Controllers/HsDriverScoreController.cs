@@ -32,5 +32,8 @@ public sealed class HsDriverScoreController(IServiceProvider services) : Control
     [HttpGet]
     public Task<IActionResult> DriverScoreEvidence(int id, CancellationToken cancellationToken) => Shared().DriverScoreEvidence(id, cancellationToken);
     [HttpGet]
+    public Task<IActionResult> DriverScoreEventPdf(string eventKey, string? period, string? driver, bool closure = false, CancellationToken cancellationToken = default) =>
+        Shared().DriverScoreEventPdf(eventKey, period, driver, closure, cancellationToken);
+    [HttpGet]
     public Task<IActionResult> DriverScoreCaseEvidence(string eventKey, CancellationToken cancellationToken) => Shared().DriverScoreCaseEvidence(eventKey, cancellationToken);
 }
