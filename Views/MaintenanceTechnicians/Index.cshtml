@@ -15,7 +15,7 @@
     var availableCount = ViewBag.AvailableCount is int available ? available : rows.Count(x => x.IsAvailable);
     var unavailableCount = ViewBag.UnavailableCount is int unavailable ? unavailable : rows.Count(x => !x.IsAvailable);
     var activeLoads = ViewBag.ActiveLoads as IDictionary<string, int> ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-    var canManageTechnicians = User.IsInRole(nameof(UserRole.Administrator));
+    var canManageTechnicians = ITServiceDeskApp.Security.UserAccessProfiles.IsAdministrator(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value);
 }
 
 <div class="container mt-4">

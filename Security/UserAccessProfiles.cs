@@ -3,6 +3,10 @@ namespace ITServiceDeskApp.Security;
 public static class UserAccessProfiles
 {
     public const string ClaimType = "AccessProfile";
+    public const string BusinessRoleClaimType = "BusinessRole";
+    public const string MaintenanceEditor = "MaintenanceEditor";
+    public const string PurchasingEditor = "PurchasingEditor";
+    public const string SupervisorOperations = "SupervisorOperations";
     public const string Administrator = "Administrator";
     public const string InventoryMaintenance = "InventoryMaintenance";
     public const string OperationsHsReadOnly = "OperationsHsReadOnly";
@@ -55,9 +59,35 @@ public static class UserAccessProfiles
     public static bool IsAdministrator(string? email) =>
         !string.IsNullOrWhiteSpace(email) && Administrators.Contains(email.Trim());
 
+    public static string? Resolve(string email, string? role)
+    {
+        if (IsAdministrator(email)) return Administrator;
+        if (role == nameof(ITServiceDeskApp.Models.UserRole.GerenteTaller)) return MaintenanceEditor;
+        if (role == nameof(ITServiceDeskApp.Models.UserRole.GerenteCompras)) return PurchasingEditor;
+        var configured = Resolve(email.Trim());
+        if (configured != null) return configured;
+        return role switch
+        {
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorTaller) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorLogistica) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorGeneralPSB) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorEncargadoML) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorML) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorEncargadoMLL) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorMLL) => SupervisorOperations,
+            _ => null
+        };
+    }
+
+    public static string? Resolve(System.Security.Claims.ClaimsPrincipal user) =>
+        Resolve(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "",
+            user.FindFirst(BusinessRoleClaimType)?.Value ?? user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)
+        ?? user.FindFirst(ClaimType)?.Value;
+
     public static (string Controller, string Action) Home(string? profile) => profile switch
     {
-        InventoryMaintenance => ("InventoryHub", "Index"),
+        InventoryMaintenance or PurchasingEditor => ("InventoryHub", "Index"),
+        MaintenanceEditor => ("MaintenanceRepairs", "Index"),
         OperationsHsReadOnly or OperationsEditor or OperationsHsReporter or OperationsHsEditor => ("Operaciones", "Dashboard"),
         _ => ("Operaciones", "Dashboard")
     };

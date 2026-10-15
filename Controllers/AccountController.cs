@@ -88,13 +88,20 @@ namespace ITServiceDeskApp.Controllers
                 return View();
             }
 
-            var accessProfile = UserAccessProfiles.Resolve(user.Email);
-            var effectiveRole = accessProfile is null ? user.Role.ToString() : UserRole.Administrator.ToString();
+            var accessProfile = UserAccessProfiles.Resolve(user.Email, user.Role.ToString());
+            var effectiveRole = accessProfile switch
+            {
+                UserAccessProfiles.MaintenanceEditor or UserAccessProfiles.PurchasingEditor or UserAccessProfiles.InventoryMaintenance => UserRole.Technician.ToString(),
+                UserAccessProfiles.SupervisorOperations => UserRole.EndUser.ToString(),
+                null => user.Role.ToString(),
+                _ => UserRole.Administrator.ToString()
+            };
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, effectiveRole),
+                new Claim(UserAccessProfiles.BusinessRoleClaimType, user.Role.ToString()),
                 new Claim("UserId", user.Id.ToString())
             };
 

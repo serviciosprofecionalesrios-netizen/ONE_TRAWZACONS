@@ -1195,17 +1195,17 @@
 
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var currentEmail = User.FindFirst(ClaimTypes.Email)?.Value;
-    var accessProfile = string.IsNullOrWhiteSpace(currentEmail) ? null : UserAccessProfiles.Resolve(currentEmail);
+    var accessProfile = UserAccessProfiles.Resolve(User);
     var hasManagedProfile = accessProfile is not null;
     var isConfiguredAdministrator = UserAccessProfiles.IsAdministrator(currentEmail);
     var showUsersMenu = (!hasManagedProfile || isConfiguredAdministrator) && (canSeeUsersMenu || canSeeCredentialsMenu);
     var showOperationsMenu = !hasManagedProfile || isConfiguredAdministrator ||
-        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsEditor or UserAccessProfiles.OperationsHsReporter or UserAccessProfiles.OperationsHsEditor;
-    var showMaintenanceMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
+        accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsEditor or UserAccessProfiles.OperationsHsReporter or UserAccessProfiles.OperationsHsEditor or UserAccessProfiles.SupervisorOperations;
+    var showMaintenanceMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile is UserAccessProfiles.InventoryMaintenance or UserAccessProfiles.MaintenanceEditor or UserAccessProfiles.PurchasingEditor;
     var showFinanceMenu = !hasManagedProfile || isConfiguredAdministrator;
     var showHsMenu = !hasManagedProfile || isConfiguredAdministrator ||
         accessProfile is UserAccessProfiles.OperationsHsReadOnly or UserAccessProfiles.OperationsHsReporter or UserAccessProfiles.OperationsHsEditor;
-    var showInventoryMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile == UserAccessProfiles.InventoryMaintenance;
+    var showInventoryMenu = !hasManagedProfile || isConfiguredAdministrator || accessProfile is UserAccessProfiles.InventoryMaintenance or UserAccessProfiles.PurchasingEditor;
     var isFinanceRequester = isAuthenticated;
     var isFinanceApprover =
         isAuthenticated &&
