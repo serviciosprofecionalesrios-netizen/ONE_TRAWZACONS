@@ -28,3 +28,47 @@
 .driver-score-ui .score-status .bi { width: 1.15rem; height: 1.15rem; border: 0; background: transparent; border-radius: .3rem; }
 .driver-score-ui .btn .bi { width: 1.65rem; height: 1.65rem; border-radius: .5rem; font-size: .95rem; }
 .driver-score-ui .infraction-hero .bi { color: #ffe3a0; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
+
+.driver-score-ui .driver-summary-scroll {
+    max-height: 560px;
+    overflow: auto;
+}
+.driver-score-ui .driver-summary-table {
+    min-width: 1180px;
+    font-size: .92rem;
+    line-height: 1.5;
+}
+.driver-score-ui .driver-summary-table th,
+.driver-score-ui .driver-summary-table td {
+    padding: .85rem 1rem;
+    vertical-align: middle;
+}
+.driver-score-ui .driver-summary-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #eef3fb;
+    color: #16365e;
+    border-bottom: 2px solid #d7e2f1;
+}
+.driver-score-ui .driver-summary-table th:first-child,
+.driver-score-ui .driver-summary-table td:first-child { min-width: 260px; }
+.driver-score-ui .driver-summary-table td:first-child a {
+    display: inline-block;
+    max-width: 340px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.driver-score-ui .driver-summary-table td:first-child a:hover { text-decoration: underline; }
+.driver-score-ui .driver-summary-table th:nth-child(2),
+.driver-score-ui .driver-summary-table td:nth-child(2) { min-width: 100px; white-space: nowrap; }
+.driver-score-ui .driver-summary-table th:nth-child(n+3):nth-child(-n+6),
+.driver-score-ui .driver-summary-table td:nth-child(n+3):nth-child(-n+6) {
+    min-width: 115px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.driver-score-ui .driver-summary-table td:nth-child(n+3):nth-child(-n+6) { white-space: nowrap; }
+.driver-score-ui .driver-summary-table th:last-child,
+.driver-score-ui .driver-summary-table td:last-child { min-width: 270px; }
+.driver-score-ui .driver-summary-table .score-status { padding: .45rem .7rem; }
