@@ -175,7 +175,10 @@ namespace ITServiceDeskApp.Controllers
             string? distanceWarning = null;
             try { tonnageRows = _operacionesSeguimientoStore.Get()?.Rows ?? []; }
             catch (DbException ex) { _logger.LogWarning(ex, "No se pudo consultar la distancia estimada desde toneladas."); distanceWarning = "Los kilómetros de toneladas no están disponibles; no se calcula la tasa de esos conductores."; }
-            profileRows = profileRows.Select(profile => { var km = DriverScoreDistanceService.Estimate(tonnageRows, profile.Driver, from, to); return profile with { Kilometers = km }; }).ToList();
+            if (distanceWarning == null && !tonnageRows.Any(r => r.FechaEvento.HasValue && (!from.HasValue || r.FechaEvento.Value.Date >= from.Value.Date) && (!to.HasValue || r.FechaEvento.Value.Date <= to.Value.Date)))
+                distanceWarning = "No hay registros de toneladas en el período seleccionado. Carga el archivo de esas fechas para estimar los kilómetros.";
+            var distanceNames = source.Scores.Select(x => x.Driver).Concat(allEvents.Select(x => x.Driver)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            profileRows = profileRows.Select(profile => { var km = DriverScoreDistanceService.Estimate(tonnageRows, profile.Driver, from, to, distanceNames); return profile with { Kilometers = km }; }).ToList();
             var scorecards = profileRows
                 .Where(x => string.IsNullOrWhiteSpace(driver) || x.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase) || events.Any(e => e.Driver.Equals(driver.Trim(), StringComparison.OrdinalIgnoreCase) && e.Vehicle.Equals(x.Vehicle, StringComparison.OrdinalIgnoreCase)))
                 .OrderByDescending(x => x.Score).ThenBy(x => x.Driver).ToList();
