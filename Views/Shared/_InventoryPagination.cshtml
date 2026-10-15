@@ -1,0 +1,35 @@
+@model ITServiceDeskApp.ViewModels.InventoryTablePage
+@{
+    string PageUrl(int page)
+    {
+        var values = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+        foreach(var entry in Context.Request.Query) values[entry.Key] = entry.Value.ToString();
+        values["page"] = page; values["pageSize"] = Model.PageSize;
+        return Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), ViewContext.RouteData.Values["controller"]?.ToString(), values) ?? "#";
+    }
+    var start = Math.Max(1, Model.Page - 2);
+    var end = Math.Min(Model.Pages, start + 4);
+    start = Math.Max(1, end - 4);
+}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-white border rounded p-3 my-3">
+    <div><strong>@Model.First–@Model.Last</strong> de @Model.Total repuestos <span class="text-muted">· Página @Model.Page de @Model.Pages</span></div>
+    <form method="get" class="d-flex align-items-center gap-2">
+        @foreach(var entry in Context.Request.Query.Where(x => x.Key != "page" && x.Key != "pageSize")) {<input type="hidden" name="@entry.Key" value="@entry.Value"/>}
+        <input type="hidden" name="page" value="1"/>
+        <label class="d-flex align-items-center gap-2 mb-0">Por página
+            <select name="pageSize" class="form-select form-select-sm w-auto">
+                @foreach(var size in new[]{25,50,100}){<option value="@size" selected="@(size == Model.PageSize)">@size</option>}
+            </select>
+        </label>
+        <button class="btn btn-outline-primary btn-sm">Aplicar</button>
+    </form>
+    <nav aria-label="Páginas del inventario">
+        <ul class="pagination pagination-sm mb-0 flex-wrap">
+            <li class="page-item @(Model.Page == 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(1)" aria-label="Primera página">«</a></li>
+            <li class="page-item @(Model.Page == 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Page - 1)">Anterior</a></li>
+            @for(var p = start; p <= end; p++){<li class="page-item @(p == Model.Page ? "active" : "")"><a class="page-link" href="@PageUrl(p)" aria-current="@(p == Model.Page ? "page" : null)">@p</a></li>}
+            <li class="page-item @(Model.Page == Model.Pages ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Page + 1)">Siguiente</a></li>
+            <li class="page-item @(Model.Page == Model.Pages ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Pages)" aria-label="Última página">»</a></li>
+        </ul>
+    </nav>
+</div>

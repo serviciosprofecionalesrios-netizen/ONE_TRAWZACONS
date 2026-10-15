@@ -8,6 +8,10 @@
     ViewData["Title"] = "Inventario de Repuestos";
 
     var rows = Model ?? Enumerable.Empty<MaintenanceInventoryPart>();
+    int.TryParse(Context.Request.Query["page"].ToString(), out var requestedPage);
+    int.TryParse(Context.Request.Query["pageSize"].ToString(), out var requestedPageSize);
+    var pagination = new ITServiceDeskApp.ViewModels.InventoryTablePage(rows.Count(), requestedPage, requestedPageSize);
+    var pageRows = rows.Skip(pagination.Skip).Take(pagination.PageSize);
     var categoryOptions = ViewBag.CategoryOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var systemTypeOptions = ViewBag.SystemTypeOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var stockStatusOptions = ViewBag.StockStatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
@@ -474,7 +478,7 @@
         </form>
     }
 
-    <form method="get" asp-action="Index" class="card shadow-sm mb-4">
+    <form method="get" asp-action="Index" class="card shadow-sm mb-4"><input type="hidden" name="pageSize" value="@pagination.PageSize"/>
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">
@@ -521,6 +525,7 @@
         </div>
     </form>
 
+    @await Html.PartialAsync("_InventoryPagination", pagination)
     <div class="card shadow inv-table-wrap">
         <div class="card-body p-0">
             @if (!rows.Any())
@@ -566,7 +571,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var row in rows)
+                            @foreach (var row in pageRows)
                             {
                                 var rowClass = !row.IsActive
                                     ? "row-inactive"
@@ -644,4 +649,5 @@
             }
         </div>
     </div>
+@await Html.PartialAsync("_InventoryPagination", pagination)
 </div>
