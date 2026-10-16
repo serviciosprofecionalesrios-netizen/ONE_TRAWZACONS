@@ -1621,6 +1621,18 @@
                                 </a>
                             </li>
 
+                            <li><hr class="dropdown-divider" data-group-divider="maestros"></li>
+                            <li><span class="menu-group-label" data-group-label="maestros">Maestros</span></li>
+                            <li class="js-op-item" data-group="maestros" data-search="maestro equipos carga masiva excel">
+                                <a class="dropdown-item op-menu-item @(currentAction == "MaestroEquipos" ? "is-active" : "")" asp-controller="Operaciones" asp-action="MaestroEquipos">
+                                    <span class="op-item-main"><i class="bi bi-truck"></i>Maestro de Equipos</span>
+                                </a>
+                            </li>
+                            <li class="js-op-item" data-group="maestros" data-search="maestro conductores carga masiva excel">
+                                <a class="dropdown-item op-menu-item @(currentAction == "MaestroConductores" ? "is-active" : "")" asp-controller="Operaciones" asp-action="MaestroConductores">
+                                    <span class="op-item-main"><i class="bi bi-person-badge"></i>Maestro de Conductores</span>
+                                </a>
+                            </li>
                             <li class="operations-no-results d-none" id="operacionesMenuNoResults">Sin resultados para la búsqueda.</li>
                         </ul>
                     </li>

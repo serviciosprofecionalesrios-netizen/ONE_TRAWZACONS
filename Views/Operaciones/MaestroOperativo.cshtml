@@ -1,0 +1,46 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.MaestroOperativoViewModel
+@{ ViewData["Title"] = Model.Titulo; }
+<div class="container-fluid py-4">
+    <h1 class="h3">@Model.Titulo</h1>
+    <p class="text-muted">Registro y carga masiva de @(Model.Equipos ? "equipos" : "conductores").</p>
+    @if (TempData["MaestroMensaje"] is string mensaje)
+    { <div class="alert alert-success" role="status">@mensaje</div> }
+    @if (Model.Errores.Count > 0)
+    {
+        <div class="alert alert-danger" role="alert"><strong>No se guardó ningún registro.</strong>
+            <ul class="mb-0">@foreach (var error in Model.Errores.Take(50)) { <li>@error</li> }</ul>
+            @if (Model.Errores.Count > 50) { <p>Se encontraron @Model.Errores.Count errores. Se muestran los primeros 50.</p> }
+        </div>
+    }
+    <div class="card mb-4"><div class="card-body">
+        <h2 class="h5">Carga masiva</h2>
+        <p>Descargue la plantilla, complete los datos y cargue el archivo .xlsx (máximo 5 MB y 5,000 registros). Los dos primeros campos son obligatorios. Los registros duplicados se rechazan y no se reemplazan datos existentes.</p>
+        <a class="btn btn-outline-primary mb-3" asp-action="PlantillaMaestro" asp-route-equipos="@Model.Equipos">Descargar plantilla Excel</a>
+        <form asp-action="CargaMasivaMaestro" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2">
+            <input type="hidden" name="equipos" value="@Model.Equipos.ToString()" />
+            <label class="visually-hidden" for="archivo">Archivo Excel</label>
+            <input id="archivo" class="form-control w-auto" type="file" name="archivo" accept=".xlsx" required />
+            <button class="btn btn-primary" type="submit">Realizar carga masiva</button>
+        </form>
+    </div></div>
+    <div class="card mb-4"><div class="card-body">
+        <h2 class="h5">Agregar registro</h2>
+        <form asp-action="GuardarMaestro" method="post" class="row g-3">
+            <input type="hidden" name="equipos" value="@Model.Equipos.ToString()" />
+            @for (var i = 0; i < Model.Columnas.Length; i++)
+            {
+                <div class="col-md-4"><label class="form-label" for="campo-@i">@Model.Columnas[i] @(i < 2 ? "*" : "")</label>
+                    <input id="campo-@i" class="form-control" name="valores" maxlength="150" required="@(i < 2)" /></div>
+            }
+            <div class="col-12"><button type="submit" class="btn btn-primary">Guardar registro</button></div>
+        </form>
+    </div></div>
+    <h2 class="h5">Registros (@Model.Registros.Count)</h2>
+    <div class="table-responsive"><table class="table table-striped">
+        <thead><tr>@foreach (var columna in Model.Columnas) { <th scope="col">@columna</th> }</tr></thead>
+        <tbody>
+        @foreach (var fila in Model.Registros) { <tr>@foreach (var valor in fila) { <td>@valor</td> }</tr> }
+        @if (Model.Registros.Count == 0) { <tr><td colspan="5" class="text-muted">Todavía no hay registros.</td></tr> }
+        </tbody>
+    </table></div>
+</div>
