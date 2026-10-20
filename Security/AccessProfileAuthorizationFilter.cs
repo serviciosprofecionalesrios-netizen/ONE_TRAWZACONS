@@ -62,6 +62,12 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
             controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
             action.Equals("SeguimientoToneladas", StringComparison.OrdinalIgnoreCase);
 
+        // These shared master actions also validate the requested catalog in the controller.
+        if (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
+            UserAccessProfiles.CanMaintainDrivers(user) &&
+            new[] { "Maestros", "MaestroPlantilla", "MaestroNuevo", "MaestroImportar", "ConductorEditar", "ConductorEstado" }.Contains(action, StringComparer.OrdinalIgnoreCase))
+            return;
+
         var permitted = profile switch
         {
             UserAccessProfiles.PurchasingEditor => InventoryAndMaintenanceControllers.Contains(controller),

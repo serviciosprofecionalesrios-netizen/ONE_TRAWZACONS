@@ -13,7 +13,7 @@ public partial class OperacionesController
     public IActionResult MaestroEquipos() => MostrarMaestro(true);
 
     [HttpGet]
-    public IActionResult MaestroConductores() => MostrarMaestro(false);
+    public IActionResult MaestroConductores() => RedirectToAction(nameof(Maestros), new { type = "conductores" });
 
     private IActionResult MostrarMaestro(bool equipos, List<string>? errores = null)
     {
@@ -29,6 +29,7 @@ public partial class OperacionesController
     [HttpGet]
     public IActionResult PlantillaMaestro(bool equipos)
     {
+        if (!equipos) return MaestroPlantilla("conductores");
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         using var package = new ExcelPackage();
         var sheet = package.Workbook.Worksheets.Add("Datos");
@@ -46,11 +47,15 @@ public partial class OperacionesController
 
     [HttpPost, ValidateAntiForgeryToken]
     public IActionResult GuardarMaestro(bool equipos, string[] valores)
-        => ImportarFilasMaestro(equipos, new List<string[]> { valores });
+    {
+        if (!equipos) return RedirectLegacyDriverEntry();
+        return ImportarFilasMaestro(equipos, new List<string[]> { valores });
+    }
 
     [HttpPost, ValidateAntiForgeryToken, RequestSizeLimit(6 * 1024 * 1024)]
     public IActionResult CargaMasivaMaestro(bool equipos, IFormFile? archivo)
     {
+        if (!equipos) return RedirectLegacyDriverEntry();
         if (archivo == null || archivo.Length == 0 || archivo.Length > 5 * 1024 * 1024 ||
             !string.Equals(Path.GetExtension(archivo.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
             return MostrarMaestro(equipos, new() { "Seleccione un archivo Excel .xlsx de hasta 5 MB." });
@@ -80,6 +85,13 @@ public partial class OperacionesController
             return MostrarMaestro(equipos, new() { "No se pudo leer el Excel. Verifique que sea un archivo válido y no esté protegido." });
         }
         return ImportarFilasMaestro(equipos, filas);
+    }
+
+    private IActionResult RedirectLegacyDriverEntry()
+    {
+        if (!ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainDrivers(User)) return Forbid();
+        TempData["MasterError"] = "Usa el maestro de conductores actualizado: los dos nombres y dos apellidos son obligatorios. Para cargar Excel, descarga la nueva plantilla.";
+        return RedirectToAction(nameof(Maestros), new { type = "conductores" });
     }
 
     private IActionResult ImportarFilasMaestro(bool equipos, List<string[]> filas)

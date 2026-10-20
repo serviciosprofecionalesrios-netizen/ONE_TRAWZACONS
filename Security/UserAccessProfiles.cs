@@ -84,6 +84,16 @@ public static class UserAccessProfiles
             user.FindFirst(BusinessRoleClaimType)?.Value ?? user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)
         ?? user.FindFirst(ClaimType)?.Value;
 
+    public static bool CanMaintainDrivers(System.Security.Claims.ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true &&
+        (IsAdministrator(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value) ||
+         (Resolve(user) == null && user.IsInRole("Administrator")) ||
+         new[] { "roldanzamora@trawzacons.com", "monitoreo2@trawzacons.com", "monitoreo@trawzacons.com", "monitoreo2@trawzacions.com" }
+             .Contains(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value?.Trim(), StringComparer.OrdinalIgnoreCase));
+
+    public static bool CanMaintainMaster(System.Security.Claims.ClaimsPrincipal user, string kind) =>
+        kind == "conductores" ? CanMaintainDrivers(user) : CanMaintainOperationalMasters(user);
+
     public static bool CanMaintainOperationalMasters(System.Security.Claims.ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true &&
         (IsAdministrator(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value) ||

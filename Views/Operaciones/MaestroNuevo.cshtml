@@ -1,10 +1,18 @@
 @model ITServiceDeskApp.Models.OperationalMasterRecord
 @using ITServiceDeskApp.Services
-@{ViewData["Title"] = "Nuevo registro · " + OperationalMasterCatalog.Title(Model.Kind);}
+@{var editing = Model.Id > 0; ViewData["Title"] = (editing ? "Editar conductor · " + Model.DisplayId : "Nuevo registro · " + OperationalMasterCatalog.Title(Model.Kind));}
 <div class="container py-4" style="max-width:1000px">
 <div class="module-banner mb-4"><h2><i class="bi bi-plus-circle"></i>@ViewData["Title"]</h2></div>
-<form asp-action="MaestroNuevo" method="post" class="card p-4 shadow-sm"><input asp-for="Kind" type="hidden"/><div asp-validation-summary="All" class="text-danger"></div>
-<div class="row g-3"><div class="col-md-6"><label asp-for="Name" class="form-label">@OperationalMasterCatalog.NameLabel(Model.Kind)</label><input asp-for="Name" class="form-control" required maxlength="160"/></div>
+<form asp-action="@(editing ? "ConductorEditar" : "MaestroNuevo")" asp-route-id="@(editing ? Model.Id : (int?)null)" method="post" class="card p-4 shadow-sm"><input asp-for="Kind" type="hidden"/><div asp-validation-summary="All" class="text-danger"></div>
+<div class="row g-3">
+@if(Model.Kind == "conductores"){
+@if(editing && string.IsNullOrWhiteSpace(Model.FirstName)){<div class="col-12"><div class="alert alert-info">Nombre registrado: <strong>@Model.Name</strong>. Completa sus dos nombres y dos apellidos para actualizarlo. No se dividieron automáticamente para evitar errores.</div></div>}
+<div class="col-md-6"><label asp-for="FirstName" class="form-label">Primer nombre *</label><input asp-for="FirstName" class="form-control" required maxlength="40"/></div>
+<div class="col-md-6"><label asp-for="SecondName" class="form-label">Segundo nombre *</label><input asp-for="SecondName" class="form-control" required maxlength="40"/></div>
+<div class="col-md-6"><label asp-for="FirstSurname" class="form-label">Primer apellido *</label><input asp-for="FirstSurname" class="form-control" required maxlength="40"/></div>
+<div class="col-md-6"><label asp-for="SecondSurname" class="form-label">Segundo apellido *</label><input asp-for="SecondSurname" class="form-control" required maxlength="40"/></div>
+<div class="col-12 small text-muted">Los cuatro campos son obligatorios. No se permite repetir un nombre completo ya registrado, aunque el conductor esté inactivo.</div>
+}else{<div class="col-md-6"><label asp-for="Name" class="form-label">@OperationalMasterCatalog.NameLabel(Model.Kind)</label><input asp-for="Name" class="form-control" required maxlength="160"/></div>}
 @if(Model.Kind == "equipos"){<div class="col-md-6"><label asp-for="Plate" class="form-label">Placa de cabezal</label><input asp-for="Plate" class="form-control" required maxlength="30"/></div>}
 <div class="col-md-6"><label asp-for="Tenure" class="form-label">Tenencia</label><input asp-for="Tenure" list="tenure-options" class="form-control" required maxlength="30"/><datalist id="tenure-options"><option value="Propio"/><option value="Subcontratado"/></datalist></div>
 <div class="col-md-6"><label asp-for="Owner" class="form-label">Propietario</label><input asp-for="Owner" class="form-control" required maxlength="180"/></div>

@@ -209,6 +209,10 @@ namespace ITServiceDeskApp.Controllers
         public async Task<IActionResult> NuevaInfraccion(DriverScoreEventCreateViewModel model, CancellationToken cancellationToken)
         {
             var source = await _driverScoreSource.GetAsync(cancellationToken);
+            var inactiveDrivers = await _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores" && !x.IsActive).Select(x => new { x.Name, x.SourceKey }).ToListAsync(cancellationToken);
+            var driverKey = OperationalMasterCatalog.Key("conductores", model.Driver);
+            if (inactiveDrivers.Any(x => OperationalMasterCatalog.Key("conductores", x.Name) == driverKey || x.SourceKey == driverKey))
+                ModelState.AddModelError(nameof(model.Driver), "El conductor está inactivo. Selecciona un conductor activo.");
             var evidence = model.CoachingCompleted ? model.CoachingEvidence : null;
             if (model.CoachingCompleted && evidence == null)
                 ModelState.AddModelError(string.Empty, "Adjunta la evidencia si marcas que se realizó coaching.");
@@ -270,8 +274,10 @@ namespace ITServiceDeskApp.Controllers
             model.Drivers = source.Scores.Select(x => x.Driver).Concat(source.Events.Select(x => x.Driver)).Where(x => !string.IsNullOrWhiteSpace(x) && !x.Equals("Sin Conductor", StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.Vehicles = source.Scores.Select(x => x.Vehicle).Concat(source.Events.Select(x => x.Vehicle)).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.EventTypes = source.Events.Select(x => x.EventType).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
-            var masters = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores" || x.Kind == "equipos").Select(x => new { x.Kind, x.Name }).ToList();
-            model.Drivers = model.Drivers.Concat(masters.Where(x => x.Kind == "conductores").Select(x => x.Name)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            var masters = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores" || x.Kind == "equipos").Select(x => new { x.Kind, x.Name, x.IsActive, x.SourceKey }).ToList();
+            var inactive = masters.Where(x => x.Kind == "conductores" && !x.IsActive).Select(x => OperationalMasterCatalog.Key("conductores", x.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in masters.Where(x => x.Kind == "conductores" && !x.IsActive && x.SourceKey != null)) inactive.Add(row.SourceKey!);
+            model.Drivers = model.Drivers.Concat(masters.Where(x => x.Kind == "conductores" && x.IsActive).Select(x => x.Name)).Where(x => !inactive.Contains(OperationalMasterCatalog.Key("conductores", x))).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.Vehicles = model.Vehicles.Concat(masters.Where(x => x.Kind == "equipos").Select(x => x.Name)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             return model;
         }
