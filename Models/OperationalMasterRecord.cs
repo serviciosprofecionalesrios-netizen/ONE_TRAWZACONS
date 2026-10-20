@@ -17,6 +17,6 @@ public sealed class OperationalMasterRecord
     [MaxLength(40)] public string? SecondName { get; set; }
     [MaxLength(40)] public string? FirstSurname { get; set; }
     [MaxLength(40)] public string? SecondSurname { get; set; }
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped] public string DisplayId => $"REG-{Id:D6}";
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped] public string DisplayId => $"TW-{Id:D6}";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

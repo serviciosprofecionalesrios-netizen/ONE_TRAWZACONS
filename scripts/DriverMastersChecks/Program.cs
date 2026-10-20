@@ -41,7 +41,7 @@ Assert(await controller.MaestroNuevo(invalid,default) is ViewResult && !controll
 controller=Controller(managers[0]);
 var valid=new OperationalMasterRecord{Kind="conductores",FirstName=" José ",SecondName="Antonio",FirstSurname="Pérez",SecondSurname="López",Tenure="Propio",Owner="TRAWZACONS"};
 Assert(await controller.MaestroNuevo(valid,default) is RedirectToActionResult,"Roldan can create driver");
-var id=valid.Id; Assert(id>0 && valid.Name=="José Antonio Pérez López" && valid.DisplayId.StartsWith("REG-"),"Stable ID and composed full name");
+var id=valid.Id; Assert(id>0 && valid.Name=="José Antonio Pérez López" && valid.DisplayId == $"TW-{id:D6}","Stable ID and composed full name");
 controller=Controller(managers[1]);
 var duplicate=new OperationalMasterRecord{Kind="conductores",FirstName="JOSE",SecondName=" ANTONIO ",FirstSurname="PEREZ",SecondSurname="LOPEZ",Tenure="Propio",Owner="other"};
 Assert(await controller.MaestroNuevo(duplicate,default) is ViewResult && !controller.ModelState.IsValid && db.OperationalMasterRecords.Count()==1,"Normalized duplicate rejected");
