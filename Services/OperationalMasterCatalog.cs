@@ -9,6 +9,18 @@ public static class OperationalMasterCatalog
     public static readonly string[] Kinds = ["equipos", "gondolas", "conductores"];
     public static string Title(string kind) => kind switch { "conductores" => "Maestro de Conductores", "gondolas" => "Maestro de Góndolas", _ => "Maestros de Equipos" };
     public static string NameLabel(string kind) => kind switch { "conductores" => "Conductor", "gondolas" => "Góndola", _ => "Cabezal" };
+    public static string[] Columns(string kind) => kind switch
+    {
+        "equipos" => ["Cabezal", "Placa de cabezal", "Tenencia", "Propietario"],
+        "gondolas" => ["Tenencia", "Propietario", "Gondola"],
+        _ => ["Conductor", "Tenencia", "Propietario"]
+    };
+    public static OperationalMasterRecord FromValues(string kind, string[] values) => kind switch
+    {
+        "equipos" => new() { Kind = kind, Name = values[0], Plate = values[1], Tenure = values[2], Owner = values[3] },
+        "gondolas" => new() { Kind = kind, Name = values[2], Tenure = values[0], Owner = values[1] },
+        _ => new() { Kind = kind, Name = values[0], Tenure = values[1], Owner = values[2] }
+    };
     public static string Key(string kind, string name) => kind + ":" + new string(name.Trim().Normalize(NormalizationForm.FormD).Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray()).ToUpperInvariant();
     public static List<OperationalMasterRecord> ReadSeed()
     {
