@@ -158,6 +158,7 @@ using (var scope = app.Services.CreateScope())
         var hasher = services.GetRequiredService<IPasswordHasher<User>>();
 
         context.Database.Migrate();
+        OperationalMasterCatalog.Seed(context);
 
         var existingTechnicianNames = context.MaintenanceTechnicians
             .Select(x => x.FullName)

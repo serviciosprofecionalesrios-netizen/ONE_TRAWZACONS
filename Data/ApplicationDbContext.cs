@@ -45,6 +45,7 @@ namespace ITServiceDeskApp.Data
         public DbSet<HsDocument> HsDocuments => Set<HsDocument>();
         public DbSet<DriverScoreManualEvent> DriverScoreManualEvents => Set<DriverScoreManualEvent>();
         public DbSet<DriverScoreCase> DriverScoreCases => Set<DriverScoreCase>();
+        public DbSet<OperationalMasterRecord> OperationalMasterRecords => Set<OperationalMasterRecord>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

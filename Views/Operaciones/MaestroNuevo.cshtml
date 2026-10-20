@@ -1,0 +1,12 @@
+@model ITServiceDeskApp.Models.OperationalMasterRecord
+@using ITServiceDeskApp.Services
+@{ViewData["Title"] = "Nuevo registro · " + OperationalMasterCatalog.Title(Model.Kind);}
+<div class="container py-4" style="max-width:1000px">
+<div class="module-banner mb-4"><h2><i class="bi bi-plus-circle"></i>@ViewData["Title"]</h2></div>
+<form asp-action="MaestroNuevo" method="post" class="card p-4 shadow-sm"><input asp-for="Kind" type="hidden"/><div asp-validation-summary="All" class="text-danger"></div>
+<div class="row g-3"><div class="col-md-6"><label asp-for="Name" class="form-label">@OperationalMasterCatalog.NameLabel(Model.Kind)</label><input asp-for="Name" class="form-control" required maxlength="160"/></div>
+@if(Model.Kind == "equipos"){<div class="col-md-6"><label asp-for="Plate" class="form-label">Placa de cabezal</label><input asp-for="Plate" class="form-control" required maxlength="30"/></div>}
+<div class="col-md-6"><label asp-for="Tenure" class="form-label">Tenencia</label><input asp-for="Tenure" list="tenure-options" class="form-control" required maxlength="30"/><datalist id="tenure-options"><option value="Propio"/><option value="Subcontratado"/></datalist></div>
+<div class="col-md-6"><label asp-for="Owner" class="form-label">Propietario</label><input asp-for="Owner" class="form-control" required maxlength="180"/></div>
+<div class="col-12 d-flex justify-content-end gap-2 mt-4"><a class="btn btn-outline-secondary" asp-action="Maestros" asp-route-type="@Model.Kind">Cancelar</a><button class="btn btn-primary">Guardar registro</button></div>
+</div></form></div>

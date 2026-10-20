@@ -84,6 +84,12 @@ public static class UserAccessProfiles
             user.FindFirst(BusinessRoleClaimType)?.Value ?? user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)
         ?? user.FindFirst(ClaimType)?.Value;
 
+    public static bool CanMaintainOperationalMasters(System.Security.Claims.ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true &&
+        (IsAdministrator(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value) ||
+         Resolve(user) == OperationsEditor ||
+         (Resolve(user) == null && (user.IsInRole("Administrator") || user.IsInRole("CoordinadorIT") || user.IsInRole("Technician"))));
+
     public static (string Controller, string Action) Home(string? profile) => profile switch
     {
         InventoryMaintenance or PurchasingEditor => ("InventoryHub", "Index"),

@@ -1,0 +1,14 @@
+@model IReadOnlyList<ITServiceDeskApp.Models.OperationalMasterRecord>
+@using ITServiceDeskApp.Services
+@{var type = ViewData["MasterType"] as string ?? "equipos"; var pagination = (ITServiceDeskApp.ViewModels.InventoryTablePage)ViewData["Pagination"]!; ViewData["Title"] = OperationalMasterCatalog.Title(type); var canCreate = ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainOperationalMasters(User);}
+<div class="container-fluid py-4">
+<div class="module-banner mb-4"><div><h2><i class="bi @(type == "conductores" ? "bi-person-vcard" : type == "gondolas" ? "bi-truck-flatbed" : "bi-truck")"></i>@ViewData["Title"]</h2><p class="mb-0">Registro y consulta del catálogo operativo.</p></div>@if(canCreate){<a asp-action="MaestroNuevo" asp-route-type="@type" class="btn btn-light">Nuevo registro</a>}</div>
+<div class="d-flex flex-wrap gap-2 mb-3">@foreach(var kind in OperationalMasterCatalog.Kinds){<a class="btn @(kind == type ? "btn-primary" : "btn-outline-primary")" asp-action="Maestros" asp-route-type="@kind">@OperationalMasterCatalog.Title(kind)</a>}</div>
+@if(TempData["MasterOk"] is string ok){<div class="alert alert-success">@ok</div>}
+<form method="get" class="card p-3 mb-3"><input type="hidden" name="type" value="@type"/><div class="d-flex gap-2"><input class="form-control" name="q" value="@ViewData["Search"]" placeholder="Buscar por nombre, identificación, placa o propietario"/><button class="btn btn-primary">Buscar</button></div></form>
+<div class="card table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>#</th><th>@OperationalMasterCatalog.NameLabel(type)</th>@if(type == "equipos"){<th>Placa de cabezal</th>}<th>Tenencia</th><th>Propietario</th></tr></thead><tbody>
+@for(var i=0;i<Model.Count;i++){var row = Model[i];<tr><td>@(pagination.Skip+i+1)</td><td class="fw-semibold">@row.Name</td>@if(type == "equipos"){<td>@row.Plate</td>}<td>@row.Tenure</td><td>@row.Owner</td></tr>}
+@if(Model.Count == 0){<tr><td colspan="5" class="text-muted p-4">No hay registros para esta búsqueda.</td></tr>}
+</tbody></table></div>
+<div class="d-flex align-items-center justify-content-between mt-3"><span>@pagination.First–@pagination.Last de @pagination.Total registros · Página @pagination.Page de @pagination.Pages</span><div class="d-flex gap-2">@if(pagination.Page > 1){<a class="btn btn-outline-primary" asp-action="Maestros" asp-route-type="@type" asp-route-q="@ViewData["Search"]" asp-route-page="@(pagination.Page-1)">Anterior</a>}@if(pagination.Page < pagination.Pages){<a class="btn btn-outline-primary" asp-action="Maestros" asp-route-type="@type" asp-route-q="@ViewData["Search"]" asp-route-page="@(pagination.Page+1)">Siguiente</a>}</div></div>
+</div>

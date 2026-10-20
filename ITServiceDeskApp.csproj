@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Compile Remove="scripts\**\*.cs" />
+    <EmbeddedResource Include="Resources/OperationalMastersSeed.json" />
   </ItemGroup>
 
 </Project>

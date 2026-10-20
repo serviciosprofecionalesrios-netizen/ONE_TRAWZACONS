@@ -1548,6 +1548,15 @@
                             </li>
 
                             <li><span class="menu-group-label" data-group-label="monitoreo">Monitoreo</span></li>
+                            @foreach(var masterType in ITServiceDeskApp.Services.OperationalMasterCatalog.Kinds)
+                            {
+                                <li class="js-op-item" data-group="monitoreo" data-search="maestros @masterType">
+                                    <a class="dropdown-item op-menu-item" asp-controller="Operaciones" asp-action="Maestros" asp-route-type="@masterType">
+                                        <span class="op-item-main"><i class="bi @(masterType == "conductores" ? "bi-person-vcard" : masterType == "gondolas" ? "bi-truck-flatbed" : "bi-truck")"></i>@ITServiceDeskApp.Services.OperationalMasterCatalog.Title(masterType)</span>
+                                    </a>
+                                </li>
+                            }
+
                             <li class="js-op-item" data-group="monitoreo" data-search="dashboard operaciones tablero resumen">
                                 <a class="dropdown-item op-menu-item @(opDashboardActive ? "is-active" : "")"
                                    asp-controller="Operaciones"

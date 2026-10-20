@@ -264,12 +264,15 @@ namespace ITServiceDeskApp.Controllers
             return RedirectToAction(nameof(DriverScoreCases), new { period = model.EventAt.ToString("yyyy-MM"), driver = model.Driver.Trim() });
         }
 
-        private static DriverScoreEventCreateViewModel CreateDriverScoreEventForm(DriverScoreSourceResult source, DriverScoreEventCreateViewModel? model = null)
+        private DriverScoreEventCreateViewModel CreateDriverScoreEventForm(DriverScoreSourceResult source, DriverScoreEventCreateViewModel? model = null)
         {
             model ??= new DriverScoreEventCreateViewModel { EventAt = DateTime.UtcNow.AddHours(-6) };
             model.Drivers = source.Scores.Select(x => x.Driver).Concat(source.Events.Select(x => x.Driver)).Where(x => !string.IsNullOrWhiteSpace(x) && !x.Equals("Sin Conductor", StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.Vehicles = source.Scores.Select(x => x.Vehicle).Concat(source.Events.Select(x => x.Vehicle)).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             model.EventTypes = source.Events.Select(x => x.EventType).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            var masters = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores" || x.Kind == "equipos").Select(x => new { x.Kind, x.Name }).ToList();
+            model.Drivers = model.Drivers.Concat(masters.Where(x => x.Kind == "conductores").Select(x => x.Name)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            model.Vehicles = model.Vehicles.Concat(masters.Where(x => x.Kind == "equipos").Select(x => x.Name)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
             return model;
         }
 

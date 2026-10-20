@@ -1,0 +1,800 @@
+[
+  {
+    "Kind": "equipos",
+    "Name": "H-05",
+    "Plate": "M265649",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0001",
+    "Plate": "M351945",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0002",
+    "Plate": "M120291",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0005",
+    "Plate": "M323599",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0006",
+    "Plate": "M352474",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0008",
+    "Plate": "M464366",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0010",
+    "Plate": "M366160",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0020",
+    "Plate": "M118960",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0025",
+    "Plate": "M315673",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0042",
+    "Plate": "M375340",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0052",
+    "Plate": "M383906",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0066",
+    "Plate": "M393558",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0067",
+    "Plate": "M395153",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0069",
+    "Plate": "M268140",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0070",
+    "Plate": "M406142",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0071",
+    "Plate": "M406143",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0073",
+    "Plate": "M457109",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0081",
+    "Plate": "M456799",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0114",
+    "Plate": "M406144",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0118",
+    "Plate": "M479602",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0119",
+    "Plate": "M479572",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0120",
+    "Plate": "M479590",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0121",
+    "Plate": "M479596",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0089",
+    "Plate": "M325702",
+    "Tenure": "Subcontratado",
+    "Owner": "Nemer Omar Moraga Espinoza"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0094",
+    "Plate": "M395536",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0100",
+    "Plate": "M414880",
+    "Tenure": "Subcontratado",
+    "Owner": "Wesley Calero Sanchez"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0101",
+    "Plate": "M196592",
+    "Tenure": "Subcontratado",
+    "Owner": "Wesley Calero Sanchez"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0102",
+    "Plate": "M437222",
+    "Tenure": "Subcontratado",
+    "Owner": "ANA LUISA SANCHEZ HERNANDEZ"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0103",
+    "Plate": "M455886",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0104",
+    "Plate": "M446260",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0105",
+    "Plate": "M446297",
+    "Tenure": "Subcontratado",
+    "Owner": "FRANCISCO JOSE ARANDA LUNA"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0106",
+    "Plate": "M455884",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0107",
+    "Plate": "M460245",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0108",
+    "Plate": "M460250",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0109",
+    "Plate": "M461344",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0110",
+    "Plate": "M453715",
+    "Tenure": "Subcontratado",
+    "Owner": "FRANCISCO JOSE ARANDA LUNA"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0111",
+    "Plate": "M424491",
+    "Tenure": "Subcontratado",
+    "Owner": "ANA LUISA SANCHEZ HERNANDEZ"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0112",
+    "Plate": "M461421",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0113",
+    "Plate": "M472009",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0115",
+    "Plate": "M476018",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0116",
+    "Plate": "M478153",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "equipos",
+    "Name": "W-0117",
+    "Plate": "M478151",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M185-176",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M199579",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M074171",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M076-468",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M073-700",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M199-579",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M074171",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M366-502",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M363-167",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M157733",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M250149",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M366500",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M453383",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M113123",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M363169",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "LE15449",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M386205",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M120295",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M119504",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M464218",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M063878",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Nemer Omar Moraga Espinoza"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M398211",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M127211",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Wesley Calero Sanchez"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M114024",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Wesley Calero Sanchez"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M330-857",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "ANA LUISA SANCHEZ HERNANDEZ"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M460253",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M336764",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M315796",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "FRANCISCO JOSE ARANDA LUNA"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M457006",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M460246",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M460248",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M460253",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M078066",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "FRANCISCO JOSE ARANDA LUNA"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M325-679",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "ANA LUISA SANCHEZ HERNANDEZ"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M463024",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M472015",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M460254",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M473650",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "gondolas",
+    "Name": "M460248",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Dewinhg Fauricio Saintclair Porras",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Fredys de la Concepcion Sanchez Cruz",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Eduardo Guadamuz Selva",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Nestor Danilo Hernandez Gutierrez",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Norwin Manuel Cerda Mairena",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Franklin Ohel Castillo Galeano",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Roberto Jose Velasquez Sanchez",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Donald A. Soza Meza",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Junior Leonardo Martinez",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Cristhian Jose Loaisiga Loaisiga",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Manuel Enrique Andino Perez",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Jose Hipolito Pastran Cabrera",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Elvis Antonio Marenco Espinoza",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Edwing Brenes",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Jose Antonio Gonzalez",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Evert de Jesus Vallecillo Estrada",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Armando Antonio Rivera Lopez",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Jhaxon Otoniel Espinoza Erazo",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Uriel Antonio Pastran",
+    "Plate": "",
+    "Tenure": "Propio",
+    "Owner": "TRAWZACONS S.A."
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Meackel de Jesus Sanchez Baltodano",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Nemer Omar Moraga Espinoza"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Roberto Carlos Palacios Sanchez",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Wesley Calero",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Wesley Calero Sanchez"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Loyman Calero",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Wesley Calero Sanchez"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Pedro Antonio Gonzalez Aguirre",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "ANA LUISA SANCHEZ HERNANDEZ"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Elvin Antonio Doña Gonzalez",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Juan Carlos Hernandez Mora",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Francklin Javier Mairena Padilla",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "FRANCISCO JOSE ARANDA LUNA"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Alfredo Antonio Chamorro Lopez",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Carlos Elias Velasquez Miranda",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Jeffry Antonio Hernandez Hernandez",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "Hamilton Francisco Balcacerez Reynosa"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Jamilton Moises Rodriguez Mercado",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "German de Jesus Sanchez Cruz",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  },
+  {
+    "Kind": "conductores",
+    "Name": "Anibal Jose Fargas Bello",
+    "Plate": "",
+    "Tenure": "Subcontratado",
+    "Owner": "EDWIN JOSE LIRA MORENO"
+  }
+]
