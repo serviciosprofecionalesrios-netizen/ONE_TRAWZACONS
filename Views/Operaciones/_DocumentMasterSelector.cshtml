@@ -3,18 +3,20 @@
 @{
     var choices = ViewData["DocumentMasterChoices"] as IReadOnlyList<OperationalMasterRecord> ?? Array.Empty<OperationalMasterRecord>();
     var selected = ViewData["DocumentMasterForm"] as DocumentMasterFormViewModel;
+    var kind = ViewData["DocumentMasterKind"] as string;
     var person = ViewData["DocumentMasterPerson"] as bool? == true;
 }
 <div class="card border-primary-subtle p-3 my-3">
     <form method="get" asp-controller="Operaciones" asp-action="@(person ? "NuevoIngresoPersonal" : "NuevoIngresoEquipoGondola")" class="d-flex flex-wrap align-items-end gap-2">
+        @if(kind != null){<input type="hidden" name="kind" value="@kind"/>}
         <div class="flex-grow-1"><label for="documentMasterChoice" class="form-label fw-semibold">Completar información desde el maestro</label>
             <select id="documentMasterChoice" name="masterId" class="form-select" required>
-                <option value="">Selecciona @(person ? "un conductor" : "un equipo o góndola")</option>
+                <option value="">Selecciona @(person ? "un conductor" : kind == "equipos" ? "un equipo" : kind == "gondolas" ? "una góndola" : "un equipo o góndola")</option>
                 @foreach(var row in choices){<option value="@row.Id" selected="@(selected?.MasterId == row.Id)">@row.DisplayId · @row.Name @(string.IsNullOrWhiteSpace(row.Plate) ? "" : "· " + row.Plate)</option>}
             </select>
         </div>
         <button class="btn btn-primary">Abrir formulario</button>
-        <a asp-controller="Operaciones" asp-action="ControlDocumentos" class="btn btn-outline-secondary">Volver a control documental</a>
+        <a asp-controller="Operaciones" asp-action="ControlDocumentos" asp-route-view="@kind" class="btn btn-outline-secondary">Volver a control documental</a>
     </form>
     @if(selected?.MasterId != null){<div class="alert alert-info mb-0 mt-3"><strong>@selected.DisplayId · @selected.Name</strong><br/>Tenencia: @selected.Tenure · Propietario: @selected.Owner<br/><small>Los datos básicos provienen del maestro. Completa los documentos y campos pendientes; los datos ya registrados se conservan.</small></div>}
 </div>

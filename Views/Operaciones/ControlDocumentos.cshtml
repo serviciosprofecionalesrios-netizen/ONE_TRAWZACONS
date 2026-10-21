@@ -1393,14 +1393,13 @@
                         Abrir formulario de persona
                     </a>
                 </div>
+                @foreach(var kind in new[] { "equipos", "gondolas" }){
                 <div class="doc-new-record__choice">
-                    <h6>Camion / Gondola</h6>
-                    <p>Usa el formulario completo de Nuevo ingreso de equipo y gondola que ya existe en el proyecto.</p>
-                    <a class="btn btn-sm btn-primary align-self-start" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola">
-                        <i class="bi bi-truck me-1"></i>
-                        Abrir formulario de camion / gondola
-                    </a>
-                </div>
+                    <h6>@(kind == "equipos" ? "Equipo" : "Góndola")</h6>
+                    <p>Completa su documentación desde el maestro correspondiente.</p>
+                    <a class="btn btn-sm btn-primary align-self-start" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-kind="@kind">Abrir formulario de @(kind == "equipos" ? "equipo" : "góndola")</a>
+                </div>}
+
             </div>
         </div>
     </div>
@@ -1483,9 +1482,12 @@
         </button>
         <button type="button"
                 class="btn btn-sm btn-outline-primary js-doc-view-switch"
-                data-doc-view="camiones"
+                data-doc-view="equipos"
                 aria-pressed="false">
-            Camiones / Gondolas
+            <i class="bi bi-truck me-1"></i>Equipos (@totalIngresosEquipo)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary js-doc-view-switch" data-doc-view="gondolas" aria-pressed="false">
+            <i class="bi bi-truck-flatbed me-1"></i>Góndolas (@totalIngresosGondola)
         </button>
     </div>
 
@@ -1605,73 +1607,45 @@
             </div>
         }
 
-        <div class="doc-chart doc-panel-camiones doc-is-hidden">
-            <h6 class="doc-chart__title">Control documental de camion y remolque o gondola</h6>
-            <div class="doc-chart__hint">Catálogo de maestros y documentación registrada. Abre cada formulario para completar la información pendiente.</div>
-            <div class="doc-chart-table-wrap">
-                <table class="table table-sm align-middle doc-chart-table">
-                    <thead>
-                        <tr>
-                            <th>ID maestro</th>
-                            <th>Tipo</th>
-                            <th>Asunto</th>
-                            <th>Tarea padre</th>
-                            <th>Estado</th>
-                            <th>Empresa</th>
-                            <th>Codigo del cabezal</th>
-                            <th>Placa de cabezal</th>
-                            <th>Placa de gondola</th>
-                            <th>Tenencia</th>
-                            <th>Propietario</th>
-                            <th>Venc. emision gases</th>
-                            <th>Venc. insp. mecanica</th>
-                            <th>Venc. seguro vehicular</th>
-                            <th>Fecha inicio</th>
-                            <th>Fecha fin</th>
-                            <th>% Realizado</th>
-                            <th>Formulario</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.EquiposGondolas.Any())
-                        {
-                            @foreach (var item in Model.EquiposGondolas)
-                            {
-                                <tr>
-                                    <td>@(string.IsNullOrWhiteSpace(item.MasterCode) ? "—" : item.MasterCode)</td>
-                                    <td><span class="doc-equipo-badge">@item.Tipo</span></td>
-                                    <td class="doc-equipo-col-main">
-                                        @item.Asunto
-                                        <div class="doc-equipo-meta">Actualizado: @item.UpdatedAt.ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture)</div>
-                                    </td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.TareaPadre) ? "-" : item.TareaPadre)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.Estado) ? "-" : item.Estado)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.Empresa) ? "-" : item.Empresa)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.CodigoCabezal) ? "-" : item.CodigoCabezal)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.PlacaCabezal) ? "-" : item.PlacaCabezal)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.PlacaGondola) ? "-" : item.PlacaGondola)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.Tenencia) ? "-" : item.Tenencia)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.Propietario) ? "-" : item.Propietario)</td>
-                                    <td>@item.VencimientoEmisionGases</td>
-                                    <td>@item.VencimientoInspeccionMecanica</td>
-                                    <td>@item.VencimientoSeguroVehicular</td>
-                                    <td>@item.FechaInicio</td>
-                                    <td>@item.FechaFin</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.PorcentajeRealizado) ? "-" : $"{item.PorcentajeRealizado}%")</td>
-                                    <td><a class="btn btn-sm btn-outline-primary text-nowrap" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-masterId="@item.MasterId" asp-route-requestId="@(item.Id > 0 ? item.Id : (int?)null)">Completar / editar</a></td>
-                                </tr>
-                            }
-                        }
-                        else
+        @foreach (var kind in new[] { "equipos", "gondolas" })
+        {
+            var isEquipo = kind == "equipos";
+            var rows = Model.EquiposGondolas.Where(x => string.Equals(x.Tipo, isEquipo ? "Ingreso de Equipo" : "Ingreso de Gondola", StringComparison.OrdinalIgnoreCase)).ToList();
+            <div class="doc-chart doc-panel-@kind doc-is-hidden">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <h6 class="doc-chart__title mb-0">Control documental de @(isEquipo ? "equipos" : "góndolas") · @rows.Count registros</h6>
+                    <a class="btn btn-sm btn-primary" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-kind="@kind">@(isEquipo ? "Completar equipo" : "Completar góndola")</a>
+                </div>
+                <div class="doc-chart__hint">Datos de su maestro y documentación registrada. Abre el formulario para completar la información pendiente.</div>
+                <div class="doc-chart-table-wrap">
+                    <table class="table table-sm align-middle doc-chart-table">
+                        <thead><tr>
+                            <th>ID maestro</th><th>Asunto</th><th>Tarea padre</th><th>Estado</th>
+                            @if(isEquipo){<th>Empresa</th><th>Código del cabezal</th><th>Placa de cabezal</th>}else{<th>Placa de góndola</th>}
+                            <th>Tenencia</th><th>Propietario</th>
+                            @if(isEquipo){<th>Venc. emisión gases</th><th>Venc. insp. mecánica</th><th>Venc. seguro vehicular</th>}
+                            <th>Fecha inicio</th><th>Fecha fin</th><th>% Realizado</th><th>Formulario</th>
+                        </tr></thead>
+                        <tbody>
+                        @foreach(var item in rows)
                         {
                             <tr>
-                                <td colspan="18" class="text-muted">Sin registros de camion, remolque o gondola todavia.</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.MasterCode) ? "—" : item.MasterCode)</td>
+                                <td class="doc-equipo-col-main">@item.Asunto<div class="doc-equipo-meta">Actualizado: @item.UpdatedAt.ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture)</div></td>
+                                <td>@(string.IsNullOrWhiteSpace(item.TareaPadre) ? "—" : item.TareaPadre)</td><td>@item.Estado</td>
+                                @if(isEquipo){<td>@item.Empresa</td><td>@item.CodigoCabezal</td><td>@item.PlacaCabezal</td>}else{<td>@item.PlacaGondola</td>}
+                                <td>@item.Tenencia</td><td>@item.Propietario</td>
+                                @if(isEquipo){<td>@item.VencimientoEmisionGases</td><td>@item.VencimientoInspeccionMecanica</td><td>@item.VencimientoSeguroVehicular</td>}
+                                <td>@item.FechaInicio</td><td>@item.FechaFin</td><td>@(string.IsNullOrWhiteSpace(item.PorcentajeRealizado) ? "—" : item.PorcentajeRealizado + "%")</td>
+                                <td><a class="btn btn-sm btn-outline-primary text-nowrap" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-kind="@kind" asp-route-masterId="@item.MasterId" asp-route-requestId="@(item.Id > 0 ? item.Id : (int?)null)">Completar / editar</a></td>
                             </tr>
                         }
-                    </tbody>
-                </table>
+                        @if(rows.Count == 0){<tr><td colspan="@(isEquipo ? 16 : 11)" class="text-muted">No hay @(isEquipo ? "equipos" : "góndolas") registrados.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        }
 
         <div class="doc-table-controls doc-panel-personas">
             <div class="doc-table-controls__box doc-table-controls__box--filters">
@@ -2172,7 +2146,8 @@
             var drawerBody = drawerRoot ? drawerRoot.querySelector(".js-doc-drawer-body") : null;
             var viewSwitchButtons = Array.from(document.querySelectorAll(".js-doc-view-switch"));
             var personasPanels = Array.from(document.querySelectorAll(".doc-panel-personas"));
-            var camionesPanels = Array.from(document.querySelectorAll(".doc-panel-camiones"));
+            var equiposPanels = Array.from(document.querySelectorAll(".doc-panel-equipos"));
+            var gondolasPanels = Array.from(document.querySelectorAll(".doc-panel-gondolas"));
             var newRecordTypeSelect = document.querySelector(".js-doc-new-record-type");
             var newPersonaFields = document.querySelector(".js-doc-new-persona-fields");
             var newCamionFields = document.querySelector(".js-doc-new-camion-fields");
@@ -2208,19 +2183,17 @@
             }
 
             function setDocumentView(view) {
-                var showCamiones = view === "camiones";
-                personasPanels.forEach(function (panel) {
-                    panel.classList.toggle("doc-is-hidden", showCamiones);
-                });
-                camionesPanels.forEach(function (panel) {
-                    panel.classList.toggle("doc-is-hidden", !showCamiones);
-                });
+                if (!["personas", "equipos", "gondolas"].includes(view)) view = "personas";
+                var showAssets = view !== "personas";
+                personasPanels.forEach(function (panel) { panel.classList.toggle("doc-is-hidden", view !== "personas"); });
+                equiposPanels.forEach(function (panel) { panel.classList.toggle("doc-is-hidden", view !== "equipos"); });
+                gondolasPanels.forEach(function (panel) { panel.classList.toggle("doc-is-hidden", view !== "gondolas"); });
                 viewSwitchButtons.forEach(function (button) {
                     var selected = (button.getAttribute("data-doc-view") || "") === view;
                     button.classList.toggle("is-active", selected);
                     button.setAttribute("aria-pressed", selected ? "true" : "false");
                 });
-                if (showCamiones) {
+                if (showAssets) {
                     closeDrawer();
                     if (historyPanel && historyPanel.classList.contains("show")) {
                         if (window.bootstrap && window.bootstrap.Collapse) {
@@ -2731,7 +2704,7 @@
             syncExecutiveMode();
             syncNewRecordFields();
             applyFilters();
-            setDocumentView("personas");
+            setDocumentView(new URLSearchParams(window.location.search).get("view") || "personas");
         });
     </script>
 }

@@ -1653,7 +1653,7 @@ namespace ITServiceDeskApp.Controllers
             bool IsClosed);
 
         [HttpGet]
-        public IActionResult NuevoIngresoEquipoGondola(int? masterId = null, int? requestId = null) => DocumentMasterForm(masterId, requestId, false);
+        public IActionResult NuevoIngresoEquipoGondola(int? masterId = null, int? requestId = null, string? kind = null) => DocumentMasterForm(masterId, requestId, false, kind);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1720,7 +1720,7 @@ namespace ITServiceDeskApp.Controllers
             TempData["NuevoIngresoEquipoGondolaOk"] = saveResult.Created
                 ? $"Registro guardado correctamente para {tipoIngreso}. Tarea padre: {traceResult.TareaPadre}"
                 : $"Registro actualizado correctamente para {tipoIngreso}. Tarea padre: {traceResult.TareaPadre}";
-            return RedirectToAction(nameof(NuevoIngresoEquipoGondola));
+            return RedirectToAction(nameof(NuevoIngresoEquipoGondola), new { kind = tipoIngreso == "Ingreso de Equipo" ? "equipos" : "gondolas", masterId = TryReadPositiveInt(form["master_record_id"].ToString()) });
         }
 
         [HttpGet]

@@ -66,16 +66,19 @@ public partial class OperacionesController
         else payload["gondola_placa"] = [master.Name];
     }
 
-    private IActionResult DocumentMasterForm(int? masterId, int? requestId, bool person)
+    private IActionResult DocumentMasterForm(int? masterId, int? requestId, bool person, string? kind = null)
     {
+        if (!person && kind != null && kind is not ("equipos" or "gondolas")) return NotFound();
+        ViewData["DocumentMasterKind"] = kind;
         ViewData["DocumentMasterPerson"] = person;
-        ViewData["DocumentMasterChoices"] = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.IsActive && (person ? x.Kind == "conductores" : x.Kind == "equipos" || x.Kind == "gondolas")).OrderBy(x => x.Kind).ThenBy(x => x.Name).ToList();
-        var master = masterId.HasValue ? _context.OperationalMasterRecords.AsNoTracking().SingleOrDefault(x => x.Id == masterId && (person ? x.Kind == "conductores" : x.Kind == "equipos" || x.Kind == "gondolas")) : null;
+        ViewData["DocumentMasterChoices"] = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.IsActive && (kind == null || x.Kind == kind) && (person ? x.Kind == "conductores" : x.Kind == "equipos" || x.Kind == "gondolas")).OrderBy(x => x.Kind).ThenBy(x => x.Name).ToList();
+        var master = masterId.HasValue ? _context.OperationalMasterRecords.AsNoTracking().SingleOrDefault(x => x.Id == masterId && (kind == null || x.Kind == kind) && (person ? x.Kind == "conductores" : x.Kind == "equipos" || x.Kind == "gondolas")) : null;
         if (masterId.HasValue && master == null) return NotFound();
         if (masterId.HasValue || requestId.HasValue)
         {
             var model = BuildDocumentMasterForm(master, requestId, person);
             if (requestId.HasValue && model.RequestId == null) return NotFound();
+            if (!person && kind != null && model.RequestId.HasValue && model.Type != (kind == "equipos" ? "Ingreso de Equipo" : "Ingreso de Gondola")) return NotFound();
             if (master != null && !master.IsActive && model.RequestId == null) return NotFound();
             ViewData["DocumentMasterForm"] = model;
         }

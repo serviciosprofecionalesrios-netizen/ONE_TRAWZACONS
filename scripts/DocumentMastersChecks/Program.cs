@@ -43,6 +43,12 @@ open=Controller();open.NuevoIngresoEquipoGondola(truck.Id);var equipment=(Docume
 Check(equipment.Payload["equipo_codigo_cabezal"][0]==truck.Name && equipment.Payload["equipo_placa_cabezal"][0]==truck.Plate && equipment.Payload["equipo_propietario"][0]==truck.Owner,"Truck code, plate and owner prefilled");
 open=Controller();open.NuevoIngresoEquipoGondola(trailer.Id);var gondola=(DocumentMasterFormViewModel)open.ViewData["DocumentMasterForm"]!;
 Check(gondola.Type=="Ingreso de Gondola" && gondola.Payload["gondola_placa"][0]==trailer.Name,"Trailer form and plate prefilled");
+var equipmentOnly=Controller();equipmentOnly.NuevoIngresoEquipoGondola(kind:"equipos");
+Check(((IReadOnlyList<OperationalMasterRecord>)equipmentOnly.ViewData["DocumentMasterChoices"]!).Count==42 && ((IReadOnlyList<OperationalMasterRecord>)equipmentOnly.ViewData["DocumentMasterChoices"]!).All(x=>x.Kind=="equipos"),"Equipment form lists equipment only");
+var trailerOnly=Controller();trailerOnly.NuevoIngresoEquipoGondola(kind:"gondolas");
+Check(((IReadOnlyList<OperationalMasterRecord>)trailerOnly.ViewData["DocumentMasterChoices"]!).Count==36 && ((IReadOnlyList<OperationalMasterRecord>)trailerOnly.ViewData["DocumentMasterChoices"]!).All(x=>x.Kind=="gondolas"),"Trailer form lists trailers only");
+Check(Controller().NuevoIngresoEquipoGondola(truck.Id,kind:"gondolas") is NotFoundResult && Controller().NuevoIngresoEquipoGondola(trailer.Id,kind:"equipos") is NotFoundResult,"Separate forms reject an ID of the other category");
+Check(Controller().NuevoIngresoEquipoGondola(kind:"invalid") is NotFoundResult,"Unknown document category rejected");
 Check(Controller().NuevoIngresoPersonal(truck.Id) is NotFoundResult,"Equipment ID rejected in personal form");
 var created=Controller();created.NuevoIngresoPersonal(Form(("master_record_id",driver.Id.ToString()),("tipo","1. Solicitud Ingreso"),("asunto",driver.Name),("nombres_apellidos","Nombre alterado"),("fecha_inicio","2026-10-01"),("numero_inss","001234"),("licencia","ABC")));
 Check(db.OperacionesIngresoPersonalSolicitudes.Count()==1,"Personal documentary form persists to database");

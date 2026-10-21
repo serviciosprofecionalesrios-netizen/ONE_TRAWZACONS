@@ -1,5 +1,6 @@
 @{
-    ViewData["Title"] = "Nuevo ingreso de equipo y gondola";
+    var documentKind = ViewData["DocumentMasterKind"] as string;
+    ViewData["Title"] = documentKind == "equipos" ? "Control documental de equipos" : documentKind == "gondolas" ? "Control documental de góndolas" : "Nuevo ingreso de equipo y góndola";
 }
 
 <style>
@@ -249,7 +250,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body">
-        <h2 class="fw-bold mb-2 module-banner page-title-ribbon"><i class="bi bi-truck-front" aria-hidden="true"></i><span>Nuevo ingreso de equipo y gondola</span></h2>
+        <h2 class="fw-bold mb-2 module-banner page-title-ribbon"><i class="bi bi-truck-front" aria-hidden="true"></i><span>@ViewData["Title"]</span></h2>
         <p class="text-muted mb-4">Registro operativo para ingresos de equipo pesado y gondolas.</p>
 
         @if (TempData["NuevoIngresoEquipoGondolaOk"] is string okMessage)
@@ -264,18 +265,22 @@
         <div class="mb-4">
             <label class="form-label fw-semibold d-block mb-2">Selecciona el tipo de ingreso</label>
             <div class="d-flex flex-wrap gap-2" id="tipoIngresoEquipoGondolaButtons">
+                @if(documentKind != "gondolas"){
                 <button type="button"
                         class="btn btn-outline-primary js-tipo-ingreso-equipo-gondola"
                         data-tipo="Ingreso de Equipo">
                     Ingreso de Equipo
                 </button>
+                }
+                @if(documentKind != "equipos"){
                 <button type="button"
                         class="btn btn-outline-primary js-tipo-ingreso-equipo-gondola"
                         data-tipo="Ingreso de Gondola">
                     Ingreso de Gondola
                 </button>
+                }
             </div>
-            <div class="form-text mt-2">El formulario se habilita al seleccionar uno de los dos botones.</div>
+            <div class="form-text mt-2">Selecciona el registro del maestro para abrir su formulario documental.</div>
         </div>
 
         @await Html.PartialAsync("_DocumentMasterSelector")
@@ -1233,7 +1238,7 @@
                     const response = await fetch(`${historyUrl}?take=30`, { method: 'GET' });
                     if (!response.ok) throw new Error('Trace error');
                     const result = await response.json();
-                    allHistoryRows = (result && result.rows) ? result.rows : [];
+                    allHistoryRows = ((result && result.rows) ? result.rows : []).filter(row => !scopedDocumentKind || (row.ultimoTipo || row.tipoOrigen) === (scopedDocumentKind === 'equipos' ? 'Ingreso de Equipo' : 'Ingreso de Gondola'));
                     applyTraceFilters();
                 } catch {
                     traceHistoryBody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-3">No se pudo cargar el historial.</td></tr>';
@@ -1283,7 +1288,7 @@
                     const response = await fetch(`${requestsUrl}?take=100`, { method: 'GET' });
                     if (!response.ok) throw new Error('Request list error');
                     const result = await response.json();
-                    allSolicitudesRows = (result && result.rows) ? result.rows : [];
+                    allSolicitudesRows = ((result && result.rows) ? result.rows : []).filter(row => !scopedDocumentKind || row.tipo === (scopedDocumentKind === 'equipos' ? 'Ingreso de Equipo' : 'Ingreso de Gondola'));
                     renderSolicitudes(allSolicitudesRows);
                 } catch {
                     solicitudesBody.innerHTML = '<tr><td colspan="12" class="text-danger text-center py-3">No se pudo cargar el listado.</td></tr>';
@@ -1600,6 +1605,9 @@
                     refreshInsights();
                 }
             }
+
+            const scopedDocumentKind = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["DocumentMasterKind"]));
+            if (!initialDocument && scopedDocumentKind && buttons.length) selectTipo(buttons[0], false);
 
             loadTraceHistory();
             loadSolicitudes();
