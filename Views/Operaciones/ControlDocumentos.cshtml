@@ -400,6 +400,58 @@
         white-space: nowrap;
     }
 
+    /* Asset tables have more columns than the summary charts. Keep their scrolling local. */
+    .doc-panel-equipos, .doc-panel-gondolas { min-width: 0; max-width: 100%; }
+    .doc-assets-scroll {
+        width: 100%;
+        max-width: 100%;
+        max-height: min(65vh, 680px);
+        overflow: auto;
+        scrollbar-gutter: stable;
+        overscroll-behavior: contain;
+    }
+    .doc-assets-scroll:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+    .doc-chart-table.doc-assets-table {
+        width: 2610px;
+        min-width: 100%;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .doc-chart-table.doc-assets-table--gondolas { width: 1790px; }
+    .doc-assets-table thead th, .doc-assets-table tbody td {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        padding: 0.65rem 0.75rem;
+        line-height: 1.4;
+    }
+    .doc-assets-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        font-size: 0.72rem;
+    }
+    .doc-assets-table tbody td { font-size: 0.78rem; }
+    .doc-assets-table th:first-child, .doc-assets-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        white-space: nowrap;
+        background: #ffffff;
+    }
+    .doc-assets-table th:last-child, .doc-assets-table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: #ffffff;
+        box-shadow: -4px 0 7px rgba(15, 23, 42, 0.07);
+    }
+    .doc-assets-table thead th:first-child, .doc-assets-table thead th:last-child {
+        z-index: 4;
+        background: #f1f5f9;
+    }
+    .doc-assets-table td:last-child .btn { white-space: nowrap; }
+
     .doc-equipo-col-main {
         min-width: 180px;
         font-weight: 800;
@@ -1617,8 +1669,16 @@
                     <a class="btn btn-sm btn-primary" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-kind="@kind">@(isEquipo ? "Completar equipo" : "Completar góndola")</a>
                 </div>
                 <div class="doc-chart__hint">Datos de su maestro y documentación registrada. Abre el formulario para completar la información pendiente.</div>
-                <div class="doc-chart-table-wrap">
-                    <table class="table table-sm align-middle doc-chart-table">
+                <p class="small text-muted mb-2">Desplázate horizontalmente para consultar todas las columnas. El ID y la acción de editar permanecen visibles.</p>
+                <div class="doc-chart-table-wrap doc-assets-scroll" tabindex="0" role="region" aria-label="Tabla documental de @(isEquipo ? "equipos" : "góndolas"), con desplazamiento horizontal y vertical">
+                    <table class="table table-sm align-middle doc-chart-table doc-assets-table @(isEquipo ? "" : "doc-assets-table--gondolas")">
+                        <colgroup>
+                            <col style="width:110px"/><col style="width:220px"/><col style="width:130px"/><col style="width:180px"/>
+                            @if(isEquipo){<col style="width:150px"/><col style="width:140px"/><col style="width:150px"/>}else{<col style="width:150px"/>}
+                            <col style="width:140px"/><col style="width:240px"/>
+                            @if(isEquipo){<col style="width:165px"/><col style="width:180px"/><col style="width:185px"/>}
+                            <col style="width:150px"/><col style="width:150px"/><col style="width:130px"/><col style="width:190px"/>
+                        </colgroup>
                         <thead><tr>
                             <th>ID maestro</th><th>Asunto</th><th>Tarea padre</th><th>Estado</th>
                             @if(isEquipo){<th>Empresa</th><th>Código del cabezal</th><th>Placa de cabezal</th>}else{<th>Placa de góndola</th>}
