@@ -273,7 +273,9 @@
             <div class="form-text mt-2">El formulario se habilita al seleccionar uno de los filtros.</div>
         </div>
 
+        @await Html.PartialAsync("_DocumentMasterSelector")
         <form id="formNuevoIngresoPersonal" class="d-none" asp-controller="Operaciones" asp-action="NuevoIngresoPersonal" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="master_record_id" id="documentMasterId" />
             @Html.AntiForgeryToken()
             <input type="hidden" name="solicitud_id" id="solicitudIdInput" />
             <input type="hidden" name="tipo" id="tipoSeleccionadoInput" required />
@@ -1842,6 +1844,11 @@
                         field.value = valueArray.length ? (valueArray[0] ?? '') : '';
                     });
                 });
+                const linked = Boolean(form.querySelector('[name="master_record_id"]')?.value);
+                ['nombres_apellidos', 'equipo_codigo_cabezal', 'equipo_placa_cabezal', 'equipo_propietario'].forEach(name => {
+                    const field = form.querySelector(`[name="${name}"]`);
+                    if (field) field.readOnly = linked;
+                });
             }
 
             async function editSolicitud(id) {
@@ -2153,6 +2160,21 @@
 
             form.addEventListener('input', refreshInsights);
             form.addEventListener('change', refreshInsights);
+
+            const initialDocument = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["DocumentMasterForm"]));
+            if (initialDocument) {
+                const button = Array.from(buttons).find(btn => btn.getAttribute('data-tipo') === initialDocument.Type) || buttons[0];
+                if (button) {
+                    selectTipo(button, false);
+                    applyPayload(initialDocument.Payload);
+                    hiddenTipo.value = button.getAttribute('data-tipo') || '';
+                    setEditMode(Boolean(initialDocument.RequestId));
+                    if (solicitudIdInput) solicitudIdInput.value = initialDocument.RequestId ? String(initialDocument.RequestId) : '';
+                    const task = initialDocument.Payload?.tarea_padre?.[0] || initialDocument.Payload?.equipo_tarea_padre?.[0] || initialDocument.Payload?.gondola_tarea_padre?.[0];
+                    if (task) setTareaPadreValue(task);
+                    refreshInsights();
+                }
+            }
 
             loadHistory();
             loadSolicitudes();

@@ -53,12 +53,12 @@ namespace ITServiceDeskApp.Services
                 };
             }
 
-            if (!IsIngresoEquipo(tipoValue))
+            if (!IsIngresoEquipo(tipoValue) && !string.Equals(tipoValue, "Ingreso de Gondola", StringComparison.OrdinalIgnoreCase))
             {
                 return new OperacionesIngresoEquipoGondolaTraceResult
                 {
                     Success = false,
-                    Message = "No existe Tarea padre para este asunto. Debes crear primero en Ingreso de Equipo."
+                    Message = "Selecciona Ingreso de Equipo o Ingreso de Gondola para crear la tarea padre."
                 };
             }
 

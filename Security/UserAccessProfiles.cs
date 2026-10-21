@@ -68,6 +68,9 @@ public static class UserAccessProfiles
         if (configured != null) return configured;
         return role switch
         {
+            nameof(ITServiceDeskApp.Models.UserRole.GestorHS) or
+            nameof(ITServiceDeskApp.Models.UserRole.GerenteHS) or
+            nameof(ITServiceDeskApp.Models.UserRole.SupervisorHS) => OperationsHsEditor,
             nameof(ITServiceDeskApp.Models.UserRole.SupervisorTaller) or
             nameof(ITServiceDeskApp.Models.UserRole.SupervisorLogistica) or
             nameof(ITServiceDeskApp.Models.UserRole.SupervisorGeneralPSB) or
@@ -83,6 +86,13 @@ public static class UserAccessProfiles
         Resolve(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "",
             user.FindFirst(BusinessRoleClaimType)?.Value ?? user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)
         ?? user.FindFirst(ClaimType)?.Value;
+
+    public static bool CanCompleteHsDocuments(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var role = user.FindFirst(BusinessRoleClaimType)?.Value ?? user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        return user.Identity?.IsAuthenticated == true &&
+            (Resolve(user) == OperationsHsEditor || role is "GestorHS" or "GerenteHS" or "SupervisorHS");
+    }
 
     public static bool CanMaintainDrivers(System.Security.Claims.ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true &&

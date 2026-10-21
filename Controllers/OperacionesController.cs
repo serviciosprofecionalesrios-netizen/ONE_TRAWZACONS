@@ -22,7 +22,7 @@ using QRCoder;
 
 namespace ITServiceDeskApp.Controllers
 {
-    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral")]
+    [Authorize(Roles = "Administrator,CoordinadorIT,Technician,EndUser,GerenciaGeneral,GestorHS,GerenteHS,SupervisorHS")]
     public partial class OperacionesController : Controller
     {
         private const decimal LitrosPorGalon = 3.78541m;
@@ -1266,15 +1266,18 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult NuevoIngresoPersonal()
-        {
-            return View();
-        }
+        public IActionResult NuevoIngresoPersonal(int? masterId = null, int? requestId = null) => DocumentMasterForm(masterId, requestId, true);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult NuevoIngresoPersonal(IFormCollection form)
         {
+            if (!TryBindDocumentMaster(form, true, out var boundForm, out var masterError))
+            {
+                TempData["NuevoIngresoPersonalError"] = masterError;
+                return RedirectToAction(nameof(NuevoIngresoPersonal), new { masterId = TryReadPositiveInt(form["master_record_id"].ToString()) });
+            }
+            form = boundForm;
             var tipo = form["tipo"].ToString();
             var asunto = form["asunto"].ToString();
             var solicitudId = TryReadPositiveInt(form["solicitud_id"].ToString());
@@ -1650,15 +1653,18 @@ namespace ITServiceDeskApp.Controllers
             bool IsClosed);
 
         [HttpGet]
-        public IActionResult NuevoIngresoEquipoGondola()
-        {
-            return View();
-        }
+        public IActionResult NuevoIngresoEquipoGondola(int? masterId = null, int? requestId = null) => DocumentMasterForm(masterId, requestId, false);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult NuevoIngresoEquipoGondola(IFormCollection form)
         {
+            if (!TryBindDocumentMaster(form, false, out var boundForm, out var masterError))
+            {
+                TempData["NuevoIngresoEquipoGondolaError"] = masterError;
+                return RedirectToAction(nameof(NuevoIngresoEquipoGondola), new { masterId = TryReadPositiveInt(form["master_record_id"].ToString()) });
+            }
+            form = boundForm;
             var tipoIngreso = form["tipo_ingreso"].ToString();
             var asunto = form["asunto"].ToString();
             var solicitudId = TryReadPositiveInt(form["solicitud_id"].ToString());
@@ -6434,99 +6440,66 @@ namespace ITServiceDeskApp.Controllers
 
         private ControlDocumentosViewModel BuildControlDocumentosModel()
         {
-            var model = new ControlDocumentosViewModel
-            {
-                FuenteArchivo = "Capacitaciones C-SAFE.xlsx",
-                FechaGeneracion = DateTime.Now
+            var model = new ControlDocumentosViewModel {
+                FuenteArchivo = "Maestros y registros documentales", FechaGeneracion = DateTime.Now,
+                EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders()
             };
-
-            var excelPath = Path.Combine(_environment.ContentRootPath, "Data", "Operaciones", model.FuenteArchivo);
-            if (!System.IO.File.Exists(excelPath))
+            var excelPath = Path.Combine(_environment.ContentRootPath, "Data", "Operaciones", "Capacitaciones C-SAFE.xlsx");
+            if (System.IO.File.Exists(excelPath))
             {
-                model.FuenteArchivo = "Registros manuales";
-                model.EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders();
-                model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion);
-                model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(
-                    model.EncabezadosCapacitacion,
-                    model.Filas);
-                model.HistorialCambios = LoadControlDocumentosHistory()
-                    .OrderByDescending(x => x.FechaCambio)
-                    .Take(300)
-                    .ToList();
-                model.TendenciaSemanal = BuildControlDocumentosTrendByDay(model.HistorialCambios, 7);
-                model.TendenciaMensual = BuildControlDocumentosTrendByMonth(model.HistorialCambios, 6);
-                model.EquiposGondolas = BuildControlDocumentosEquipoGondolaRows();
-                return model;
-            }
-
-            try
-            {
-                var overrides = LoadControlDocumentosOverrides();
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-                using var package = new ExcelPackage(new FileInfo(excelPath));
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Dimension is not null);
-                if (worksheet is null)
+                try
                 {
-                    model.ErrorMessage = "El archivo Excel no contiene hojas con informacion.";
-                    return model;
+                    ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                    using var package = new ExcelPackage(new FileInfo(excelPath));
+                    var sheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Dimension != null);
+                    if (sheet?.Dimension != null && sheet.Dimension.Columns > 1)
+                    {
+                        model.EncabezadosCapacitacion = Enumerable.Range(sheet.Dimension.Start.Column + 1, sheet.Dimension.Columns - 1).Select(c => {
+                            var header = sheet.Cells[sheet.Dimension.Start.Row, c].Text.Trim(); return string.IsNullOrWhiteSpace(header) ? $"Columna {c}" : header;
+                        }).ToList();
+                        model.FuenteArchivo += " · Capacitaciones C-SAFE.xlsx";
+                    }
                 }
-
-                var startRow = worksheet.Dimension!.Start.Row;
-                var endRow = worksheet.Dimension.End.Row;
-                var startCol = worksheet.Dimension.Start.Column;
-                var endCol = worksheet.Dimension.End.Column;
-
-                if (endRow <= startRow || endCol <= startCol)
+                catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
-                    model.ErrorMessage = "No hay datos suficientes en el Excel para construir la tabla.";
-                    return model;
+                    _logger.LogWarning(ex, "No se pudo leer la plantilla de capacitaciones; se conserva el catálogo documental.");
+                    model.ErrorMessage = "No se pudo leer el archivo de capacitaciones. Se muestran los maestros y documentos disponibles.";
                 }
-
-                var headers = new List<string>();
-                for (var col = startCol; col <= endCol; col++)
-                {
-                    var header = (worksheet.Cells[startRow, col].Text ?? string.Empty).Trim();
-                    headers.Add(string.IsNullOrWhiteSpace(header) ? $"Columna {col}" : header);
-                }
-
-                model.EncabezadosCapacitacion = headers.Skip(1).ToList();
-                model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion);
-                model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(
-                    model.EncabezadosCapacitacion,
-                    model.Filas);
-                model.HistorialCambios = LoadControlDocumentosHistory()
-                    .OrderByDescending(x => x.FechaCambio)
-                    .Take(300)
-                    .ToList();
-                model.TendenciaSemanal = BuildControlDocumentosTrendByDay(model.HistorialCambios, 7);
-                model.TendenciaMensual = BuildControlDocumentosTrendByMonth(model.HistorialCambios, 6);
-                model.EquiposGondolas = BuildControlDocumentosEquipoGondolaRows();
             }
-            catch
-            {
-                model.ErrorMessage = "No se pudo procesar el archivo de capacitaciones. Verifica su formato.";
-            }
-
+            var capturedTrainingHeaders = _context.OperacionesIngresoPersonalSolicitudes.AsNoTracking().Select(x => x.PayloadJson).AsEnumerable()
+                .Select(DeserializeEquipoGondolaPayload).SelectMany(payload => HsTrainingDocumentFields.Where(field => !string.IsNullOrWhiteSpace(FirstPayloadValue(payload, field.Value))).Select(field => field.Key));
+            model.EncabezadosCapacitacion = model.EncabezadosCapacitacion.Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
+            model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion);
+            model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
+            model.HistorialCambios = LoadControlDocumentosHistory().OrderByDescending(x => x.FechaCambio).Take(300).ToList();
+            model.TendenciaSemanal = BuildControlDocumentosTrendByDay(model.HistorialCambios, 7);
+            model.TendenciaMensual = BuildControlDocumentosTrendByMonth(model.HistorialCambios, 6);
+            model.EquiposGondolas = BuildControlDocumentosEquipoGondolaRows();
             return model;
         }
 
         private IReadOnlyList<ControlDocumentosEquipoGondolaRowViewModel> BuildControlDocumentosEquipoGondolaRows()
         {
-            try
+            var requests = _context.OperacionesIngresoEquipoGondolaSolicitudes.AsNoTracking().OrderByDescending(x => x.UpdatedAt).ToList();
+            var rows = requests.Select(ToControlDocumentosEquipoGondolaRow).ToList();
+            var masters = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "equipos" || x.Kind == "gondolas").ToList();
+            foreach (var master in masters)
             {
-                return _context.OperacionesIngresoEquipoGondolaSolicitudes
-                    .AsNoTracking()
-                    .OrderByDescending(x => x.UpdatedAt)
-                    .Take(200)
-                    .AsEnumerable()
-                    .Select(ToControlDocumentosEquipoGondolaRow)
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PlacaCabezal) || !string.IsNullOrWhiteSpace(x.PlacaGondola))
-                    .ToList();
+                var matches = requests.Where(x => DocumentMatchesMaster(master, x.Tipo, x.Asunto, DeserializeEquipoGondolaPayload(x.PayloadJson))).ToList();
+                if (!master.IsActive && matches.Count == 0) continue;
+                var row = matches.Count > 0 ? ToControlDocumentosEquipoGondolaRow(matches[0]) : new ControlDocumentosEquipoGondolaRowViewModel {
+                    Tipo = master.Kind == "equipos" ? "Ingreso de Equipo" : "Ingreso de Gondola", Asunto = master.Name,
+                    Estado = "Pendiente de completar", UpdatedAt = master.CreatedAt,
+                    VencimientoEmisionGases = "-", VencimientoInspeccionMecanica = "-", VencimientoSeguroVehicular = "-"
+                };
+                var ids = matches.Select(x => x.Id).ToHashSet(); rows.RemoveAll(x => ids.Contains(x.Id));
+                row.MasterId = master.Id; row.MasterCode = master.DisplayId;
+                row.Tenencia = master.Tenure; row.Propietario = master.Owner;
+                if (master.Kind == "equipos") { row.CodigoCabezal = master.Name; row.PlacaCabezal = master.Plate ?? ""; }
+                else row.PlacaGondola = master.Name;
+                rows.Add(row);
             }
-            catch
-            {
-                return Array.Empty<ControlDocumentosEquipoGondolaRowViewModel>();
-            }
+            return rows.Where(x => x.MasterId.HasValue || !string.IsNullOrWhiteSpace(x.PlacaCabezal) || !string.IsNullOrWhiteSpace(x.PlacaGondola)).OrderBy(x => x.Tipo).ThenBy(x => x.CodigoCabezal).ThenBy(x => x.PlacaGondola).ToList();
         }
 
         private static ControlDocumentosEquipoGondolaRowViewModel ToControlDocumentosEquipoGondolaRow(OperacionesIngresoEquipoGondolaSolicitud solicitud)
@@ -6673,19 +6646,30 @@ namespace ITServiceDeskApp.Controllers
                 ? encabezados
                 : GetDefaultControlDocumentosPersonaHeaders();
 
-            var personas = LoadControlDocumentosPersonas()
-                .Where(x => !string.IsNullOrWhiteSpace(x.Nombre))
-                .ToDictionary(x => NormalizeControlDocumentoKey(x.Nombre), x => x, StringComparer.Ordinal);
-
-            foreach (var persona in LoadControlDocumentosPersonasDesdeIngresoPersonal())
+            var personas = LoadControlDocumentosPersonas().Where(x => !string.IsNullOrWhiteSpace(x.Nombre))
+                .GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).ToDictionary(x => x.Key, x => x.OrderByDescending(p => p.UpdatedAt).First(), StringComparer.Ordinal);
+            foreach (var persona in LoadControlDocumentosPersonasDesdeIngresoPersonal().GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).Select(x => x.OrderByDescending(p => p.UpdatedAt).First()))
             {
-                var key = NormalizeControlDocumentoKey(persona.Nombre);
-                if (string.IsNullOrWhiteSpace(key) || personas.ContainsKey(key))
-                {
-                    continue;
-                }
-
+                var key = OperationalMasterCatalog.Key("conductores", persona.Nombre);
+                if (personas.TryGetValue(key, out var manual))
+                    foreach (var date in manual.Fechas) if (!persona.Fechas.ContainsKey(date.Key)) persona.Fechas[date.Key] = date.Value;
                 personas[key] = persona;
+            }
+            foreach (var master in _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores").ToList())
+            {
+                var key = OperationalMasterCatalog.Key("conductores", master.Name);
+                var matches = personas.Where(x => x.Value.MasterId == master.Id || x.Key == key || x.Key == master.SourceKey).ToList();
+                if (!master.IsActive && matches.Count == 0) continue;
+                var persona = matches.OrderByDescending(x => x.Value.RequestId.HasValue).ThenByDescending(x => x.Value.UpdatedAt).Select(x => x.Value).FirstOrDefault() ?? new ControlDocumentosPersonaRecord();
+                foreach (var match in matches) { foreach (var date in match.Value.Fechas) if (!persona.Fechas.ContainsKey(date.Key)) persona.Fechas[date.Key] = date.Value; personas.Remove(match.Key); }
+                persona.Nombre = master.Name; persona.MasterId = master.Id; persona.MasterCode = master.DisplayId; persona.Tenure = master.Tenure; persona.Owner = master.Owner; persona.SourceKey = master.SourceKey;
+                personas[key] = persona;
+            }
+            var overrides = LoadControlDocumentosOverrides();
+            foreach (var persona in personas.Values)
+            {
+                var entries = overrides.Where(x => OperationalMasterCatalog.Key("conductores", x.Key) == (OperationalMasterCatalog.Key("conductores", persona.Nombre)) || OperationalMasterCatalog.Key("conductores", x.Key) == persona.SourceKey);
+                foreach (var entry in entries) foreach (var date in entry.Value) persona.Fechas[date.Key] = date.Value;
             }
 
             return personas.Values
@@ -6710,6 +6694,7 @@ namespace ITServiceDeskApp.Controllers
                     return new ControlDocumentosRowViewModel
                     {
                         Conductor = persona.Nombre,
+                        MasterId = persona.MasterId, MasterCode = persona.MasterCode, RequestId = persona.RequestId, Tenure = persona.Tenure, Owner = persona.Owner,
                         FechasCapacitacion = fechasCapacitacion,
                         FechasCapacitacionIso = fechasCapacitacionIso,
                         Capacitaciones = capacitaciones
@@ -6725,7 +6710,6 @@ namespace ITServiceDeskApp.Controllers
                 return _context.OperacionesIngresoPersonalSolicitudes
                     .AsNoTracking()
                     .OrderByDescending(x => x.UpdatedAt)
-                    .Take(300)
                     .AsEnumerable()
                     .Select(ToControlDocumentosPersonaRecord)
                     .Where(x => !string.IsNullOrWhiteSpace(x.Nombre))
@@ -6759,6 +6743,9 @@ namespace ITServiceDeskApp.Controllers
                     FirstPayloadValue(payload, $"control_documento_{NormalizeHeader(encabezado)}"));
             }
 
+            foreach (var training in HsTrainingDocumentFields)
+                AddControlDocumentoPersonaFecha(fechas, training.Key, FirstPayloadValue(payload, training.Value));
+
             AddControlDocumentoPersonaFecha(fechas, "Contrato de Trabajo", FirstPayloadValue(payload, "fecha_inicio_contrato", "fecha_inicio"));
             AddControlDocumentoPersonaFecha(fechas, "INSS", FirstPayloadValue(payload, "fecha_inicio_contrato", "fecha_inicio"));
             AddControlDocumentoPersonaFecha(fechas, "Cedula", FirstPayloadValue(payload, "fecha_inicio"));
@@ -6767,6 +6754,8 @@ namespace ITServiceDeskApp.Controllers
             return new ControlDocumentosPersonaRecord
             {
                 Nombre = nombre.Trim(),
+                RequestId = solicitud.Id,
+                MasterId = TryReadPositiveInt(FirstPayloadValue(payload, "master_record_id")),
                 Fechas = fechas,
                 CreatedAt = solicitud.CreatedAt,
                 UpdatedAt = solicitud.UpdatedAt
@@ -6789,6 +6778,12 @@ namespace ITServiceDeskApp.Controllers
 
         private sealed class ControlDocumentosPersonaRecord
         {
+            public string? SourceKey { get; set; }
+            public int? MasterId { get; set; }
+            public int? RequestId { get; set; }
+            public string MasterCode { get; set; } = "";
+            public string Tenure { get; set; } = "";
+            public string Owner { get; set; } = "";
             public string Nombre { get; set; } = string.Empty;
             public Dictionary<string, string> Fechas { get; set; } = new(StringComparer.OrdinalIgnoreCase);
             public DateTime CreatedAt { get; set; }

@@ -62,6 +62,13 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
             controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
             action.Equals("SeguimientoToneladas", StringComparison.OrdinalIgnoreCase);
 
+        // H&S completes documentary forms in Operations without receiving unrelated Operations write access.
+        if (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) && UserAccessProfiles.CanCompleteHsDocuments(user) &&
+            new[] { "ControlDocumentos", "ActualizarControlDocumentos", "ActualizarControlDocumentosMasivo", "CrearControlDocumentosRegistro",
+                "NuevoIngresoPersonal", "NuevoIngresoEquipoGondola", "ResolveTareaPadreIngresoPersonal", "ResolveTareaPadreIngresoEquipoGondola",
+                "GetIngresoPersonalRequests", "GetIngresoPersonalRequestById", "GetIngresoPersonalTraceHistory", "GetIngresoEquipoGondolaRequests", "GetIngresoEquipoGondolaRequestById", "GetIngresoEquipoGondolaTraceHistory" }.Contains(action, StringComparer.OrdinalIgnoreCase))
+            return;
+
         // These shared master actions also validate the requested catalog in the controller.
         if (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
             UserAccessProfiles.CanMaintainDrivers(user) &&

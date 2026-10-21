@@ -22,6 +22,11 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosRowViewModel
     {
+        public int? MasterId { get; set; }
+        public string MasterCode { get; set; } = "";
+        public string Tenure { get; set; } = "";
+        public string Owner { get; set; } = "";
+        public int? RequestId { get; set; }
         public string Conductor { get; set; } = string.Empty;
         public IReadOnlyList<string> FechasCapacitacion { get; set; } = Array.Empty<string>();
         public IReadOnlyList<string> FechasCapacitacionIso { get; set; } = Array.Empty<string>();
@@ -45,6 +50,8 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosEquipoGondolaRowViewModel
     {
+        public int? MasterId { get; set; }
+        public string MasterCode { get; set; } = "";
         public int Id { get; set; }
         public string Tipo { get; set; } = string.Empty;
         public string Asunto { get; set; } = string.Empty;

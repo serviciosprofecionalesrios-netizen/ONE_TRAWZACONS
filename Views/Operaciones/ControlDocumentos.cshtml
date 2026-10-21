@@ -1607,11 +1607,12 @@
 
         <div class="doc-chart doc-panel-camiones doc-is-hidden">
             <h6 class="doc-chart__title">Control documental de camion y remolque o gondola</h6>
-            <div class="doc-chart__hint">Informacion captada desde Ingreso de Equipo / Ingreso de Gondola.</div>
+            <div class="doc-chart__hint">Catálogo de maestros y documentación registrada. Abre cada formulario para completar la información pendiente.</div>
             <div class="doc-chart-table-wrap">
                 <table class="table table-sm align-middle doc-chart-table">
                     <thead>
                         <tr>
+                            <th>ID maestro</th>
                             <th>Tipo</th>
                             <th>Asunto</th>
                             <th>Tarea padre</th>
@@ -1628,6 +1629,7 @@
                             <th>Fecha inicio</th>
                             <th>Fecha fin</th>
                             <th>% Realizado</th>
+                            <th>Formulario</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1636,6 +1638,7 @@
                             @foreach (var item in Model.EquiposGondolas)
                             {
                                 <tr>
+                                    <td>@(string.IsNullOrWhiteSpace(item.MasterCode) ? "—" : item.MasterCode)</td>
                                     <td><span class="doc-equipo-badge">@item.Tipo</span></td>
                                     <td class="doc-equipo-col-main">
                                         @item.Asunto
@@ -1655,13 +1658,14 @@
                                     <td>@item.FechaInicio</td>
                                     <td>@item.FechaFin</td>
                                     <td>@(string.IsNullOrWhiteSpace(item.PorcentajeRealizado) ? "-" : $"{item.PorcentajeRealizado}%")</td>
+                                    <td><a class="btn btn-sm btn-outline-primary text-nowrap" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-masterId="@item.MasterId" asp-route-requestId="@(item.Id > 0 ? item.Id : (int?)null)">Completar / editar</a></td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="16" class="text-muted">Sin registros de camion, remolque o gondola todavia.</td>
+                                <td colspan="18" class="text-muted">Sin registros de camion, remolque o gondola todavia.</td>
                             </tr>
                         }
                     </tbody>
@@ -1905,6 +1909,7 @@
                                             aria-expanded="false"
                                             aria-controls="@detailId">
                                         <span class="doc-conductor-name">@fila.Conductor</span>
+                                        @if(fila.MasterId.HasValue){<small class="text-muted">@fila.MasterCode</small>}
                                         <span class="doc-conductor-state doc-conductor-state--@conductorEstadoClass">
                                             <span class="doc-semaforo-dot doc-semaforo-dot--@conductorEstadoClass"></span>
                                             <span>@conductorEstadoLabel</span>
@@ -1940,6 +1945,7 @@
                             <td colspan="@(Model.TotalCapacitaciones + 1)">
                                 <div class="collapse doc-detail-collapse" id="@detailId">
                                     <div class="doc-detail-panel">
+                                        @if(fila.MasterId.HasValue || fila.RequestId.HasValue){<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><span class="small text-muted">@fila.MasterCode · @fila.Tenure · @fila.Owner</span><a class="btn btn-primary btn-sm" asp-controller="Operaciones" asp-action="NuevoIngresoPersonal" asp-route-masterId="@fila.MasterId" asp-route-requestId="@fila.RequestId">Completar / editar formulario de personal</a></div>}
                                         <div class="doc-detail-toolbar">
                                             <h6>
                                                 Detalle de capacitaciones:
