@@ -1523,6 +1523,11 @@
                         </li>
                     }
 
+                    @if (ITServiceDeskApp.Security.SiteActivityPolicy.CanView(User))
+                    {
+                        <li class="nav-item"><a class="nav-link menu-link @(currentController == "SiteActivity" ? "active fw-bold" : "")" asp-controller="SiteActivity" asp-action="Index"><span class="menu-text"><i class="bi bi-activity me-1"></i>Actividad del sitio</span></a></li>
+                    }
+
                     @if (showOperationsMenu)
                     {
                     <li class="nav-item dropdown area-dropdown">
@@ -2859,6 +2864,11 @@
 
     @RenderSection("Scripts", required: false)
 
+@if(User.Identity?.IsAuthenticated == true)
+{
+    <form id="site-activity-token" class="d-none" data-pulse-url="@Url.Action("Pulse","SiteActivity")">@Html.AntiForgeryToken()</form>
+    <script src="~/js/site-activity.js" asp-append-version="true" defer></script>
+}
 </body>
 </html>
 

@@ -19,6 +19,7 @@ public sealed class AuditTrailFilter(ApplicationDbContext database) : IAsyncActi
         if (!executed.Canceled && executed.Exception is null &&
             !controller.Equals("Account", StringComparison.OrdinalIgnoreCase) &&
             !controller.Equals("Audit", StringComparison.OrdinalIgnoreCase) &&
+            !controller.Equals("SiteActivity", StringComparison.OrdinalIgnoreCase) &&
             (isChange || isGeneration))
         {
             var actionLabel = action.Contains("delete", StringComparison.OrdinalIgnoreCase) || action.Contains("remove", StringComparison.OrdinalIgnoreCase)

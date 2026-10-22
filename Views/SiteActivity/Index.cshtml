@@ -1,0 +1,36 @@
+@model ITServiceDeskApp.ViewModels.SiteActivityViewModel
+@{ ViewData["Title"] = "Actividad del sitio"; }
+<div class="container-fluid py-4">
+    <div class="module-banner mb-4"><div><h2><i class="bi bi-activity"></i>Actividad del sitio</h2><p class="mb-0">Reporte privado de conexiones, presencia y actividad de usuarios.</p></div><span class="badge bg-light text-dark">Acceso exclusivo de tu cuenta</span></div>
+    <div class="alert alert-info small">El tiempo activo es una estimación: se cuenta cuando la pestaña está visible y hubo interacción en los últimos 2 minutos. La presencia vence tras 90 segundos sin señal. El registro comienza con esta actualización; no reconstruye visitas anteriores.</div>
+    <form method="get" asp-action="Index" class="card p-3 mb-3"><div asp-validation-summary="All" class="text-danger"></div><div class="row g-3 align-items-end">
+        <div class="col-md-4"><label for="activityUser" class="form-label">Usuario</label><select id="activityUser" name="userId" class="form-select"><option value="">Todos los usuarios</option>@foreach(var choice in Model.Choices){<option value="@choice.Id" selected="@(choice.Id==Model.UserId)">@choice.Name · @choice.Email</option>}</select></div>
+        <div class="col-md-2"><label for="activityFrom" class="form-label">Historial desde</label><input id="activityFrom" type="date" name="from" value="@Model.From.ToString("yyyy-MM-dd")" class="form-control" required/></div>
+        <div class="col-md-2"><label for="activityTo" class="form-label">Historial hasta</label><input id="activityTo" type="date" name="to" value="@Model.To.ToString("yyyy-MM-dd")" class="form-control" required/></div>
+        <div class="col-md-4 d-flex flex-wrap gap-2"><button class="btn btn-primary">Aplicar</button><a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a><button type="button" id="refresh-site-activity" class="btn btn-outline-primary">Actualizar ahora</button></div>
+    </div></form>
+    <p id="site-activity-refresh-status" class="small text-muted" aria-live="polite">Actualización automática cada 30 segundos mientras este reporte esté visible.</p>
+    <div id="site-activity-report" data-snapshot-url="@Url.Action("Snapshot")">@await Html.PartialAsync("_Report",Model)</div>
+</div>
+@section Scripts {
+<script>
+(() => {
+    const report=document.getElementById('site-activity-report');
+    const status=document.getElementById('site-activity-refresh-status');
+    let pending=false, stopped=false;
+    async function refresh(){
+        if(pending || stopped || document.visibilityState!=='visible')return;
+        pending=true;
+        try{
+            const response=await fetch(report.dataset.snapshotUrl+window.location.search,{credentials:'same-origin',cache:'no-store'});
+            if(response.redirected || response.status===401 || response.status===403){stopped=true;status.textContent='La sesión cambió o terminó. Vuelve a ingresar con tu cuenta.';return;}
+            if(!response.ok)throw new Error('refresh');
+            report.innerHTML=await response.text();status.textContent='Actualización automática cada 30 segundos mientras este reporte esté visible.';
+        }catch{status.textContent='No se pudo actualizar el reporte. Se volverá a intentar.';}
+        finally{pending=false;}
+    }
+    document.getElementById('refresh-site-activity').addEventListener('click',refresh);
+    setInterval(refresh,30000);
+})();
+</script>
+}

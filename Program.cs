@@ -1,4 +1,4 @@
-﻿using ITServiceDeskApp.Data;
+using ITServiceDeskApp.Data;
 using ITServiceDeskApp.Models;
 using ITServiceDeskApp.Services;
 using ITServiceDeskApp.Services.Interfaces;
@@ -29,10 +29,14 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddScoped<AccessProfileAuthorizationFilter>();
 builder.Services.AddScoped<AuditTrailFilter>();
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddScoped<SiteActivityRecorder>();
+builder.Services.AddScoped<SiteActivityFilter>();
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.AddService<AccessProfileAuthorizationFilter>();
     options.Filters.AddService<AuditTrailFilter>();
+    options.Filters.AddService<SiteActivityFilter>();
 });
 builder.Services.AddHttpClient("PublishedInventory", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<PublishedInventoryService>();

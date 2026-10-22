@@ -30,6 +30,11 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
         }
 
         var action = context.ActionDescriptor.RouteValues["action"] ?? string.Empty;
+        if (controller.Equals("SiteActivity", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!action.Equals("Pulse", StringComparison.OrdinalIgnoreCase) && !SiteActivityPolicy.CanView(user)) context.Result=new ForbidResult();
+            return;
+        }
         if (controller.Equals("MaintenanceTechnicians", StringComparison.OrdinalIgnoreCase) &&
             !isConfiguredAdministrator && !action.Equals("Index", StringComparison.OrdinalIgnoreCase))
         {

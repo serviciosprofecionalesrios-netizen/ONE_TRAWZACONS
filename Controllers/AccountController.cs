@@ -1,4 +1,4 @@
-﻿using ITServiceDeskApp.Data;
+using ITServiceDeskApp.Data;
 using ITServiceDeskApp.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ITServiceDeskApp.Security;
+using ITServiceDeskApp.Services;
 
 namespace ITServiceDeskApp.Controllers
 {
@@ -16,15 +17,17 @@ namespace ITServiceDeskApp.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IWebHostEnvironment _environment;
+        private readonly SiteActivityRecorder? _activity;
 
         public AccountController(
             ApplicationDbContext context,
             IPasswordHasher<User> passwordHasher,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment, SiteActivityRecorder? activity = null)
         {
             _context = context;
             _passwordHasher = passwordHasher;
             _environment = environment;
+            _activity = activity;
         }
 
         [HttpGet]
@@ -102,7 +105,8 @@ namespace ITServiceDeskApp.Controllers
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, effectiveRole),
                 new Claim(UserAccessProfiles.BusinessRoleClaimType, user.Role.ToString()),
-                new Claim("UserId", user.Id.ToString())
+                new Claim("UserId", user.Id.ToString()),
+                new Claim(SiteActivityPolicy.SessionClaim, Guid.NewGuid().ToString("N"))
             };
 
             if (accessProfile is not null)
@@ -115,6 +119,9 @@ namespace ITServiceDeskApp.Controllers
                 CookieAuthenticationDefaults.AuthenticationScheme);
 
             var principal = new ClaimsPrincipal(identity);
+
+            if (_activity != null && Guid.TryParse(principal.FindFirst(SiteActivityPolicy.SessionClaim)?.Value,out var sessionId))
+                await _activity.Record(sessionId,principal,"Inicio de sesión","Account","Login","Inicio de sesión",302);
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
@@ -135,6 +142,9 @@ namespace ITServiceDeskApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            var sessionId = SiteActivityRecorder.SessionId(HttpContext,false);
+            if (_activity != null && sessionId.HasValue) await _activity.Close(sessionId.Value,User);
+            Response.Cookies.Delete(SiteActivityPolicy.SessionCookie);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login));
         }

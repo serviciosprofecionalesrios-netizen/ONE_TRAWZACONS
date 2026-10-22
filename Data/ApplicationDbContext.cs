@@ -10,6 +10,9 @@ namespace ITServiceDeskApp.Data
         {
         }
 
+        public DbSet<SiteActivitySession> SiteActivitySessions => Set<SiteActivitySession>();
+        public DbSet<SiteActivityEvent> SiteActivityEvents => Set<SiteActivityEvent>();
+
         public DbSet<User> Users => Set<User>();
         public DbSet<Ticket> Tickets => Set<Ticket>();
         public DbSet<TicketHistory> TicketHistories => Set<TicketHistory>();
