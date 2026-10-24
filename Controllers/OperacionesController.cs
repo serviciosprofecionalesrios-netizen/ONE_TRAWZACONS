@@ -6468,7 +6468,7 @@ namespace ITServiceDeskApp.Controllers
             }
             var capturedTrainingHeaders = _context.OperacionesIngresoPersonalSolicitudes.AsNoTracking().Select(x => x.PayloadJson).AsEnumerable()
                 .Select(DeserializeEquipoGondolaPayload).SelectMany(payload => HsTrainingDocumentFields.Where(field => !string.IsNullOrWhiteSpace(FirstPayloadValue(payload, field.Value))).Select(field => field.Key));
-            model.EncabezadosCapacitacion = model.EncabezadosCapacitacion.Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
+            model.EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders().Concat(model.EncabezadosCapacitacion).Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
             model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion);
             model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
             model.HistorialCambios = LoadControlDocumentosHistory().OrderByDescending(x => x.FechaCambio).Take(300).ToList();
@@ -6636,7 +6636,13 @@ namespace ITServiceDeskApp.Controllers
                 "INSS",
                 "Contrato de Trabajo",
                 "Licencia",
-                "Examen medico"
+                "Examen medico",
+                "Inducción General de Sitio", "IPER", "Manejo de Residuos Sólidos",
+                "Manejo de Hidrocarburos", "Sistema de Gestión Social", "Gestión de Fatiga",
+                "Sistema 5 puntos", "Respuesta ante Emergencia", "Primeros Auxilios Teórico",
+                "Primeros Auxilios Práctico", "Prevención de Incendios", "ATS",
+                "Oper. Traslado Mina a  Mina", "Uso de Formato de Transporte", "Educación Vial",
+                "Manejo Defensivo (V. Pesado)", "Manejo Defensivo (V. Liviano)"
             };
         }
 
@@ -6646,11 +6652,13 @@ namespace ITServiceDeskApp.Controllers
                 ? encabezados
                 : GetDefaultControlDocumentosPersonaHeaders();
 
+            var overrides = LoadControlDocumentosOverrides();
             var personas = LoadControlDocumentosPersonas().Where(x => !string.IsNullOrWhiteSpace(x.Nombre))
                 .GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).ToDictionary(x => x.Key, x => x.OrderByDescending(p => p.UpdatedAt).First(), StringComparer.Ordinal);
             foreach (var persona in LoadControlDocumentosPersonasDesdeIngresoPersonal().GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).Select(x => x.OrderByDescending(p => p.UpdatedAt).First()))
             {
                 var key = OperationalMasterCatalog.Key("conductores", persona.Nombre);
+                if (personas.TryGetValue(key, out var imported)) persona.Datos = imported.Datos;
                 if (personas.TryGetValue(key, out var manual))
                     foreach (var date in manual.Fechas) if (!persona.Fechas.ContainsKey(date.Key)) persona.Fechas[date.Key] = date.Value;
                 personas[key] = persona;
@@ -6685,6 +6693,10 @@ namespace ITServiceDeskApp.Controllers
                         var fecha = persona.Fechas is not null && persona.Fechas.TryGetValue(encabezado, out var fechaGuardada)
                             ? fechaGuardada
                             : string.Empty;
+                        if (TryGetOverriddenFecha(overrides, NormalizeControlDocumentoKey(persona.Nombre), encabezado, out var editada))
+                        {
+                            fecha = editada;
+                        }
                         var estado = BuildControlDocumentoCapacitacionEstado(encabezado, fecha);
                         capacitaciones.Add(estado);
                         fechasCapacitacion.Add(estado.Fecha);
@@ -6694,6 +6706,7 @@ namespace ITServiceDeskApp.Controllers
                     return new ControlDocumentosRowViewModel
                     {
                         Conductor = persona.Nombre,
+                        Datos = persona.Datos,
                         MasterId = persona.MasterId, MasterCode = persona.MasterCode, RequestId = persona.RequestId, Tenure = persona.Tenure, Owner = persona.Owner,
                         FechasCapacitacion = fechasCapacitacion,
                         FechasCapacitacionIso = fechasCapacitacionIso,
@@ -6785,6 +6798,7 @@ namespace ITServiceDeskApp.Controllers
             public string Tenure { get; set; } = "";
             public string Owner { get; set; } = "";
             public string Nombre { get; set; } = string.Empty;
+            public Dictionary<string, string> Datos { get; set; } = new();
             public Dictionary<string, string> Fechas { get; set; } = new(StringComparer.OrdinalIgnoreCase);
             public DateTime CreatedAt { get; set; }
             public DateTime UpdatedAt { get; set; }
@@ -6845,6 +6859,10 @@ namespace ITServiceDeskApp.Controllers
                 QrPdfUrl = qrPdfUrl,
                 FechaGeneracion = DateTime.Now,
                 Capacitaciones = fila.Capacitaciones,
+                DatosProfesionales = LoadControlDocumentosPersonas()
+                    .FirstOrDefault(x => NormalizeControlDocumentoKey(x.Nombre) == conductorKey)?.Datos
+                    .Where(x => new[] { "Empresa", "Cargo", "Ubicación de Trabajo", "Nombre Supervisor", "Categorías de Licencia", "Fecha Vencimiento Licencia.", "Estado de solicitud" }.Contains(x.Key))
+                    .ToDictionary(x => x.Key, x => x.Value) ?? new Dictionary<string, string>(),
                 EscaneosRecientes = escaneosRecientes
             };
         }
@@ -7565,6 +7583,12 @@ namespace ITServiceDeskApp.Controllers
                 return result;
             }
 
+            var persona = LoadControlDocumentosPersonas().FirstOrDefault(x => NormalizeControlDocumentoKey(x.Nombre) == conductorKey);
+            if (persona is not null)
+            {
+                return new Dictionary<string, string>(persona.Fechas, StringComparer.OrdinalIgnoreCase);
+            }
+
             var excelPath = Path.Combine(_environment.ContentRootPath, "Data", "Operaciones", "Capacitaciones C-SAFE.xlsx");
             if (!System.IO.File.Exists(excelPath))
             {
@@ -8146,6 +8170,7 @@ namespace ITServiceDeskApp.Controllers
         }
     }
 }
+
 
 
 

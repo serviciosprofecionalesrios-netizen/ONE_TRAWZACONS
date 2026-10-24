@@ -302,6 +302,16 @@
         <div>
             <h3 class="module-banner page-title-ribbon"><i class="bi bi-truck-front" aria-hidden="true"></i><span>Registro de capacitaciones - @Model.Conductor</span></h3>
             <p>Consulta viva via QR | Codigo: @Model.ConductorKey | @Model.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</p>
+            @if (Model.DatosProfesionales.Any())
+            {
+                <dl class="row">
+                    @foreach (var dato in Model.DatosProfesionales)
+                    {
+                        <dt class="col-sm-4">@dato.Key</dt>
+                        <dd class="col-sm-8">@dato.Value</dd>
+                    }
+                </dl>
+            }
             <div class="qr-detail-head-actions">
                 <a class="btn btn-sm btn-light" href="@Model.QrPdfUrl" target="_blank" rel="noopener">PDF</a>
                 <button type="button" class="btn btn-sm btn-outline-light" onclick="window.print()">Imprimir</button>

@@ -27,6 +27,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
         public string Tenure { get; set; } = "";
         public string Owner { get; set; } = "";
         public int? RequestId { get; set; }
+        public IReadOnlyDictionary<string, string> Datos { get; set; } = new Dictionary<string, string>();
         public string Conductor { get; set; } = string.Empty;
         public IReadOnlyList<string> FechasCapacitacion { get; set; } = Array.Empty<string>();
         public IReadOnlyList<string> FechasCapacitacionIso { get; set; } = Array.Empty<string>();
@@ -136,6 +137,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosQrViewModel
     {
+        public IReadOnlyDictionary<string, string> DatosProfesionales { get; set; } = new Dictionary<string, string>();
         public string Conductor { get; set; } = string.Empty;
         public string ConductorKey { get; set; } = string.Empty;
         public string QrImageUrl { get; set; } = string.Empty;
@@ -171,3 +173,4 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
         public string UserAgent { get; set; } = "-";
     }
 }
+
