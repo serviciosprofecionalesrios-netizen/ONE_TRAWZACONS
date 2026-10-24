@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>ITServiceDeskApp-6dcecd4a-4f54-41d4-8828-1091172c0b11</UserSecretsId>
-    <DefaultItemExcludes>$(DefaultItemExcludes);out_temp\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);out_temp\**;scripts\**\bin\**;scripts\**\obj\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

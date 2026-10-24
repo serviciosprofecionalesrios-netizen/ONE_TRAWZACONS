@@ -180,7 +180,7 @@
         .OrderBy(x => x.Equipo)
         .ToList();
 
-    var equiposEnRutaDetalle = rowsBase
+    var equiposEnRutaDetalle = ITServiceDeskApp.Services.TonnageStatusRows.Select(operationalRows, Model.FechaOperativa)
         .Where(r => IsEnRuta(r.Estado))
         .GroupBy(r => (r.Equipo ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
         .Where(g => !string.IsNullOrWhiteSpace(g.Key))
@@ -1620,7 +1620,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>Equipos descargados (<span id="equipos-descargados-count">@(resumenDescargados?.Equipos ?? 0)</span>)</th>
-                        <th>Equipos en ruta (<span id="equipos-ruta-count">@(resumenEnRuta?.Equipos ?? 0)</span>)</th>
+                        <th>Equipos en ruta (<span id="equipos-ruta-count">@(resumenEnRuta?.Equipos ?? 0)</span>)<div class="small fw-normal">Incluye viajes abiertos de días anteriores.</div></th>
                     </tr>
                 </thead>
                 <tbody>

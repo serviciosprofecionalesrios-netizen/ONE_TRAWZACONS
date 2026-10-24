@@ -4241,9 +4241,7 @@ namespace ITServiceDeskApp.Controllers
                     return d.Year == monthReference.Year && d.Month == monthReference.Month;
                 })
                 .Sum(r => r.Toneladas);
-            var rowsBaseEstado = fechaOperativa.HasValue
-                ? rowsConFecha.Where(r => r.FechaEvento!.Value.Date == fechaOperativa.Value).ToList()
-                : rows;
+            var rowsBaseEstado = TonnageStatusRows.Select(rows, fechaOperativa);
             var estadoResumen = BuildEstadoResumen(rowsBaseEstado);
             var toneladasAlDia = rowsBaseEstado
                 .Where(r => string.Equals(MapEstadoCategoria(r.Estado), "FINALIZADO", StringComparison.Ordinal))
