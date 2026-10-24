@@ -6593,14 +6593,23 @@ namespace ITServiceDeskApp.Controllers
         private List<ControlDocumentosPersonaRecord> LoadControlDocumentosPersonas()
         {
             var path = GetControlDocumentosPersonasPath();
-            if (!System.IO.File.Exists(path))
-            {
-                return new List<ControlDocumentosPersonaRecord>();
-            }
-
             try
             {
-                var json = System.IO.File.ReadAllText(path, Encoding.UTF8);
+                string json;
+                if (System.IO.File.Exists(path))
+                {
+                    json = System.IO.File.ReadAllText(path, Encoding.UTF8);
+                }
+                else
+                {
+                    // Private deployment configuration keeps HR records out of the public repository.
+                    var imported = _configuration["Hs:ConductoresImportGzipBase64"];
+                    if (string.IsNullOrWhiteSpace(imported)) return new List<ControlDocumentosPersonaRecord>();
+                    using var compressed = new MemoryStream(Convert.FromBase64String(imported));
+                    using var gzip = new System.IO.Compression.GZipStream(compressed, System.IO.Compression.CompressionMode.Decompress);
+                    using var reader = new StreamReader(gzip, Encoding.UTF8);
+                    json = reader.ReadToEnd();
+                }
                 return string.IsNullOrWhiteSpace(json)
                     ? new List<ControlDocumentosPersonaRecord>()
                     : JsonSerializer.Deserialize<List<ControlDocumentosPersonaRecord>>(json) ?? new List<ControlDocumentosPersonaRecord>();
@@ -6652,7 +6661,6 @@ namespace ITServiceDeskApp.Controllers
                 ? encabezados
                 : GetDefaultControlDocumentosPersonaHeaders();
 
-            var overrides = LoadControlDocumentosOverrides();
             var personas = LoadControlDocumentosPersonas().Where(x => !string.IsNullOrWhiteSpace(x.Nombre))
                 .GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).ToDictionary(x => x.Key, x => x.OrderByDescending(p => p.UpdatedAt).First(), StringComparer.Ordinal);
             foreach (var persona in LoadControlDocumentosPersonasDesdeIngresoPersonal().GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).Select(x => x.OrderByDescending(p => p.UpdatedAt).First()))
@@ -6693,10 +6701,6 @@ namespace ITServiceDeskApp.Controllers
                         var fecha = persona.Fechas is not null && persona.Fechas.TryGetValue(encabezado, out var fechaGuardada)
                             ? fechaGuardada
                             : string.Empty;
-                        if (TryGetOverriddenFecha(overrides, NormalizeControlDocumentoKey(persona.Nombre), encabezado, out var editada))
-                        {
-                            fecha = editada;
-                        }
                         var estado = BuildControlDocumentoCapacitacionEstado(encabezado, fecha);
                         capacitaciones.Add(estado);
                         fechasCapacitacion.Add(estado.Fecha);

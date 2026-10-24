@@ -16,6 +16,8 @@ tmp_login/
 
 # Environment/user secrets
 .env
+.env.*
+Data/Operaciones/*.bak
 appsettings.Local.json
 
 # Runtime and internal business data (kept outside source control)
