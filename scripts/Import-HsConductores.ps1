@@ -44,6 +44,11 @@ foreach ($root in @($rows | Where-Object { $_.Tipo -eq '1.Solicitud Ingreso El L
     }
     $imported++
 }
+foreach ($person in $people) {
+    foreach ($field in @('CreatedAt','UpdatedAt')) {
+        $person[$field] = ([datetime]$person[$field]).ToString('yyyy-MM-ddTHH:mm:ss')
+    }
+}
 New-Item -ItemType Directory -Force (Split-Path $destination) | Out-Null
 if (Test-Path $destination) { Copy-Item $destination ($destination + '.before-import.bak') -ErrorAction Stop }
 ConvertTo-Json -InputObject @($people | Sort-Object Nombre) -Depth 8 | Set-Content -LiteralPath $destination -Encoding utf8
