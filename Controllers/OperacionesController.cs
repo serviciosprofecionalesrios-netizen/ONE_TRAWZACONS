@@ -7750,10 +7750,9 @@ namespace ITServiceDeskApp.Controllers
                     }
                 }
 
-                var totalEvaluable = totalConductores - sinFecha;
-                var porcentaje = totalEvaluable > 0
-                    ? Math.Round(((decimal)(vigente + porVencer) / totalEvaluable) * 100m, 1, MidpointRounding.AwayFromZero)
-                    : 100m;
+                var porcentaje = totalConductores > 0
+                    ? Math.Round(((decimal)(vigente + porVencer) / totalConductores) * 100m, 1, MidpointRounding.AwayFromZero)
+                    : 0m;
                 var estadoVisual = "verde";
                 if (vencida > 0 || sinFecha > 0)
                 {

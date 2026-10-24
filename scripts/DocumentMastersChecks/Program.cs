@@ -35,6 +35,7 @@ var trailer=db.OperationalMasterRecords.First(x=>x.Kind=="gondolas");
 var initial=Documents();
 Check(initial.TotalConductores==33 && initial.TotalEquiposGondolas==78,"All 33 drivers, 42 trucks and 36 trailers appear without creating documents");
 Check(initial.Filas.All(x=>x.Capacitaciones.All(c=>!c.TieneFecha)),"Missing dates are pending, never fabricated");
+Check(initial.CumplimientoCapacitaciones.All(x=>x.CumplimientoPorcentaje==0m),"Missing all dates gives zero compliance instead of 100 percent");
 Check(!db.OperacionesIngresoPersonalSolicitudes.Any()&&!db.OperacionesIngresoEquipoGondolaSolicitudes.Any(),"Opening dashboard has no document writes");
 var open=Controller();Check(open.NuevoIngresoPersonal(driver.Id) is ViewResult,"Driver master opens personal form");
 var personal=(DocumentMasterFormViewModel)open.ViewData["DocumentMasterForm"]!;
@@ -59,6 +60,7 @@ Check(db.OperacionesIngresoPersonalSolicitudes.Count()==1 && db.OperacionesIngre
 payload=JsonSerializer.Deserialize<Dictionary<string,string[]>>(saved.PayloadJson)!;
 Check(payload["numero_inss"][0]=="001234" && payload["licencia"][0]=="ABC","Editing preserves fields not submitted by hidden sections");
 var after=Documents();Check(after.TotalConductores==33 && after.Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Any(c=>c.TieneFecha),"Saved personal dates appear in dashboard without duplicate rows");
+Check(after.CumplimientoCapacitaciones.All(x=>x.CumplimientoPorcentaje==Math.Round(100m*(x.Vigentes+x.PorVencer)/33m,1,MidpointRounding.AwayFromZero)),"Compliance includes missing documents in denominator");
 var hsUpdate=Controller();hsUpdate.NuevoIngresoPersonal(Form(("master_record_id",driver.Id.ToString()),("tipo","1.3 H&S"),("asunto",driver.Name),("induccion_general_fecha","2026-10-20")));
 Check(db.OperacionesIngresoPersonalSolicitudes.Count()==1 && Documents().Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Any(x=>x.NombreCapacitacion=="Inducción General"&&x.FechaIso=="2026-10-20"),"Captured H&S training dates become visible in documentary dashboard");
 var other=db.OperationalMasterRecords.First(x=>x.Kind=="conductores"&&x.Id!=driver.Id);
