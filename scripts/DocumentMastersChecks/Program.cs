@@ -85,6 +85,31 @@ Check(Documents().Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Single(x
 var inactive=db.OperationalMasterRecords.First(x=>x.Kind=="conductores"&&x.Id!=driver.Id);inactive.IsActive=false;db.SaveChanges();
 Check(Controller().NuevoIngresoPersonal(inactive.Id) is NotFoundResult,"Inactive driver cannot start new document");
 Check(Documents().TotalConductores==32,"Inactive undocumented driver excluded");
+// Import aliases are explicitly linked to the existing master's stable source key.
+var importDirectory=Path.Combine(root,"Data","Operaciones");Directory.CreateDirectory(importDirectory);
+var importedTarget=db.OperationalMasterRecords.First(x=>x.Kind=="conductores" && x.IsActive && x.Id!=driver.Id);
+File.WriteAllText(Path.Combine(importDirectory,"ControlDocumentosPersonas.json"),JsonSerializer.Serialize(new[]{
+ new {Nombre="Nombre alternativo confirmado",SourceKey=driver.SourceKey,MasterId=(int?)null,Fechas=new Dictionary<string,string>{{"IPER","01/09/2026"}},Datos=new Dictionary<string,string>{{"Cargo","Operador"}}},
+ new {Nombre=driver.Name,SourceKey=(string?)null,MasterId=(int?)importedTarget.Id,Fechas=new Dictionary<string,string>{{"ATS","02/09/2026"}},Datos=new Dictionary<string,string>()}
+}));
+var linked=Documents();
+Check(linked.TotalConductores==32,"Confirmed imported alias joins existing TW driver without adding a duplicate");
+Check(linked.Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="IPER").FechaIso=="2026-09-01","Imported training retained on master driver");
+Check(linked.Filas.Single(x=>x.MasterId==driver.Id).Datos["Cargo"]=="Operador","Imported profile retained after merging with existing document");
+Check(linked.Filas.Single(x=>x.MasterId==importedTarget.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="ATS").FechaIso=="2026-09-02" && !linked.Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="ATS").TieneFecha,"Explicit master ID wins over a conflicting name without mixing people's training");
+var catalog=db.OperationalMasterRecords.AsNoTracking().ToList();
+Check(OperationalMasterIdentity.Resolve(catalog,"conductores",driver.Id,other.Name)?.Id==driver.Id,"Master ID remains authoritative after a name change");
+Check(OperationalMasterIdentity.Resolve(catalog,"conductores",truck.Id,driver.Name)==null,"ID from another category cannot fall back to matching name");
+Check(OperationalMasterIdentity.Resolve(catalog,"conductores",null,"Unrelated Person")==null,"Unconfirmed name similarity never links a person");
+var assetCatalog=new[]{new OperationalMasterRecord{Id=9001,Kind="equipos",Name="CAB-01",Plate="M 123-456"},new OperationalMasterRecord{Id=9002,Kind="equipos",Name="CAB-02",Plate="M 654-321"},new OperationalMasterRecord{Id=9003,Kind="gondolas",Name="M 123-456"}};
+Check(OperationalMasterIdentity.Resolve(assetCatalog,"equipos",null,"", "m123456")?.Id==9001,"Truck plate formatting differences resolve to one existing ID");
+Check(OperationalMasterIdentity.Resolve(assetCatalog,"gondolas",null,"m123456")?.Id==9003,"Trailer plate formatting resolves within its own category");
+Check(OperationalMasterIdentity.Resolve(assetCatalog,"equipos",null,"CAB-01","M654321")==null,"Conflicting truck code and plate remain unlinked for review");
+var duplicatePlate=assetCatalog.Append(new OperationalMasterRecord{Id=9004,Kind="equipos",Name="CAB-03",Plate="M123456"});
+Check(OperationalMasterIdentity.Resolve(duplicatePlate,"equipos",null,"","M123456")==null,"Ambiguous duplicate plates are never assigned to multiple masters");
+db.OperacionesIngresoEquipoGondolaSolicitudes.Add(new(){Tipo="Ingreso de Equipo",Asunto="Documento importado por placa",PayloadJson=JsonSerializer.Serialize(new Dictionary<string,string[]>{{"equipo_placa_cabezal",[truck.Plate!.Replace("-", "").ToLowerInvariant()]},{"equipo_vencimiento_emision_gases",["2027-04-01"]}}),UpdatedAt=DateTime.Now.AddMinutes(1)});db.SaveChanges();
+var mergedAssets=Documents();
+Check(mergedAssets.TotalEquiposGondolas==78 && mergedAssets.EquiposGondolas.Single(x=>x.MasterId==truck.Id).VencimientoEmisionGases=="01/04/2027" && mergedAssets.EquiposGondolas.Single(x=>x.MasterId==truck.Id).VencimientoSeguroVehicular=="15/03/2027","Repeated truck imports resolve to same TW ID and retain complementary dates");
 foreach(var entry in new[]{("leslieantonioespinoza@trawzacons.com","SupervisorHS",true),("hs@example.com","GestorHS",true),("manager@example.com","GerenteHS",true),("supervisor@example.com","SupervisorHS",true),("roldanzamora@trawzacons.com","Monitoreo",false),("yerlinrocha@trawzacons.com","SupervisorMLL",false)}) {
  var user=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,entry.Item1),new Claim(ClaimTypes.Role,"EndUser"),new Claim(UserAccessProfiles.BusinessRoleClaimType,entry.Item2)},"test"));
  foreach(var action in new[]{"NuevoIngresoPersonal","NuevoIngresoEquipoGondola","ActualizarControlDocumentos","ActualizarControlDocumentosMasivo"}) {

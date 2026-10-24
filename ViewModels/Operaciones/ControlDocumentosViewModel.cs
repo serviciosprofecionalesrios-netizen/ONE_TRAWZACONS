@@ -22,6 +22,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosRowViewModel
     {
+        public IReadOnlyList<string> NombresOrigen { get; set; } = Array.Empty<string>();
         public int? MasterId { get; set; }
         public string MasterCode { get; set; } = "";
         public string Tenure { get; set; } = "";

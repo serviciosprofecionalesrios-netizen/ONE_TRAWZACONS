@@ -20,34 +20,34 @@ public partial class OperacionesController
     };
 
     // Use the immutable master ID for new documents; exact identifiers support older documents.
-    private static bool DocumentMatchesMaster(OperationalMasterRecord master, string type, string name, Dictionary<string, string[]> payload)
+    private bool DocumentMatchesMaster(OperationalMasterRecord master, string type, string name, Dictionary<string, string[]> payload, IReadOnlyList<OperationalMasterRecord>? catalog = null)
     {
         var person = master.Kind == "conductores";
         if (!person && (master.Kind == "equipos") != type.Equals("Ingreso de Equipo", StringComparison.OrdinalIgnoreCase)) return false;
-        if (int.TryParse(FirstPayloadValue(payload, "master_record_id"), out var linked)) return linked == master.Id;
+        var linked = TryReadPositiveInt(FirstPayloadValue(payload, "master_record_id"));
         var identifier = person ? FirstPayloadValue(payload, "nombres_apellidos", "nombre_completo", "nombre")
             : master.Kind == "equipos" ? FirstPayloadValue(payload, "equipo_codigo_cabezal") : FirstPayloadValue(payload, "gondola_placa", "equipo_placa_gondola");
         if (string.IsNullOrWhiteSpace(identifier)) identifier = name;
-        var key = OperationalMasterCatalog.Key(master.Kind, identifier);
-        if (key == OperationalMasterCatalog.Key(master.Kind, master.Name) || key == master.SourceKey) return true;
-        return master.Kind == "equipos" && !string.IsNullOrWhiteSpace(master.Plate) &&
-            OperationalMasterCatalog.Key("equipos", FirstPayloadValue(payload, "equipo_placa_cabezal")) == OperationalMasterCatalog.Key("equipos", master.Plate);
+        catalog ??= _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == master.Kind).ToList();
+        return OperationalMasterIdentity.Resolve(catalog, master.Kind, linked, identifier,
+            FirstPayloadValue(payload, "equipo_placa_cabezal"))?.Id == master.Id;
     }
 
     private DocumentMasterFormViewModel BuildDocumentMasterForm(OperationalMasterRecord? master, int? requestId, bool person)
     {
+        var catalog = _context.OperationalMasterRecords.AsNoTracking().ToList();
         var model = new DocumentMasterFormViewModel { MasterId = master?.Id, DisplayId = master?.DisplayId ?? "", Name = master?.Name ?? "", Kind = master?.Kind ?? "", Tenure = master?.Tenure ?? "", Owner = master?.Owner ?? "", Type = person ? "1. Solicitud Ingreso" : master?.Kind == "gondolas" ? "Ingreso de Gondola" : "Ingreso de Equipo" };
         if (person)
         {
             var requests = _context.OperacionesIngresoPersonalSolicitudes.AsNoTracking().OrderByDescending(x => x.UpdatedAt).ToList();
-            var request = requestId.HasValue ? requests.FirstOrDefault(x => x.Id == requestId) : master == null ? null : requests.FirstOrDefault(x => DocumentMatchesMaster(master, x.Tipo, x.SolicitanteNombre, DeserializeEquipoGondolaPayload(x.PayloadJson)));
-            if (request != null && (master == null || DocumentMatchesMaster(master, request.Tipo, request.SolicitanteNombre, DeserializeEquipoGondolaPayload(request.PayloadJson)))) { model.RequestId = request.Id; model.Type = request.Tipo; model.Payload = DeserializeEquipoGondolaPayload(request.PayloadJson); }
+            var request = requestId.HasValue ? requests.FirstOrDefault(x => x.Id == requestId) : master == null ? null : requests.FirstOrDefault(x => DocumentMatchesMaster(master, x.Tipo, x.SolicitanteNombre, DeserializeEquipoGondolaPayload(x.PayloadJson), catalog));
+            if (request != null && (master == null || DocumentMatchesMaster(master, request.Tipo, request.SolicitanteNombre, DeserializeEquipoGondolaPayload(request.PayloadJson), catalog))) { model.RequestId = request.Id; model.Type = request.Tipo; model.Payload = DeserializeEquipoGondolaPayload(request.PayloadJson); }
         }
         else
         {
             var requests = _context.OperacionesIngresoEquipoGondolaSolicitudes.AsNoTracking().OrderByDescending(x => x.UpdatedAt).ToList();
-            var request = requestId.HasValue ? requests.FirstOrDefault(x => x.Id == requestId) : master == null ? null : requests.FirstOrDefault(x => DocumentMatchesMaster(master, x.Tipo, x.Asunto, DeserializeEquipoGondolaPayload(x.PayloadJson)));
-            if (request != null && (master == null || DocumentMatchesMaster(master, request.Tipo, request.Asunto, DeserializeEquipoGondolaPayload(request.PayloadJson)))) { model.RequestId = request.Id; model.Type = request.Tipo; model.Payload = DeserializeEquipoGondolaPayload(request.PayloadJson); }
+            var request = requestId.HasValue ? requests.FirstOrDefault(x => x.Id == requestId) : master == null ? null : requests.FirstOrDefault(x => DocumentMatchesMaster(master, x.Tipo, x.Asunto, DeserializeEquipoGondolaPayload(x.PayloadJson), catalog));
+            if (request != null && (master == null || DocumentMatchesMaster(master, request.Tipo, request.Asunto, DeserializeEquipoGondolaPayload(request.PayloadJson), catalog))) { model.RequestId = request.Id; model.Type = request.Tipo; model.Payload = DeserializeEquipoGondolaPayload(request.PayloadJson); }
         }
         if (master != null) ApplyMasterIdentity(master, model.Payload, person);
         return model;

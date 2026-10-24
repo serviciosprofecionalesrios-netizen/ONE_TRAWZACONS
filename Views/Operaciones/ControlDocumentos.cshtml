@@ -1945,6 +1945,7 @@
                                             aria-controls="@detailId">
                                         <span class="doc-conductor-name">@fila.Conductor</span>
                                         @if(fila.MasterId.HasValue){<small class="text-muted">@fila.MasterCode</small>}
+                                        else { <small class="text-warning">Pendiente de vincular con el maestro</small> }
                                         <span class="doc-conductor-state doc-conductor-state--@conductorEstadoClass">
                                             <span class="doc-semaforo-dot doc-semaforo-dot--@conductorEstadoClass"></span>
                                             <span>@conductorEstadoLabel</span>

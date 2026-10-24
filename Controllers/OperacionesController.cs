@@ -6483,15 +6483,31 @@ namespace ITServiceDeskApp.Controllers
             var requests = _context.OperacionesIngresoEquipoGondolaSolicitudes.AsNoTracking().OrderByDescending(x => x.UpdatedAt).ToList();
             var rows = requests.Select(ToControlDocumentosEquipoGondolaRow).ToList();
             var masters = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "equipos" || x.Kind == "gondolas").ToList();
+            var assigned = requests.ToDictionary(x => x.Id, x =>
+            {
+                var payload = DeserializeEquipoGondolaPayload(x.PayloadJson);
+                var kind = x.Tipo.Trim().Equals("Ingreso de Equipo", StringComparison.OrdinalIgnoreCase) ? "equipos" : "gondolas";
+                var name = FirstPayloadValue(payload, kind == "equipos" ? "equipo_codigo_cabezal" : "gondola_placa", "equipo_placa_gondola");
+                return OperationalMasterIdentity.Resolve(masters, kind, TryReadPositiveInt(FirstPayloadValue(payload, "master_record_id")),
+                    string.IsNullOrWhiteSpace(name) ? x.Asunto : name, FirstPayloadValue(payload, "equipo_placa_cabezal"))?.Id;
+            });
             foreach (var master in masters)
             {
-                var matches = requests.Where(x => DocumentMatchesMaster(master, x.Tipo, x.Asunto, DeserializeEquipoGondolaPayload(x.PayloadJson))).ToList();
+                var matches = requests.Where(x => assigned[x.Id] == master.Id).ToList();
                 if (!master.IsActive && matches.Count == 0) continue;
                 var row = matches.Count > 0 ? ToControlDocumentosEquipoGondolaRow(matches[0]) : new ControlDocumentosEquipoGondolaRowViewModel {
                     Tipo = master.Kind == "equipos" ? "Ingreso de Equipo" : "Ingreso de Gondola", Asunto = master.Name,
                     Estado = "Pendiente de completar", UpdatedAt = master.CreatedAt,
                     VencimientoEmisionGases = "-", VencimientoInspeccionMecanica = "-", VencimientoSeguroVehicular = "-"
                 };
+                foreach (var previous in matches.Skip(1).Select(ToControlDocumentosEquipoGondolaRow))
+                {
+                    if (string.IsNullOrWhiteSpace(row.VencimientoEmisionGases) || row.VencimientoEmisionGases == "-") row.VencimientoEmisionGases = previous.VencimientoEmisionGases;
+                    if (string.IsNullOrWhiteSpace(row.VencimientoInspeccionMecanica) || row.VencimientoInspeccionMecanica == "-") row.VencimientoInspeccionMecanica = previous.VencimientoInspeccionMecanica;
+                    if (string.IsNullOrWhiteSpace(row.VencimientoSeguroVehicular) || row.VencimientoSeguroVehicular == "-") row.VencimientoSeguroVehicular = previous.VencimientoSeguroVehicular;
+                    if (string.IsNullOrWhiteSpace(row.FechaInicio) || row.FechaInicio == "-") row.FechaInicio = previous.FechaInicio;
+                    if (string.IsNullOrWhiteSpace(row.FechaFin) || row.FechaFin == "-") row.FechaFin = previous.FechaFin;
+                }
                 var ids = matches.Select(x => x.Id).ToHashSet(); rows.RemoveAll(x => ids.Contains(x.Id));
                 row.MasterId = master.Id; row.MasterCode = master.DisplayId;
                 row.Tenencia = master.Tenure; row.Propietario = master.Owner;
@@ -6661,34 +6677,36 @@ namespace ITServiceDeskApp.Controllers
                 ? encabezados
                 : GetDefaultControlDocumentosPersonaHeaders();
 
-            var personas = LoadControlDocumentosPersonas().Where(x => !string.IsNullOrWhiteSpace(x.Nombre))
-                .GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).ToDictionary(x => x.Key, x => x.OrderByDescending(p => p.UpdatedAt).First(), StringComparer.Ordinal);
-            foreach (var persona in LoadControlDocumentosPersonasDesdeIngresoPersonal().GroupBy(x => OperationalMasterCatalog.Key("conductores", x.Nombre)).Select(x => x.OrderByDescending(p => p.UpdatedAt).First()))
+            var masters = _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores").ToList();
+            var records = LoadControlDocumentosPersonasDesdeIngresoPersonal().Concat(LoadControlDocumentosPersonas())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Nombre)).ToList();
+            var groups = records.GroupBy(x =>
             {
-                var key = OperationalMasterCatalog.Key("conductores", persona.Nombre);
-                if (personas.TryGetValue(key, out var imported)) persona.Datos = imported.Datos;
-                if (personas.TryGetValue(key, out var manual))
-                    foreach (var date in manual.Fechas) if (!persona.Fechas.ContainsKey(date.Key)) persona.Fechas[date.Key] = date.Value;
-                personas[key] = persona;
-            }
-            foreach (var master in _context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "conductores").ToList())
+                var master = OperationalMasterIdentity.Resolve(masters, "conductores", x.MasterId, x.Nombre, sourceKey: x.SourceKey);
+                // An explicit ID must never be replaced by another person's matching name.
+                return master is not null ? $"id:{master.Id}" : x.MasterId.HasValue ? $"unlinked-id:{x.MasterId}" : OperationalMasterCatalog.Key("conductores", x.Nombre);
+            }).ToDictionary(x => x.Key, x => MergeControlDocumentosPersonas(x));
+            foreach (var master in masters)
             {
-                var key = OperationalMasterCatalog.Key("conductores", master.Name);
-                var matches = personas.Where(x => x.Value.MasterId == master.Id || x.Key == key || x.Key == master.SourceKey).ToList();
-                if (!master.IsActive && matches.Count == 0) continue;
-                var persona = matches.OrderByDescending(x => x.Value.RequestId.HasValue).ThenByDescending(x => x.Value.UpdatedAt).Select(x => x.Value).FirstOrDefault() ?? new ControlDocumentosPersonaRecord();
-                foreach (var match in matches) { foreach (var date in match.Value.Fechas) if (!persona.Fechas.ContainsKey(date.Key)) persona.Fechas[date.Key] = date.Value; personas.Remove(match.Key); }
-                persona.Nombre = master.Name; persona.MasterId = master.Id; persona.MasterCode = master.DisplayId; persona.Tenure = master.Tenure; persona.Owner = master.Owner; persona.SourceKey = master.SourceKey;
-                personas[key] = persona;
+                var key = $"id:{master.Id}";
+                if (!groups.TryGetValue(key, out var persona))
+                {
+                    if (!master.IsActive) continue;
+                    persona = new ControlDocumentosPersonaRecord();
+                    groups[key] = persona;
+                }
+                persona.Nombre = master.Name; persona.MasterId = master.Id; persona.MasterCode = master.DisplayId;
+                persona.Tenure = master.Tenure; persona.Owner = master.Owner; persona.SourceKey = master.SourceKey;
             }
             var overrides = LoadControlDocumentosOverrides();
-            foreach (var persona in personas.Values)
+            foreach (var persona in groups.Values)
             {
-                var entries = overrides.Where(x => OperationalMasterCatalog.Key("conductores", x.Key) == (OperationalMasterCatalog.Key("conductores", persona.Nombre)) || OperationalMasterCatalog.Key("conductores", x.Key) == persona.SourceKey);
+                var aliases = persona.NombresOrigen.Append(persona.Nombre).Select(x => OperationalMasterCatalog.Key("conductores", x)).ToHashSet();
+                var entries = overrides.Where(x => aliases.Contains(OperationalMasterCatalog.Key("conductores", x.Key)) || OperationalMasterCatalog.Key("conductores", x.Key) == persona.SourceKey);
                 foreach (var entry in entries) foreach (var date in entry.Value) persona.Fechas[date.Key] = date.Value;
             }
 
-            return personas.Values
+            return groups.Values
                 .OrderBy(x => x.Nombre)
                 .Select(persona =>
                 {
@@ -6710,6 +6728,7 @@ namespace ITServiceDeskApp.Controllers
                     return new ControlDocumentosRowViewModel
                     {
                         Conductor = persona.Nombre,
+                        NombresOrigen = persona.NombresOrigen,
                         Datos = persona.Datos,
                         MasterId = persona.MasterId, MasterCode = persona.MasterCode, RequestId = persona.RequestId, Tenure = persona.Tenure, Owner = persona.Owner,
                         FechasCapacitacion = fechasCapacitacion,
@@ -6718,6 +6737,18 @@ namespace ITServiceDeskApp.Controllers
                     };
                 })
                 .ToList();
+        }
+
+        private static ControlDocumentosPersonaRecord MergeControlDocumentosPersonas(IEnumerable<ControlDocumentosPersonaRecord> records)
+        {
+            var ordered = records.OrderByDescending(x => x.RequestId.HasValue).ThenByDescending(x => x.UpdatedAt).ToList();
+            var result = ordered[0];
+            result.NombresOrigen = ordered.SelectMany(x => x.NombresOrigen.Append(x.Nombre)).Distinct().ToList();
+            result.Fechas = ordered.SelectMany(x => x.Fechas).GroupBy(x => NormalizeHeader(x.Key))
+                .ToDictionary(x => x.First().Key, x => x.First().Value, StringComparer.OrdinalIgnoreCase);
+            result.Datos = ordered.SelectMany(x => x.Datos).GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(x => x.Key, x => x.First().Value, StringComparer.OrdinalIgnoreCase);
+            return result;
         }
 
         private IReadOnlyList<ControlDocumentosPersonaRecord> LoadControlDocumentosPersonasDesdeIngresoPersonal()
@@ -6795,6 +6826,7 @@ namespace ITServiceDeskApp.Controllers
 
         private sealed class ControlDocumentosPersonaRecord
         {
+            public List<string> NombresOrigen { get; set; } = new();
             public string? SourceKey { get; set; }
             public int? MasterId { get; set; }
             public int? RequestId { get; set; }
@@ -6821,8 +6853,9 @@ namespace ITServiceDeskApp.Controllers
                 return null;
             }
 
-            var fila = model.Filas.FirstOrDefault(x =>
-                string.Equals(NormalizeControlDocumentoKey(x.Conductor), conductorKey, StringComparison.Ordinal));
+            var matchingRows = model.Filas.Where(x => x.NombresOrigen.Append(x.Conductor).Any(name =>
+                OperationalMasterCatalog.Key("conductores", name) == OperationalMasterCatalog.Key("conductores", conductorKey))).ToList();
+            var fila = matchingRows.Count == 1 ? matchingRows[0] : null;
             if (fila is null)
             {
                 return null;
@@ -6863,10 +6896,9 @@ namespace ITServiceDeskApp.Controllers
                 QrPdfUrl = qrPdfUrl,
                 FechaGeneracion = DateTime.Now,
                 Capacitaciones = fila.Capacitaciones,
-                DatosProfesionales = LoadControlDocumentosPersonas()
-                    .FirstOrDefault(x => NormalizeControlDocumentoKey(x.Nombre) == conductorKey)?.Datos
+                DatosProfesionales = fila.Datos
                     .Where(x => new[] { "Empresa", "Cargo", "Ubicación de Trabajo", "Nombre Supervisor", "Categorías de Licencia", "Fecha Vencimiento Licencia.", "Estado de solicitud" }.Contains(x.Key))
-                    .ToDictionary(x => x.Key, x => x.Value) ?? new Dictionary<string, string>(),
+                    .ToDictionary(x => x.Key, x => x.Value),
                 EscaneosRecientes = escaneosRecientes
             };
         }
