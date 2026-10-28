@@ -1,16 +1,57 @@
 @model IReadOnlyList<ITServiceDeskApp.Models.OperationalMasterRecord>
 @using ITServiceDeskApp.Services
-@{var type = ViewData["MasterType"] as string ?? "equipos"; var pagination = (ITServiceDeskApp.ViewModels.InventoryTablePage)ViewData["Pagination"]!; ViewData["Title"] = OperationalMasterCatalog.Title(type); var canCreate = ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainMaster(User, type);}
+@{
+    var type = ViewData["MasterType"] as string ?? "equipos";
+    var pagination = (ITServiceDeskApp.ViewModels.InventoryTablePage)ViewData["Pagination"]!;
+    var companyFilter = ViewData["Company"] as string;
+    ViewData["Title"] = OperationalMasterCatalog.Title(type);
+    var canCreate = ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainMaster(User, type);
+    var columnCount = 6 + (type == "equipos" ? 1 : 0) + (type == "conductores" ? (canCreate ? 2 : 1) : 0);
+}
 <div class="container-fluid py-4">
-<div class="module-banner mb-4"><div><h2><i class="bi @(type == "conductores" ? "bi-person-vcard" : type == "gondolas" ? "bi-truck-flatbed" : "bi-truck")"></i>@ViewData["Title"]</h2><p class="mb-0">Registro y consulta del catálogo operativo.</p></div>@if(canCreate){<a asp-action="MaestroNuevo" asp-route-type="@type" class="btn btn-light">Nuevo registro</a>}</div>
-<div class="d-flex flex-wrap gap-2 mb-3">@foreach(var kind in OperationalMasterCatalog.Kinds){<a class="btn @(kind == type ? "btn-primary" : "btn-outline-primary")" asp-action="Maestros" asp-route-type="@kind">@OperationalMasterCatalog.Title(kind)</a>}</div>
-@if(TempData["MasterOk"] is string ok){<div class="alert alert-success">@ok</div>}
-@if(TempData["MasterError"] is string error){<div class="alert alert-warning">@error</div>}
-@if(canCreate){<div class="card p-3 mb-3"><div class="d-flex flex-wrap justify-content-between gap-2 mb-2"><strong>Carga masiva desde Excel</strong><a asp-action="MaestroPlantilla" asp-route-type="@type" class="btn btn-outline-primary btn-sm">Descargar plantilla</a></div><p class="small text-muted">Usa la plantilla actualizada. Para conductores, los dos nombres y dos apellidos se ingresan en columnas separadas. Máximo 5 MB y 5,000 filas. Los duplicados se omiten.</p><form asp-action="MaestroImportar" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2"><input type="hidden" name="type" value="@type"/><input type="file" name="archivo" accept=".xlsx" class="form-control w-auto" required/><button class="btn btn-primary">Cargar Excel</button></form></div>}
-<form method="get" class="card p-3 mb-3"><input type="hidden" name="type" value="@type"/><div class="d-flex gap-2"><input class="form-control" name="q" value="@ViewData["Search"]" placeholder="Buscar por nombre, identificación, placa o propietario"/>@if(type == "conductores"){<select class="form-select w-auto" name="status" aria-label="Estado del conductor"><option value="activos" selected="@(ViewData["Status"] as string == "activos")">Activos</option><option value="inactivos" selected="@(ViewData["Status"] as string == "inactivos")">Inactivos</option><option value="todos" selected="@(ViewData["Status"] as string == "todos")">Todos</option></select>}<button class="btn btn-primary">Buscar</button></div></form>
-<div class="card table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>ID único</th><th>@OperationalMasterCatalog.NameLabel(type)</th>@if(type == "equipos"){<th>Placa de cabezal</th>}<th>Tenencia</th><th>Propietario</th>@if(type == "conductores"){<th>Estado</th>@if(canCreate){<th>Acciones</th>}}</tr></thead><tbody>
-@for(var i=0;i<Model.Count;i++){var row = Model[i];<tr><td class="text-nowrap"><code>@row.DisplayId</code></td><td class="fw-semibold">@row.Name</td>@if(type == "equipos"){<td>@row.Plate</td>}<td>@row.Tenure</td><td>@row.Owner</td>@if(type == "conductores"){<td><span class="badge @(row.IsActive ? "bg-success" : "bg-secondary")">@(row.IsActive ? "Activo" : "Inactivo")</span></td>@if(canCreate){<td><div class="d-flex gap-2"><a asp-action="ConductorEditar" asp-route-id="@row.Id" class="btn btn-outline-primary btn-sm">Editar</a><form asp-action="ConductorEstado" method="post" onsubmit="return confirm('¿Confirmas cambiar el estado del conductor? Se conservará su historial.');"><input type="hidden" name="id" value="@row.Id"/><input type="hidden" name="active" value="@(!row.IsActive ? "true" : "false")"/><button class="btn @(row.IsActive ? "btn-outline-danger" : "btn-outline-success") btn-sm">@(row.IsActive ? "Desactivar" : "Reactivar")</button></form></div></td>}}</tr>}
-@if(Model.Count == 0){<tr><td colspan="7" class="text-muted p-4">No hay registros para esta búsqueda.</td></tr>}
-</tbody></table></div>
-<div class="d-flex align-items-center justify-content-between mt-3"><span>@pagination.First–@pagination.Last de @pagination.Total registros · Página @pagination.Page de @pagination.Pages</span><div class="d-flex gap-2">@if(pagination.Page > 1){<a class="btn btn-outline-primary" asp-action="Maestros" asp-route-type="@type" asp-route-q="@ViewData["Search"]" asp-route-status="@ViewData["Status"]" asp-route-page="@(pagination.Page-1)">Anterior</a>}@if(pagination.Page < pagination.Pages){<a class="btn btn-outline-primary" asp-action="Maestros" asp-route-type="@type" asp-route-q="@ViewData["Search"]" asp-route-status="@ViewData["Status"]" asp-route-page="@(pagination.Page+1)">Siguiente</a>}</div></div>
+    <div class="module-banner mb-4"><div><h2><i class="bi @(type == "conductores" ? "bi-person-vcard" : type == "gondolas" ? "bi-truck-flatbed" : "bi-truck")"></i>@ViewData["Title"]</h2><p class="mb-0">Catálogo operativo clasificado por empresa, con un solo ID para registros compartidos.</p></div>@if(canCreate){<a asp-action="MaestroNuevo" asp-route-type="@type" class="btn btn-light">Nuevo registro</a>}</div>
+    <div class="d-flex flex-wrap gap-2 mb-3">@foreach(var kind in OperationalMasterCatalog.Kinds){<a class="btn @(kind == type ? "btn-primary" : "btn-outline-primary")" asp-action="Maestros" asp-route-type="@kind" asp-route-company="@companyFilter">@OperationalMasterCatalog.Title(kind)</a>}</div>
+    @if(TempData["MasterOk"] is string ok){<div class="alert alert-success">@ok</div>}
+    @if(TempData["MasterError"] is string error){<div class="alert alert-warning">@error</div>}
+    @if(canCreate){
+        <div class="card p-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2"><strong>Carga masiva desde Excel</strong><a asp-action="MaestroPlantilla" asp-route-type="@type" class="btn btn-outline-primary btn-sm">Descargar plantilla</a></div>
+            <p class="small text-muted">La plantilla incluye Empresa de operación: EQUINOX, HOLCIM o HOLCIM/EQUINOX. Los registros existentes conservan su ID y amplían su clasificación si corresponde. Una empresa vacía o una plantilla anterior se considera EQUINOX. Para conductores, completa los dos nombres y dos apellidos. Máximo 5 MB y 5,000 filas.</p>
+            <form asp-action="MaestroImportar" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2"><input type="hidden" name="type" value="@type"/><input type="file" name="archivo" accept=".xlsx" class="form-control w-auto" required/><button class="btn btn-primary">Cargar Excel</button></form>
+        </div>
+    }
+    <form method="get" class="card p-3 mb-3">
+        <input type="hidden" name="type" value="@type"/>
+        <div class="row g-2 align-items-end">
+            <div class="col-md"><label for="master-search" class="form-label">Buscar</label><input id="master-search" class="form-control" name="q" value="@ViewData["Search"]" placeholder="Nombre, código, placa, propietario o referencia Holcim"/></div>
+            <div class="col-md-3"><label for="master-company" class="form-label">Empresa de operación</label><select id="master-company" name="company" class="form-select"><option value="">Todas las empresas</option>@foreach(var company in HolcimMasterCatalog.Companies){<option value="@company" selected="@(company==companyFilter)">@(company=="HOLCIM/EQUINOX" ? "Compartidos · HOLCIM/EQUINOX" : company + " (incluye compartidos)")</option>}</select></div>
+            @if(type == "conductores"){<div class="col-md-2"><label for="master-status" class="form-label">Estado</label><select id="master-status" class="form-select" name="status"><option value="activos" selected="@(ViewData["Status"] as string == "activos")">Activos</option><option value="inactivos" selected="@(ViewData["Status"] as string == "inactivos")">Inactivos</option><option value="todos" selected="@(ViewData["Status"] as string == "todos")">Todos</option></select></div>}
+            <div class="col-md-auto"><button class="btn btn-primary">Filtrar</button></div>
+        </div>
+    </form>
+    <div class="card table-responsive"><table class="table table-hover align-middle mb-0" style="min-width:1100px">
+        <thead><tr><th class="text-nowrap">ID único</th><th style="min-width:260px">@OperationalMasterCatalog.NameLabel(type)</th>@if(type == "equipos"){<th class="text-nowrap">Placa de cabezal</th>}<th class="text-nowrap">Empresa de operación</th><th>Tenencia</th><th style="min-width:180px">Propietario</th><th>Información Holcim</th>@if(type == "conductores"){<th>Estado</th>@if(canCreate){<th>Acciones</th>}}</tr></thead>
+        <tbody>
+        @foreach(var row in Model){
+            var detail = HolcimMasterCatalog.Detail(row.HolcimSourceJson);
+            <tr>
+                <td class="text-nowrap"><code>@row.DisplayId</code></td><td><strong>@row.Name</strong>@if(!string.IsNullOrWhiteSpace(row.HolcimReference)){<div class="small text-muted">Referencia Holcim: @row.HolcimReference</div>}</td>
+                @if(type == "equipos"){<td class="text-nowrap">@(string.IsNullOrWhiteSpace(row.Plate) ? "Pendiente de completar" : row.Plate)</td>}
+                <td class="text-nowrap"><span class="badge @(row.CompanyClassification=="HOLCIM/EQUINOX" ? "bg-primary" : row.CompanyClassification=="HOLCIM" ? "bg-info text-dark" : "bg-secondary")">@row.CompanyClassification</span></td>
+                <td>@row.Tenure</td><td>@row.Owner</td>
+                <td>@if(detail!=null){<button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="collapse" data-bs-target="#holcim-source-@row.Id" aria-expanded="false" aria-controls="holcim-source-@row.Id">Ver datos de origen</button>}else{<span class="text-muted">—</span>}</td>
+                @if(type == "conductores"){
+                    <td><span class="badge @(row.IsActive ? "bg-success" : "bg-secondary")">@(row.IsActive ? "Activo" : "Inactivo")</span></td>
+                    @if(canCreate){<td><div class="d-flex gap-2"><a asp-action="ConductorEditar" asp-route-id="@row.Id" class="btn btn-outline-primary btn-sm">Editar</a><form asp-action="ConductorEstado" method="post" onsubmit="return confirm('¿Confirmas cambiar el estado del conductor? Se conservará su historial.');"><input type="hidden" name="id" value="@row.Id"/><input type="hidden" name="active" value="@(!row.IsActive ? "true" : "false")"/><button class="btn @(row.IsActive ? "btn-outline-danger" : "btn-outline-success") btn-sm">@(row.IsActive ? "Desactivar" : "Reactivar")</button></form></div></td>}
+                }
+            </tr>
+            @if(detail!=null){<tr><td colspan="@columnCount" class="p-0 border-0"><div class="collapse" id="holcim-source-@row.Id"><div class="p-3 bg-light">@await Html.PartialAsync("_HolcimMasterSource",detail)</div></div></td></tr>}
+        }
+        @if(Model.Count == 0){<tr><td colspan="@columnCount" class="text-muted p-4">No hay registros para esta búsqueda.</td></tr>}
+        </tbody>
+    </table></div>
+    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mt-3"><span>@pagination.First–@pagination.Last de @pagination.Total registros · Página @pagination.Page de @pagination.Pages</span><div class="d-flex gap-2">
+        @if(pagination.Page > 1){<a class="btn btn-outline-primary" asp-action="Maestros" asp-route-type="@type" asp-route-q="@ViewData["Search"]" asp-route-status="@ViewData["Status"]" asp-route-company="@companyFilter" asp-route-page="@(pagination.Page-1)">Anterior</a>}
+        @if(pagination.Page < pagination.Pages){<a class="btn btn-outline-primary" asp-action="Maestros" asp-route-type="@type" asp-route-q="@ViewData["Search"]" asp-route-status="@ViewData["Status"]" asp-route-company="@companyFilter" asp-route-page="@(pagination.Page+1)">Siguiente</a>}
+    </div></div>
 </div>

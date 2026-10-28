@@ -1,0 +1,1738 @@
+[
+  {
+    "Kind": "equipos",
+    "Reference": "NM120616",
+    "Name": "NM120616",
+    "Plate": null,
+    "Identifiers": [
+      "NM120616"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 2,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM120616",
+            "Nombre": "NM120616",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM129766",
+    "Name": "NM129766",
+    "Plate": null,
+    "Identifiers": [
+      "NM129766"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 3,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM129766",
+            "Nombre": "NM129766",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM140714",
+    "Name": "NM140714",
+    "Plate": null,
+    "Identifiers": [
+      "NM140714"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 4,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM140714",
+            "Nombre": "NM140714",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM238879",
+    "Name": "NM238879",
+    "Plate": null,
+    "Identifiers": [
+      "NM238879"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 5,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM238879",
+            "Nombre": "NM238879",
+            "Flete": "LH",
+            "Inspeccionado el": "14.10.2026 10:05:06",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-11 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM247901",
+    "Name": "NM247901",
+    "Plate": null,
+    "Identifiers": [
+      "NM247901"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 6,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM247901",
+            "Nombre": "NM247901",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM268282",
+    "Name": "NM268282",
+    "Plate": null,
+    "Identifiers": [
+      "NM268282",
+      "M268282"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 7,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM268282",
+            "Nombre": "M268282",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM268283",
+    "Name": "NM268283",
+    "Plate": null,
+    "Identifiers": [
+      "NM268283"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 8,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM268283",
+            "Nombre": "Camión batch 4 CCA 2007",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM318157",
+    "Name": "NM318157",
+    "Plate": null,
+    "Identifiers": [
+      "NM318157"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 9,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM318157",
+            "Nombre": "NM318157 2007",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM332936",
+    "Name": "NM332936",
+    "Plate": null,
+    "Identifiers": [
+      "NM332936"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 10,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM332936",
+            "Nombre": "VOLVO 2007",
+            "Flete": "LH",
+            "Inspeccionado el": "14.10.2026 10:05:06",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-11 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM336597",
+    "Name": "NM336597",
+    "Plate": null,
+    "Identifiers": [
+      "NM336597",
+      "M336597"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 11,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM336597",
+            "Nombre": "M336597",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM348793",
+    "Name": "NM348793",
+    "Plate": null,
+    "Identifiers": [
+      "NM348793"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 12,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM348793",
+            "Nombre": "FREIGHTLINER 2010",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "equipos",
+    "Reference": "NM348797",
+    "Name": "NM348797",
+    "Plate": null,
+    "Identifiers": [
+      "NM348797"
+    ],
+    "Detail": {
+      "File": "Inspecciones Holcim interna.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 13,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "NM348797",
+            "Nombre": "FREIGHTLINER 2010",
+            "Flete": "LH",
+            "Inspeccionado el": "09.10.2026 12:10:46",
+            "Local": "ANG0",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "Válido hasta": "2027-02-06 00:00:00",
+            "Resultado": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N01870069K",
+    "Name": "MOISES LENIN CASTAÑEDA ARIAS",
+    "Plate": null,
+    "Identifiers": [
+      "N01870069K"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 2,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N01870069K",
+            "Nombre": "MOISES LENIN CASTAÑEDA ARIAS",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 3,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N01870069K",
+            "Nombre": "MOISES LENIN CASTAÑEDA ARIAS",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 4,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N01870069K",
+            "Nombre": "MOISES LENIN CASTAÑEDA ARIAS",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N02900002H",
+    "Name": "WILMER ANTONIO VALLE PALACIOS",
+    "Plate": null,
+    "Identifiers": [
+      "N02900002H"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 5,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N02900002H",
+            "Nombre": "WILMER ANTONIO VALLE PALACIOS",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 6,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N02900002H",
+            "Nombre": "WILMER ANTONIO VALLE PALACIOS",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 7,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N02900002H",
+            "Nombre": "WILMER ANTONIO VALLE PALACIOS",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2026-08-07 00:00:00",
+            "Válido hasta": "2027-08-07 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N03780002D",
+    "Name": "Donald Jonathan Hernández Roch",
+    "Plate": null,
+    "Identifiers": [
+      "N03780002D"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 8,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N03780002D",
+            "Nombre": "Donald Jonathan Hernández Roch",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 9,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N03780002D",
+            "Nombre": "Donald Jonathan Hernández Roch",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 10,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N03780002D",
+            "Nombre": "Donald Jonathan Hernández Roch",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2025-02-15 00:00:00",
+            "Válido hasta": "2027-02-15 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N04690003A",
+    "Name": "ZEPEDA CRUZ Wilmer Antonio",
+    "Plate": null,
+    "Identifiers": [
+      "N04690003A"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 11,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N04690003A",
+            "Nombre": "ZEPEDA CRUZ Wilmer Antonio",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 12,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N04690003A",
+            "Nombre": "ZEPEDA CRUZ Wilmer Antonio",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 13,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N04690003A",
+            "Nombre": "ZEPEDA CRUZ Wilmer Antonio",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2025-02-15 00:00:00",
+            "Válido hasta": "2027-02-15 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N05820001P",
+    "Name": "JUAN AGUSTIN PEÑA JIRON",
+    "Plate": null,
+    "Identifiers": [
+      "N05820001P"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 14,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N05820001P",
+            "Nombre": "JUAN AGUSTIN PEÑA JIRON",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 15,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N05820001P",
+            "Nombre": "JUAN AGUSTIN PEÑA JIRON",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 16,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N05820001P",
+            "Nombre": "JUAN AGUSTIN PEÑA JIRON",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N05820001V",
+    "Name": "CLAUDIA MARIA DOÑA JOAQUIN",
+    "Plate": null,
+    "Identifiers": [
+      "N05820001V"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 17,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N05820001V",
+            "Nombre": "CLAUDIA MARIA DOÑA JOAQUIN",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 18,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N05820001V",
+            "Nombre": "CLAUDIA MARIA DOÑA JOAQUIN",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 19,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N05820001V",
+            "Nombre": "CLAUDIA MARIA DOÑA JOAQUIN",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2026-08-21 00:00:00",
+            "Válido hasta": "2027-08-21 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N06860035L",
+    "Name": "Deyvi Jose Guerrero Rivas",
+    "Plate": null,
+    "Identifiers": [
+      "N06860035L"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 20,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N06860035L",
+            "Nombre": "Deyvi Jose Guerrero Rivas",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 21,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N06860035L",
+            "Nombre": "Deyvi Jose Guerrero Rivas",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 22,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N06860035L",
+            "Nombre": "Deyvi Jose Guerrero Rivas",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2026-03-06 00:00:00",
+            "Válido hasta": "2027-03-05 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N08880011P",
+    "Name": "Wuazkel Zamir Estrada Baqueado",
+    "Plate": null,
+    "Identifiers": [
+      "N08880011P"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 23,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N08880011P",
+            "Nombre": "Wuazkel Zamir Estrada Baqueado",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 24,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N08880011P",
+            "Nombre": "Wuazkel Zamir Estrada Baqueado",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 25,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N08880011P",
+            "Nombre": "Wuazkel Zamir Estrada Baqueado",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2026-08-07 00:00:00",
+            "Válido hasta": "2027-08-07 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N09890061L",
+    "Name": "JANIER FRANCISCO QUEZADA MENDO",
+    "Plate": null,
+    "Identifiers": [
+      "N09890061L"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 26,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N09890061L",
+            "Nombre": "JANIER FRANCISCO QUEZADA MENDO",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 27,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N09890061L",
+            "Nombre": "JANIER FRANCISCO QUEZADA MENDO",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 28,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N09890061L",
+            "Nombre": "JANIER FRANCISCO QUEZADA MENDO",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N10750024C",
+    "Name": "Silvio Antonio Lopez Moran",
+    "Plate": null,
+    "Identifiers": [
+      "N10750024C"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 29,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N10750024C",
+            "Nombre": "Silvio Antonio Lopez Moran",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 30,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N10750024C",
+            "Nombre": "Silvio Antonio Lopez Moran",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 31,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N10750024C",
+            "Nombre": "Silvio Antonio Lopez Moran",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N10920000N",
+    "Name": "Carlos Alfredo Barrios Urey",
+    "Plate": null,
+    "Identifiers": [
+      "N10920000N"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 32,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N10920000N",
+            "Nombre": "Carlos Alfredo Barrios Urey",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 33,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N10920000N",
+            "Nombre": "Carlos Alfredo Barrios Urey",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 34,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N10920000N",
+            "Nombre": "Carlos Alfredo Barrios Urey",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2025-02-15 00:00:00",
+            "Válido hasta": "2027-02-15 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N11640000L",
+    "Name": "Edgar Antonio Garcia Lanuza",
+    "Plate": null,
+    "Identifiers": [
+      "N11640000L"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 35,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N11640000L",
+            "Nombre": "Edgar Antonio Garcia Lanuza",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 36,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N11640000L",
+            "Nombre": "Edgar Antonio Garcia Lanuza",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 37,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N11640000L",
+            "Nombre": "Edgar Antonio Garcia Lanuza",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2025-02-15 00:00:00",
+            "Válido hasta": "2027-02-15 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N11750001G",
+    "Name": "Nerys Antonio Gago Sanchez",
+    "Plate": null,
+    "Identifiers": [
+      "N11750001G"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 38,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N11750001G",
+            "Nombre": "Nerys Antonio Gago Sanchez",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 39,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N11750001G",
+            "Nombre": "Nerys Antonio Gago Sanchez",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 40,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N11750001G",
+            "Nombre": "Nerys Antonio Gago Sanchez",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Kind": "conductores",
+    "Reference": "N12870000Q",
+    "Name": "WILFREDO ARISTIDES PEREZ HERRE",
+    "Plate": null,
+    "Identifiers": [
+      "N12870000Q"
+    ],
+    "Detail": {
+      "File": "Holcim NSC.xlsx",
+      "Sheet": "Sheet1",
+      "Rows": [
+        {
+          "Row": 41,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N12870000Q",
+            "Nombre": "WILFREDO ARISTIDES PEREZ HERRE",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "1",
+            "Entrenamiento": "INDUCCION H&S EN PLANTA",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 42,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N12870000Q",
+            "Nombre": "WILFREDO ARISTIDES PEREZ HERRE",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "2",
+            "Entrenamiento": "PROCEDIMIENTOS INTERNOS DE SEGURIDAD VIAL",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "El indicador no está fijado.",
+            "Agregados": "El indicador no está fijado.",
+            "Embal": "El indicador no está fijado.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "false",
+            "Clinker": "El indicador no está fijado.",
+            "RMX": "false",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": null,
+            "Válido hasta": null,
+            "Observación": null
+          }
+        },
+        {
+          "Row": 43,
+          "Values": {
+            "ST": null,
+            "Interlocutor": "N12870000Q",
+            "Nombre": "WILFREDO ARISTIDES PEREZ HERRE",
+            "Tipo": "Chofer",
+            "Flete": "LH",
+            "Código": "802",
+            "Entrenamiento": "MANEJO DEFENSIVO APROBADO ( =>80 % )",
+            "Bolsa": "Flag fijado. El evento se ha producido.",
+            "Granel": "Flag fijado. El evento se ha producido.",
+            "Big bag": "Flag fijado. El evento se ha producido.",
+            "Agregados": "Flag fijado. El evento se ha producido.",
+            "Embal": "Flag fijado. El evento se ha producido.",
+            "MP": "Flag fijado. El evento se ha producido.",
+            "AFR": "true",
+            "Clinker": "Flag fijado. El evento se ha producido.",
+            "RMX": "true",
+            "Se aplica a": "Todos",
+            "Requeridos en las unidades": null,
+            "Válido desde": "2025-02-15 00:00:00",
+            "Válido hasta": "2027-02-15 00:00:00",
+            "Observación": null
+          }
+        }
+      ]
+    }
+  }
+]

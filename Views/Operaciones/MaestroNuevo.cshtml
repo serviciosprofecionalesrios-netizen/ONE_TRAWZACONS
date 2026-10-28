@@ -5,6 +5,7 @@
 <div class="module-banner mb-4"><h2><i class="bi bi-plus-circle"></i>@ViewData["Title"]</h2></div>
 <form asp-action="@(editing ? "ConductorEditar" : "MaestroNuevo")" asp-route-id="@(editing ? Model.Id : (int?)null)" method="post" class="card p-4 shadow-sm"><input asp-for="Kind" type="hidden"/><div asp-validation-summary="All" class="text-danger"></div>
 <div class="row g-3">
+<div class="col-12"><label asp-for="CompanyClassification" class="form-label">Empresa de operación *</label><select asp-for="CompanyClassification" class="form-select" required>@foreach(var company in HolcimMasterCatalog.Companies){<option value="@company">@company</option>}</select><div class="form-text">Selecciona HOLCIM/EQUINOX cuando el mismo registro participe en ambas operaciones. Esta clasificación es independiente del propietario.</div></div>
 @if(Model.Kind == "conductores"){
 @if(editing && string.IsNullOrWhiteSpace(Model.FirstName)){<div class="col-12"><div class="alert alert-info">Nombre registrado: <strong>@Model.Name</strong>. Completa sus dos nombres y dos apellidos para actualizarlo. No se dividieron automáticamente para evitar errores.</div></div>}
 <div class="col-md-6"><label asp-for="FirstName" class="form-label">Primer nombre *</label><input asp-for="FirstName" class="form-control" required maxlength="40"/></div>

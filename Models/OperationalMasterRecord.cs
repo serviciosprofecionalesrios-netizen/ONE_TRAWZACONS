@@ -10,6 +10,10 @@ public sealed class OperationalMasterRecord
     [MaxLength(30)] public string? Plate { get; set; }
     [Required, MaxLength(30)] public string Tenure { get; set; } = "";
     [Required, MaxLength(180)] public string Owner { get; set; } = "";
+    [Required, MaxLength(30), RegularExpression("^(EQUINOX|HOLCIM|HOLCIM/EQUINOX)$", ErrorMessage = "Selecciona EQUINOX, HOLCIM o HOLCIM/EQUINOX.")]
+    public string CompanyClassification { get; set; } = "EQUINOX";
+    [MaxLength(40)] public string? HolcimReference { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever] public string? HolcimSourceJson { get; set; }
     [MaxLength(250), Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever] public string RecordKey { get; set; } = "";
     public bool IsActive { get; set; } = true;
     [MaxLength(250)] public string? SourceKey { get; set; }
