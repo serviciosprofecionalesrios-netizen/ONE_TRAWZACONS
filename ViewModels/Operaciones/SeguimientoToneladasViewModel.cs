@@ -5,6 +5,10 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 {
     public sealed class SeguimientoToneladasViewModel
     {
+        public List<string> LatestUploadEquipment { get; set; } = new();
+        public List<SeguimientoToneladasRowViewModel> LatestUploadRows { get; set; } = new();
+        public DateTime? LatestUploadAt { get; set; }
+        public FleetBoardViewModel Fleet { get; set; } = new();
         public List<SeguimientoToneladasRowViewModel> Rows { get; set; } = new();
         public List<SeguimientoToneladasEstadoResumenViewModel> EstadoResumen { get; set; } = new();
         public decimal TotalToneladas { get; set; }

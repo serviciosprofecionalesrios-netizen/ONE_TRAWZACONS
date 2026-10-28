@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using ITServiceDeskApp.Data;
 using ITServiceDeskApp.Models;
 using ITServiceDeskApp.Services.Interfaces;
@@ -64,6 +65,11 @@ namespace ITServiceDeskApp.Services
             metadata.SourceFileName = model.SourceFileName;
             metadata.FechaOperativa = model.FechaOperativa ?? datesToReplace.Max();
             metadata.UpdatedAt = uploadedAt;
+            var fleetRows = model.LatestUploadRows.Count > 0 ? model.LatestUploadRows : model.Rows;
+            metadata.EquipmentSnapshotJson = JsonSerializer.Serialize(fleetRows.Where(x => !string.IsNullOrWhiteSpace(x.Equipo))
+                .Select((row,index) => new {row,index}).GroupBy(x => x.row.Equipo.Trim(),StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(x => x.row.FechaEvento).ThenByDescending(x => x.index).First())
+                .OrderBy(x => x.index).Select(x => x.row).ToList());
 
             _context.SaveChanges();
         }
@@ -106,6 +112,12 @@ namespace ITServiceDeskApp.Services
 
             model.IsFromUpload = true;
             model.SourceFileName = metadata?.SourceFileName ?? "Datos SQL - Operaciones";
+            model.LatestUploadAt = metadata?.UpdatedAt;
+            model.LatestUploadRows = metadata == null ? [] : !string.IsNullOrWhiteSpace(metadata.EquipmentSnapshotJson)
+                ? JsonSerializer.Deserialize<List<SeguimientoToneladasRowViewModel>>(metadata.EquipmentSnapshotJson) ?? []
+                : _context.OperacionesSeguimientoRegistros.AsNoTracking().Where(x => x.UploadedAt == metadata.UpdatedAt)
+                    .Select(x => new SeguimientoToneladasRowViewModel {Equipo=x.Equipo,Estado=x.Estado,Conductor=x.Conductor,FechaEvento=x.FechaEvento ?? x.FechaOperativa}).ToList();
+            model.LatestUploadEquipment = model.LatestUploadRows.Select(x => x.Equipo).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
             return model;
         }
@@ -148,9 +160,15 @@ namespace ITServiceDeskApp.Services
                     CREATE TABLE [dbo].[OperacionesSeguimientoCargas](
                         [Id] INT NOT NULL PRIMARY KEY,
                         [SourceFileName] NVARCHAR(260) NULL,
+                        [EquipmentSnapshotJson] NVARCHAR(MAX) NULL,
                         [FechaOperativa] DATETIME2 NULL,
                         [UpdatedAt] DATETIME2 NOT NULL
                     );
+                END;
+
+                IF COL_LENGTH(N'dbo.OperacionesSeguimientoCargas', N'EquipmentSnapshotJson') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[OperacionesSeguimientoCargas] ADD [EquipmentSnapshotJson] NVARCHAR(MAX) NULL;
                 END;
 
                 IF COL_LENGTH(N'dbo.OperacionesSeguimientoRegistros', N'PesoSugerido') IS NULL

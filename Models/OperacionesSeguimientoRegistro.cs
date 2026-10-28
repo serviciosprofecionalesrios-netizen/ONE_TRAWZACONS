@@ -20,6 +20,7 @@ namespace ITServiceDeskApp.Models
 
     public sealed class OperacionesSeguimientoCarga
     {
+        public string? EquipmentSnapshotJson { get; set; }
         public int Id { get; set; }
         public string? SourceFileName { get; set; }
         public DateTime? FechaOperativa { get; set; }

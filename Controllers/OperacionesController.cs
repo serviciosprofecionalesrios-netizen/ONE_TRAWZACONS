@@ -339,12 +339,12 @@ namespace ITServiceDeskApp.Controllers
             if (storedSeguimiento is not null)
             {
                 ApplyMetasProduccionMensual(storedSeguimiento);
-                return View(storedSeguimiento);
+                return SeguimientoFleetView(storedSeguimiento);
             }
 
             var sampleModel = CreateSampleToneladasModel();
             ApplyMetasProduccionMensual(sampleModel);
-            return View(sampleModel);
+            return SeguimientoFleetView(sampleModel);
         }
 
         [HttpPost]
@@ -357,14 +357,14 @@ namespace ITServiceDeskApp.Controllers
             if (excelFile is null || excelFile.Length == 0)
             {
                 fallbackModel.ErrorMessage = "Selecciona un archivo Excel (.xlsx) para cargar la informacion.";
-                return View(fallbackModel);
+                return SeguimientoFleetView(fallbackModel);
             }
 
             var extension = Path.GetExtension(excelFile.FileName);
             if (!string.Equals(extension, ".xlsx", StringComparison.OrdinalIgnoreCase))
             {
                 fallbackModel.ErrorMessage = "Formato no permitido. Solo se aceptan archivos .xlsx.";
-                return View(fallbackModel);
+                return SeguimientoFleetView(fallbackModel);
             }
 
             try
@@ -379,25 +379,27 @@ namespace ITServiceDeskApp.Controllers
                 if (package.Workbook.Worksheets.Count == 0)
                 {
                     fallbackModel.ErrorMessage = "El archivo no contiene hojas para procesar.";
-                    return View(fallbackModel);
+                    return SeguimientoFleetView(fallbackModel);
                 }
 
                 var rows = ParseToneladasRowsFromWorkbook(package.Workbook, out var parseError, out var sourceSheetName);
                 if (!string.IsNullOrWhiteSpace(parseError))
                 {
                     fallbackModel.ErrorMessage = parseError;
-                    return View(fallbackModel);
+                    return SeguimientoFleetView(fallbackModel);
                 }
 
+                var fleetUploadRows = rows.ToList();
                 rows = rows.Where(IsSitioTriton).ToList();
 
                 if (!rows.Any())
                 {
                     fallbackModel.ErrorMessage = "No se encontraron filas validas de TRITON con Equipo y Toneladas en el Excel.";
-                    return View(fallbackModel);
+                    return SeguimientoFleetView(fallbackModel);
                 }
 
                 var model = BuildToneladasModel(rows);
+                model.LatestUploadRows = fleetUploadRows;
                 model.IsFromUpload = true;
                 model.SourceFileName = string.IsNullOrWhiteSpace(sourceSheetName)
                     ? excelFile.FileName
@@ -407,12 +409,12 @@ namespace ITServiceDeskApp.Controllers
                 var consolidatedModel = _operacionesSeguimientoStore.Get() ?? model;
                 ApplyMetasProduccionMensual(consolidatedModel);
 
-                return View(consolidatedModel);
+                return SeguimientoFleetView(consolidatedModel);
             }
             catch
             {
                 fallbackModel.ErrorMessage = "No se pudo procesar el archivo Excel. Verifica la estructura y vuelve a intentar.";
-                return View(fallbackModel);
+                return SeguimientoFleetView(fallbackModel);
             }
         }
 
