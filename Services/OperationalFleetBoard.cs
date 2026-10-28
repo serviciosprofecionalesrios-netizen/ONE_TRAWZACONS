@@ -7,7 +7,7 @@ namespace ITServiceDeskApp.Services;
 public static class OperationalFleetBoard
 {
     public static readonly string[] Reasons = ["Plantel Contratista", "Otros", "Viajes Externos", "Conductor de Pase"];
-    public static readonly string[] ManualStatuses = ["auto", "fuera-ruta", "carretera", "taller-pct", "taller-psb", "taller-poz"];
+    public static readonly string[] ManualStatuses = ["auto", "finalizado", "fuera-ruta", "carretera", "taller-pct", "taller-psb", "taller-poz"];
     public static bool CanManage(ClaimsPrincipal user) => UserAccessProfiles.CanMaintainDrivers(user) || UserAccessProfiles.CanMaintainOperationalMasters(user);
     public static string Version(DateTime? uploadedAt) => uploadedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "none";
     public static string StatusLabel(string status) => status switch {
@@ -15,9 +15,10 @@ public static class OperationalFleetBoard
         "fuera-ruta" => "Equipos Fuera de Ruta", "carretera" => "Varado en Carretera",
         "taller" => "En Taller", "taller-pct" => "En Taller · PCT", "taller-psb" => "En Taller · PSB", "taller-poz" => "En Taller · POZ", _ => "Otros estados del archivo"
     };
-    public static FleetBoardViewModel Build(IEnumerable<OperationalMasterRecord> catalog, SeguimientoToneladasViewModel source, IEnumerable<OperationalFleetState> changes)
+    public static FleetBoardViewModel Build(IEnumerable<OperationalMasterRecord> catalog, SeguimientoToneladasViewModel source, IEnumerable<OperationalFleetState> changes, IEnumerable<OperationalFleetDriver>? assignments = null)
     {
-        var masters = catalog.Where(x => x.Kind == "equipos" && x.IsActive).ToList();
+        var records = catalog.ToList();
+        var masters = records.Where(x => x.Kind == "equipos" && x.IsActive).ToList();
         var board = new FleetBoardViewModel { HasUpload = source.IsFromUpload && source.LatestUploadAt.HasValue, LoadVersion = Version(source.LatestUploadAt) };
         var byKey = masters.ToDictionary(x => "master:" + x.Id, x => new FleetEquipmentViewModel {
             Key = "master:" + x.Id, Code = x.Name, Company = x.CompanyClassification, MasterDisplayId = x.DisplayId, LoadVersion = board.LoadVersion });
@@ -56,10 +57,29 @@ public static class OperationalFleetBoard
                 }
                 else continue;
             }
-            equipment.Status = change.Status;
+            // Manual activation supplies availability until TiHouse reports an actual trip.
+            equipment.Status = change.Status == "finalizado" && equipment.InLatestUpload && equipment.BaseStatus is "ruta" or "finalizado"
+                ? equipment.BaseStatus : change.Status;
             equipment.Reason = change.Reason;
             equipment.ManualStateKey = change.EquipmentKey;
             equipment.ManualStateKeys.Add(change.EquipmentKey);
+        }
+        foreach (var assignment in (assignments ?? []).OrderBy(x => x.UpdatedAtUtc))
+        {
+            var equipment = byKey.GetValueOrDefault(assignment.EquipmentKey);
+            if (equipment == null && assignment.EquipmentKey.StartsWith("unit:"))
+            {
+                var code = HolcimMasterCatalog.Identifier(assignment.EquipmentCode);
+                var matches = masters.Where(m => HolcimMasterCatalog.Identifier(m.Name) == code ||
+                    (!string.IsNullOrWhiteSpace(m.Plate) && HolcimMasterCatalog.Identifier(m.Plate) == code)).ToList();
+                if (matches.Count == 1) equipment = byKey["master:" + matches[0].Id];
+            }
+            var driver = records.SingleOrDefault(x => x.Id == assignment.DriverId && x.Kind == "conductores" && x.IsActive);
+            if (equipment != null && driver != null)
+            {
+                equipment.Driver = driver.Name;
+                equipment.AssignedDriverId = driver.Id;
+            }
         }
         board.Equipment = byKey.Values.OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase).ToList();
         return board;
@@ -72,6 +92,6 @@ public static class OperationalFleetBoard
         if (state.Contains("VARAD") || state.Contains("CARRETERA")) return "carretera";
         if (state.Contains("TALLER")) return state.Contains("PSB") ? "taller-psb" : state.Contains("POZ") ? "taller-poz" : "taller-pct";
         if (new[] {"ENRUTA","ENTRADA","ENCAMINO","RUTA","TRANSITO","PROCESO","PENDIENTE"}.Any(state.Contains)) return "ruta";
-        return "otros";
+        return "standby";
     }
 }

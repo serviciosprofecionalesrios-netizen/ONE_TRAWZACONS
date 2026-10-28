@@ -5,12 +5,11 @@
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2"><strong>Distribución de equipos</strong><span class="small text-muted">@displayedEquipment.Count equipos visibles · @displayedEquipment.Count(x=>x.InLatestUpload) en la última carga de TiHouse</span></div>
     @if(TempData["FleetOk"] is string ok){<div class="alert alert-success">@ok</div>}
     @if(TempData["FleetError"] is string error){<div class="alert alert-warning">@error</div>}
-    <p class="small text-muted">Standby muestra únicamente equipos EQUINOX o HOLCIM/EQUINOX ausentes de la última carga. Los estados manuales se conservan aunque se cargue otro TiHouse; solo un usuario puede activarlos. No se desactivan registros del maestro.</p>
+    <p class="small text-muted">Standby muestra equipos EQUINOX o HOLCIM/EQUINOX ausentes de la carga o sin estado reconocido. Activar equipo los coloca como activos y descargados. Fuera de Ruta, Varado y Taller se conservan hasta la activación manual. No se desactivan registros del maestro.</p>
     @if(!Model.HasUpload){<div class="alert alert-info">Sin una carga de TiHouse registrada: los equipos EQUINOX del maestro se muestran en Standby, salvo clasificaciones manuales. Los datos de ejemplo no activan equipos.</div>}
     <div class="row g-3">
-    @foreach(var status in new[]{"finalizado","ruta","standby","fuera-ruta","carretera","taller","otros"}){
+    @foreach(var status in new[]{"finalizado","ruta","standby","fuera-ruta","carretera","taller"}){
         var units=displayedEquipment.Where(x=>status=="taller" ? x.Status.StartsWith("taller-") : x.Status==status).ToList();
-        if(status=="otros" && units.Count==0){continue;}
         <div class="@(status is "standby" or "fuera-ruta" or "otros" ? "col-12" : "col-lg-6")">
             <div class="varado-panel @(status=="carretera" ? "varado-panel--carretera" : status.StartsWith("taller") ? "varado-panel--taller" : "")" style="@(status=="standby" ? "border-top:4px solid #64748b;background:#f1f5f9" : "")">
                 <div class="varado-panel__title"><i class="bi @(status=="standby" ? "bi-pause-circle" : status=="fuera-ruta" ? "bi-sign-turn-right" : "bi-truck-front") me-2"></i>@OperationalFleetBoard.StatusLabel(status) (@units.Count)</div>

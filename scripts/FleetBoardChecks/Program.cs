@@ -27,7 +27,7 @@ var truck1=new OperationalMasterRecord{Kind="equipos",Name="W-0001",Plate="M1000
 var truck2=new OperationalMasterRecord{Kind="equipos",Name="W-0002",Plate="M100002",Owner="Owner",Tenure="Propio",RecordKey="truck2"};
 var holcim=new OperationalMasterRecord{Kind="equipos",Name="NM900001",Owner="Pending",Tenure="Pending",RecordKey="holcim",CompanyClassification="HOLCIM"};
 db.AddRange(truck1,truck2,holcim,new OperationalMasterRecord{Kind="gondolas",Name="G-01",Owner="Owner",Tenure="Propio",RecordKey="trailer"});db.SaveChanges();
-FleetBoardViewModel Board()=>OperationalFleetBoard.Build(db.OperationalMasterRecords.ToList(),store.Get()??new(),db.OperationalFleetStates.AsNoTracking().ToList());
+FleetBoardViewModel Board()=>OperationalFleetBoard.Build(db.OperationalMasterRecords.ToList(),store.Get()??new(),db.OperationalFleetStates.AsNoTracking().ToList(),db.OperationalFleetDrivers.AsNoTracking().ToList());
 Check(Board().Equipment.Count==3 && Board().Equipment.All(x=>x.Status=="standby"),"All equipment, including Holcim, starts Standby without a real upload; no trailers");
 store.Save(Upload(Row("W-0001","EN RUTA",-1),Row("W-0002","FINALIZADO",-1)));
 store.Save(Upload(Row("W-0001","EN RUTA"),Row("M-100001","FINALIZADO",0,"Conductor anterior"),Row("W-0001","FINALIZADO",0,"Último conductor"),Row("UNKNOWN","EN RUTA")));
@@ -38,6 +38,7 @@ Check(board.Equipment.Single(x=>x.Key=="master:"+truck1.Id).Status=="finalizado"
 Check(board.Equipment.Single(x=>x.Key=="master:"+truck1.Id).Driver=="Último conductor","The last source row supplies the actual driver across plate/code aliases");
 Check(board.Equipment.Any(x=>x.Code=="UNKNOWN"&&x.Status=="ruta") && board.Equipment.Count==4,"TiHouse equipment not yet in master remains visible");
 Check(OperationalFleetBoard.Build(db.OperationalMasterRecords.ToList(),new(){Rows=[Row("W-0001","EN RUTA")]},[]).Equipment.All(x=>x.Status=="standby"),"Sample rows never activate equipment");
+Check(OperationalFleetBoard.Build([truck2],new(){IsFromUpload=true,LatestUploadAt=day,LatestUploadEquipment=[truck2.Name],Rows=[Row(truck2.Name,"NO RECONOCIDO")]},[]).Equipment.Single().Status=="standby","Unrecognized source states go to Standby, without an Other states card");
 
 ClaimsPrincipal Person(string email,string? profile=null)=>new(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,email),new Claim(ClaimTypes.Role,"Administrator")}.Concat(profile==null?[]:new[]{new Claim(UserAccessProfiles.ClaimType,profile)}),"test"));
 OperacionesController Controller(string email="monitoreo@trawzacons.com",string? profile=null){
@@ -64,6 +65,13 @@ Check(Board().Equipment.Single(x=>x.Key==key).Status=="fuera-ruta" && !Board().E
 var stale=Controller();Check(await stale.ActualizarEstadoEquipo(key,"auto",null,priorVersion,default) is RedirectToActionResult && stale.TempData.ContainsKey("FleetError") && Board().Equipment.Single(x=>x.Key==key).Status=="fuera-ruta","Stale activation request cannot act on a different upload");
 await Controller().ActualizarEstadoEquipo(key,"auto",null,Board().LoadVersion,default);
 Check(Board().Equipment.Single(x=>x.Key==key).Status=="standby" && !db.OperationalFleetStates.Any(),"Only manual activation clears classification; absent equipment returns to Standby");
+await Controller().ActualizarEstadoEquipo(key,"finalizado",null,Board().LoadVersion,default);
+Check(Board().Equipment.Single(x=>x.Key==key).Status=="finalizado" && !Board().Equipment.Single(x=>x.Key==key).InLatestUpload,"Standby can be manually activated as discharged without a TiHouse row");
+store.Save(Upload(Row("W-0002","EN RUTA",2)));
+Check(Board().Equipment.Single(x=>x.Key==key).Status=="finalizado","Manual activation survives uploads that still omit the equipment");
+store.Save(Upload(Row("W-0001","EN RUTA",2)));
+Check(Board().Equipment.Single(x=>x.Key==key).Status=="ruta","An actual later TiHouse trip updates manually activated equipment");
+await Controller().ActualizarEstadoEquipo(key,"auto",null,Board().LoadVersion,default);
 await Controller().ActualizarEstadoEquipo("master:"+truck2.Id,"carretera",null,Board().LoadVersion,default);
 store.Save(Upload(Row("W-0002","FINALIZADO",3)));
 Check(Board().Equipment.Single(x=>x.Code=="W-0002").Status=="carretera","New uploads also preserve manual roadside/workshop classifications");
@@ -98,5 +106,33 @@ using var pg=new PostgresApplicationDbContext(new DbContextOptionsBuilder<Postgr
 Check(pg.GetService<IMigrator>().GenerateScript("20261027010000_MasterCompanyClassificationPostgres","20261027020000_OperationalFleetPostgres").Contains("timestamp without time zone"),"PostgreSQL fleet migration generated");
 using var sql=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer("Server=localhost;Database=check;Integrated Security=True;TrustServerCertificate=True").Options);
 Check(sql.GetService<IMigrator>().GenerateScript("20261027010000_MasterCompanyClassification","20261027020000_OperationalFleet").Contains("EquipmentSnapshotJson"),"SQL Server fleet migration generated");
-Console.WriteLine("PASS: latest-upload membership, complete master coverage, persistent manual status across uploads, explicit activation, reasons, permissions and migrations.");
+var driver1 = new OperationalMasterRecord { Kind="conductores",Name="Juan Carlos Perez Ruiz",RecordKey="driver1" };
+var driver2 = new OperationalMasterRecord { Kind="conductores",Name="Pedro Jose Lopez Cruz",RecordKey="driver2" };
+var inactiveDriver = new OperationalMasterRecord { Kind="conductores",Name="Inactivo",RecordKey="inactive",IsActive=false };
+db.AddRange(driver1,driver2,inactiveDriver);db.SaveChanges();
+Check(await Controller().AsignarConductorEquipo(key,driver1.Id,Board().LoadVersion,default) is RedirectToActionResult,"Assign an active catalog driver to Standby equipment");
+Check(Board().Equipment.Single(x=>x.Key==key).Driver==driver1.Name && Board().Equipment.Single(x=>x.Key==key).Status=="standby","Driver assignment preserves equipment status");
+await Controller().ActualizarEstadoEquipo(key,"finalizado",null,Board().LoadVersion,default);
+await Controller().AsignarConductorEquipo(key,driver2.Id,Board().LoadVersion,default);
+Check(Board().Equipment.Single(x=>x.Key==key).Driver==driver2.Name && Board().Equipment.Single(x=>x.Key==key).Status=="finalizado","Change driver on discharged equipment");
+store.Save(Upload(Row("W-0001","EN RUTA",8,"Conductor TiHouse")));
+Check(Board().Equipment.Single(x=>x.Key==key).Driver==driver2.Name && Board().Equipment.Single(x=>x.Key==key).Status=="ruta","Manual driver survives TiHouse upload while actual trip changes status");
+await Controller().AsignarConductorEquipo(key,driver1.Id,Board().LoadVersion,default);
+Check(Board().Equipment.Single(x=>x.Key==key).Driver==driver1.Name,"Change driver while equipment is en route");
+Check(await Controller().AsignarConductorEquipo(key,inactiveDriver.Id,Board().LoadVersion,default) is BadRequestResult,"Inactive driver rejected");
+Check(await Controller().AsignarConductorEquipo(key,truck1.Id,Board().LoadVersion,default) is BadRequestResult,"Equipment cannot be assigned as a driver");
+Check(await Controller().AsignarConductorEquipo("master:999999",driver1.Id,Board().LoadVersion,default) is BadRequestResult,"Unknown equipment rejected for driver assignment");
+Check(await Controller("supervisor@example.com",UserAccessProfiles.SupervisorOperations).AsignarConductorEquipo(key,driver1.Id,Board().LoadVersion,default) is ForbidResult,"Read-only supervisor cannot assign a driver");
+var savedDriverId=db.OperationalFleetDrivers.Single(x=>x.EquipmentKey==key).DriverId;
+await Controller().AsignarConductorEquipo(key,driver2.Id,"stale",default);
+Check(db.OperationalFleetDrivers.Single(x=>x.EquipmentKey==key).DriverId==savedDriverId,"Stale upload prevents driver assignment");
+Check(typeof(OperacionesController).GetMethod("AsignarConductorEquipo")!.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute),true).Length==1,"Driver assignment requires CSRF protection");
+foreach(var email in new[]{"admin@trawzacons.com","roldanzamora@trawzacons.com","monitoreo2@trawzacons.com","monitoreo@trawzacons.com"}){
+ var http=new DefaultHttpContext{User=Person(email)};http.Request.Method="POST";var route=new RouteData();route.Values["controller"]="Operaciones";
+ var auth=new AuthorizationFilterContext(new ActionContext(http,route,new ActionDescriptor{RouteValues=new Dictionary<string,string?>{{"action","AsignarConductorEquipo"}}}),[]);
+ new AccessProfileAuthorizationFilter().OnAuthorization(auth);Check(auth.Result==null,"Global filter allows driver assignment: "+email);
+}
+Check(pg.GetService<IMigrator>().GenerateScript("20261027020000_OperationalFleetPostgres","20261028010000_FleetDriverAssignmentsPostgres").Contains("OperationalFleetDrivers"),"PostgreSQL assignment migration generated without connecting to database");
+Check(sql.GetService<IMigrator>().GenerateScript("20261027020000_OperationalFleet","20261028010000_FleetDriverAssignments").Contains("OperationalFleetDrivers"),"SQL Server assignment migration generated without connecting to database");
+Console.WriteLine("PASS: fleet activation, driver assignments, upload persistence, permissions and migration scripts.");
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

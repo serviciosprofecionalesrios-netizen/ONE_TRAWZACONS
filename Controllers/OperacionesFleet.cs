@@ -14,10 +14,36 @@ public partial class OperacionesController
     }
     private FleetBoardViewModel BuildFleet(SeguimientoToneladasViewModel source)
     {
-        var board = OperationalFleetBoard.Build(_context.OperationalMasterRecords.AsNoTracking().Where(x => x.Kind == "equipos").ToList(),source,_context.OperationalFleetStates.AsNoTracking().ToList());
+        var catalog = _context.OperationalMasterRecords.AsNoTracking().ToList();
+        var board = OperationalFleetBoard.Build(catalog,source,_context.OperationalFleetStates.AsNoTracking().ToList(),_context.OperationalFleetDrivers.AsNoTracking().ToList());
         board.CanManage = OperationalFleetBoard.CanManage(User);
-        foreach(var equipment in board.Equipment) equipment.CanManage = board.CanManage;
+        var drivers = catalog.Where(x => x.Kind == "conductores" && x.IsActive).OrderBy(x => x.Name).ToList();
+        foreach(var equipment in board.Equipment) { equipment.CanManage = board.CanManage; if(board.CanManage) equipment.AvailableDrivers = drivers; }
         return board;
+    }
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AsignarConductorEquipo(string key, int driverId, string loadVersion, CancellationToken cancellationToken)
+    {
+        if (!OperationalFleetBoard.CanManage(User)) return Forbid();
+        var board = BuildFleet(_operacionesSeguimientoStore.Get() ?? new SeguimientoToneladasViewModel());
+        if (board.LoadVersion != loadVersion)
+        {
+            TempData["FleetError"] = "Se cargó otro archivo de TiHouse. Revisa el equipo y vuelve a intentar.";
+            return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
+        }
+        var equipment = board.Equipment.SingleOrDefault(x => x.Key == key);
+        var driver = await _context.OperationalMasterRecords.AsNoTracking().SingleOrDefaultAsync(x => x.Id == driverId && x.Kind == "conductores" && x.IsActive,cancellationToken);
+        if (equipment == null || driver == null) return BadRequest();
+        var assignment = await _context.OperationalFleetDrivers.FindAsync([key],cancellationToken);
+        if (assignment == null) { assignment = new OperationalFleetDriver { EquipmentKey = key }; _context.OperationalFleetDrivers.Add(assignment); }
+        assignment.EquipmentCode = equipment.Code;
+        assignment.DriverId = driver.Id;
+        assignment.UpdatedAtUtc = DateTime.UtcNow;
+        var actor = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "";
+        assignment.ChangedBy = actor.Length > 150 ? actor[..150] : actor;
+        await _context.SaveChangesAsync(cancellationToken);
+        TempData["FleetOk"] = $"Conductor {driver.Name} asignado a {equipment.Code}.";
+        return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
     }
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ActualizarEstadoEquipo(string key, string status, string? reason, string loadVersion, CancellationToken cancellationToken)

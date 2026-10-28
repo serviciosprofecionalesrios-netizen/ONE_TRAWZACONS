@@ -4,7 +4,19 @@
     <button class="equipo-chip @(Model.Status=="finalizado" ? "equipo-chip--descargado" : Model.Status=="ruta" ? "equipo-chip--ruta" : "") dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="@($"{Model.MasterDisplayId ?? "Sin vínculo a maestro"} · {Model.Company} · Conductor: {(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin conductor en la carga" : Model.Driver)}")"><i class="bi bi-truck-front"></i>@Model.Code</button>
     <ul class="dropdown-menu" style="max-height:70vh;overflow-y:auto">
         <li class="dropdown-header">@Model.Code · @(Model.InLatestUpload ? "En TiHouse" : "Fuera de la carga")</li>
+        <li class="px-3 pb-2 small" style="max-width:320px;white-space:normal">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin asignar" : Model.Driver)</li>
         @if(Model.CanManage){
+            <li><details><summary class="dropdown-item"><i class="bi bi-person-plus me-2"></i>Asignar / cambiar conductor</summary>
+                <form asp-action="AsignarConductorEquipo" method="post" class="px-3 py-2" style="min-width:300px;max-width:85vw">
+                    <input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
+                    <label class="form-label small">Conductores activos del maestro</label>
+                    <select name="driverId" class="form-select form-select-sm mb-2" required>
+                        <option value="">Selecciona un conductor</option>
+                        @foreach(var driver in Model.AvailableDrivers){<option value="@driver.Id" selected="@(driver.Id == Model.AssignedDriverId)">@driver.Name · @driver.DisplayId</option>}
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm" disabled="@(Model.AvailableDrivers.Count == 0)">Guardar conductor</button>
+                </form>
+            </details></li>
             <li><details><summary class="dropdown-item"><i class="bi bi-sign-turn-right me-2"></i>Fuera de ruta ▸</summary>
                 <form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="fuera-ruta"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
                     @foreach(var reason in OperationalFleetBoard.Reasons){<button class="dropdown-item ps-4" name="reason" value="@reason" type="submit">@reason</button>}
@@ -13,8 +25,8 @@
             @foreach(var state in new[]{"carretera","taller-pct","taller-psb","taller-poz"}){
                 <li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="@state"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit">@OperationalFleetBoard.StatusLabel(state)</button></form></li>
             }
-            @if(Model.ManualStateKey!=null){
-                <li><hr class="dropdown-divider"/></li><li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="auto"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit"><i class="bi bi-play-circle me-2"></i>Activar equipo</button></form><div class="small text-muted px-3 pb-1">@(Model.InLatestUpload ? "Retoma el estado vigente de TiHouse." : Model.MasterDisplayId!=null ? "Sin registro en la carga actual: volverá a Standby." : "Sin registro en el maestro ni en la carga: no se marcará activo.")</div></li>
+            @if(Model.Status=="standby" || Model.ManualStateKey!=null){
+                <li><hr class="dropdown-divider"/></li><li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="finalizado"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit"><i class="bi bi-play-circle me-2"></i>Activar equipo</button></form><div class="small text-muted px-3 pb-1">Activo y descargado mientras TiHouse no registre un viaje.</div></li>
             }
         }
         <li><a class="dropdown-item text-danger" asp-action="NuevaInfraccion" asp-route-vehicle="@Model.Code" asp-route-driver="@Model.Driver"><i class="bi bi-exclamation-octagon me-2"></i>Nueva infracción</a></li>

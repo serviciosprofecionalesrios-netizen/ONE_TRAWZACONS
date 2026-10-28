@@ -13,6 +13,8 @@ public sealed class FleetEquipmentViewModel
     public string Company { get; set; } = "";
     public string? MasterDisplayId { get; set; }
     public string Driver { get; set; } = "";
+    public int? AssignedDriverId { get; set; }
+    public List<ITServiceDeskApp.Models.OperationalMasterRecord> AvailableDrivers { get; set; } = [];
     public string BaseStatus { get; set; } = "standby";
     public string Status { get; set; } = "standby";
     public string? Reason { get; set; }

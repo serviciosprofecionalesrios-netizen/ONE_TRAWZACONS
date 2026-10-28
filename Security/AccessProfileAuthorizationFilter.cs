@@ -75,7 +75,7 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
             return;
 
         // These shared master actions also validate the requested catalog in the controller.
-        if (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) && action.Equals("ActualizarEstadoEquipo", StringComparison.OrdinalIgnoreCase) &&
+        if (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) && new[] { "ActualizarEstadoEquipo", "AsignarConductorEquipo" }.Contains(action, StringComparer.OrdinalIgnoreCase) &&
             ITServiceDeskApp.Services.OperationalFleetBoard.CanManage(user)) return;
 
         if (controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
