@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
+using ITServiceDeskApp.Services.Interfaces;
 using System.Security.Claims;
 void Check(bool value,string message){if(!value)throw new Exception(message);Console.WriteLine("PASS: "+message);}
 var data=OperationalBreakdownCatalog.Missing([]);
@@ -86,7 +88,31 @@ var manager=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Em
 Check(OperationalBreakdownClosure.CanClose(manager),"Maintenance editor may close incidents");
 var supervisor=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"supervisor@example.com"),new Claim(UserAccessProfiles.ClaimType,UserAccessProfiles.SupervisorOperations)},"test"));
 Check(!OperationalBreakdownClosure.CanClose(supervisor),"Read-only operations supervisor cannot close incidents");
-Console.WriteLine("PASS: Averias, maintenance-board and closure acceptance checks complete");
+var technician=new MaintenanceTechnician{FullName="Técnico de prueba",IsActive=true};
+var inactiveTechnician=new MaintenanceTechnician{FullName="Técnico inactivo",IsActive=false};
+db.AddRange(technician,inactiveTechnician);
+var managed=Open(0);managed.EventAt=DateTime.UtcNow.AddHours(-7);db.Add(managed);db.SaveChanges();
+var services=new ServiceCollection().AddSingleton(db).AddSingleton<IOperacionesSeguimientoStore>(store).BuildServiceProvider();
+MaintenanceBreakdownsController MaintenanceController(){
+ var controller=ActivatorUtilities.CreateInstance<MaintenanceBreakdownsController>(services);
+ var http=Controller().HttpContext;
+ controller.ControllerContext=new ControllerContext{HttpContext=http};controller.TempData=new TempDataDictionary(http,new TempData());return controller;
+}
+Check(await MaintenanceController().Close(managed.Id) is ViewResult,"Closure controller resolves using the actual interface registration and opens its form");
+var edit=new MaintenanceBreakdownsController.CloseForm{Id=managed.Id,TechnicianId=technician.Id,SlaDeadline=DateTime.UtcNow.AddHours(-2),ClosedAt=null};
+Check(await MaintenanceController().Close(edit,default,"assign") is RedirectToActionResult && managed.AssignedTechnicianId==technician.Id && managed.Status=="Abierta","Assign active technician and deadline without requiring closure date or closing incident");
+var invalidAssignment=new MaintenanceBreakdownsController.CloseForm{Id=managed.Id,TechnicianId=inactiveTechnician.Id};
+Check(await MaintenanceController().Close(invalidAssignment,default,"assign") is ViewResult && managed.AssignedTechnicianId==technician.Id,"Inactive technician cannot be newly assigned");
+Check(await MaintenanceController().Close(new(){Id=managed.Id},default,"close") is ViewResult && managed.EndAt==null,"Closing still requires a closing date");
+Check(MaintenanceSemaphore.Evaluate(-0.01,TicketStatus.Open,null).Tone=="danger" && MaintenanceSemaphore.Evaluate(0,TicketStatus.Open,null).Tone=="warning" && MaintenanceSemaphore.Evaluate(4,TicketStatus.Open,null).Tone=="warning","Shared overdue and near-due thresholds match work orders, including exact 4h boundary");
+Check(MaintenanceSemaphore.Evaluate(4.01,TicketStatus.Open,null).Tone=="info" && MaintenanceSemaphore.Evaluate(12,TicketStatus.Open,null).Tone=="info" && MaintenanceSemaphore.Evaluate(12.01,TicketStatus.Open,null).Tone=="success","Shared monitoring and on-time thresholds match work orders");
+var timed=Open(500,"{\"T. Estimado Mantt.\":\"4\"}");timed.AssignedTechnicianId=technician.Id;
+var timedRow=MaintenanceBreakdownBoard.Build(new[]{timed},[],boardTime,new[]{technician}).Single();
+Check(timedRow.Technician==technician.FullName && !timedRow.IsUnassigned && timedRow.SemaphoreTone=="warning" && timedRow.RemainingHours==2,"Board uses assigned catalog technician and source estimated repair hours");
+Check(MaintenanceBreakdownBoard.Build(new[]{Open(501)},[],boardTime).Single() is {IsUnassigned:true,SemaphoreLabel:"Sin plazo"},"No invented SLA when the source has no deadline or estimate");
+Check(pg.GetService<IMigrator>().GenerateScript("20261029010000_OperationalBreakdownsPostgres","20261029020000_BreakdownTechnicianSlaPostgres").Contains("AssignedTechnicianId"),"PostgreSQL technician/deadline migration generates offline");
+Check(sql.GetService<IMigrator>().GenerateScript("20261029010000_OperationalBreakdowns","20261029020000_BreakdownTechnicianSla").Contains("SlaDeadline"),"SQL Server technician/deadline migration generates offline");
+Console.WriteLine("PASS: Averias, closure controller activation, technician assignment and shared semaphores complete");
 sealed class TempData:ITempDataProvider{public IDictionary<string,object> LoadTempData(HttpContext c)=>new Dictionary<string,object>();public void SaveTempData(HttpContext c,IDictionary<string,object> v){}}
 
 

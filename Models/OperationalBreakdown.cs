@@ -17,6 +17,8 @@ public sealed class OperationalBreakdown
     [MaxLength(4000)] public string? Observation { get; set; }
     [MaxLength(80)] public string Status { get; set; } = "Abierta";
     public DateTime? EndAt { get; set; }
+    public int? AssignedTechnicianId { get; set; }
+    public DateTime? SlaDeadline { get; set; }
     public string? SourceJson { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     [MaxLength(150)] public string RegisteredBy { get; set; } = "";

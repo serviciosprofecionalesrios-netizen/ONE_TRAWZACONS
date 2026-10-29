@@ -1535,7 +1535,8 @@ namespace ITServiceDeskApp.Controllers
 
             var openBreakdowns = MaintenanceBreakdownBoard.Build(
                 await _context.OperationalBreakdowns.AsNoTracking().Where(x=>x.EndAt==null).ToListAsync(),
-                await _context.OperationalFleetStates.AsNoTracking().ToListAsync(),nowUtc);
+                await _context.OperationalFleetStates.AsNoTracking().ToListAsync(),nowUtc,
+                await _context.MaintenanceTechnicians.AsNoTracking().ToListAsync());
             var siteOptions = MaintenanceSites.Concat(openBreakdowns.Select(x=>x.Site)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             if (!string.IsNullOrWhiteSpace(selectedSite) &&
                 siteOptions.All(x => !x.Equals(selectedSite, StringComparison.OrdinalIgnoreCase)))
@@ -1574,7 +1575,8 @@ namespace ITServiceDeskApp.Controllers
                 OverdueOrders = rows.Count(x => x.RemainingHoursToSla < 0),
                 NearDueOrders = rows.Count(x => x.RemainingHoursToSla >= 0 && x.RemainingHoursToSla <= 4),
                 UnassignedOrders = rows.Count(x => string.Equals(x.Technician, "Sin asignar", StringComparison.OrdinalIgnoreCase)),
-                OpenBreakdowns = openBreakdowns.Where(x=>string.IsNullOrWhiteSpace(selectedSite) || string.Equals(x.Site,selectedSite,StringComparison.OrdinalIgnoreCase)).ToList(),
+                OpenBreakdowns = openBreakdowns.Where(x=>(string.IsNullOrWhiteSpace(selectedSite) || string.Equals(x.Site,selectedSite,StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrWhiteSpace(selectedTechnician) || string.Equals(x.Technician,selectedTechnician,StringComparison.OrdinalIgnoreCase))).ToList(),
                 SiteOptions = siteOptions,
                 TechnicianOptions = technicianOptions,
                 StageOptions = stageOptions,
@@ -1800,29 +1802,7 @@ namespace ITServiceDeskApp.Controllers
             TicketStatus status,
             string? maintenanceStage)
         {
-            var normalizedStage = (maintenanceStage ?? string.Empty).Trim();
-            if (status == TicketStatus.Closed ||
-                normalizedStage.Equals("Cerrada", StringComparison.OrdinalIgnoreCase))
-            {
-                return ("Completada", "secondary", 3);
-            }
-
-            if (remainingHours < 0)
-            {
-                return ("Vencida", "danger", 0);
-            }
-
-            if (remainingHours <= 4)
-            {
-                return ("Por vencer", "warning", 1);
-            }
-
-            if (remainingHours <= 12)
-            {
-                return ("Seguimiento", "info", 2);
-            }
-
-            return ("En tiempo", "success", 2);
+            return MaintenanceSemaphore.Evaluate(remainingHours,status,maintenanceStage);
         }
 
         private static IQueryable<Ticket> ApplyQuickFilter(
