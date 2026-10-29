@@ -1592,6 +1592,9 @@
                                 </a>
                             </li>
 
+                            <li class="js-op-item" data-group="monitoreo" data-search="averias daños bitacora equipos">
+                                <a class="dropdown-item op-menu-item @(currentAction is "Averias" or "NuevaAveria" or "AveriaDetalle" ? "is-active" : "")" asp-controller="Operaciones" asp-action="Averias"><span class="op-item-main"><i class="bi bi-tools"></i>Averías</span></a>
+                            </li>
                             <li><hr class="dropdown-divider" data-group-divider="monitoreo"></li>
                             <li><span class="menu-group-label" data-group-label="analisis">Análisis</span></li>
                             <li class="js-op-item" data-group="analisis" data-search="reportes operaciones cumplimiento toneladas diesel pdf">

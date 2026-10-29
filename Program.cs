@@ -163,6 +163,7 @@ using (var scope = app.Services.CreateScope())
 
         context.Database.Migrate();
         OperationalMasterCatalog.Seed(context);
+        OperationalBreakdownCatalog.Seed(context);
         var holcimImport = HolcimMasterCatalog.Seed(context, logger);
         logger.LogInformation("Maestros Holcim: {Added} nuevos, {Linked} vinculados y {Ambiguous} por revisar.", holcimImport.Added, holcimImport.Linked, holcimImport.Ambiguous);
 

@@ -51,6 +51,7 @@ namespace ITServiceDeskApp.Data
         public DbSet<OperationalMasterRecord> OperationalMasterRecords => Set<OperationalMasterRecord>();
         public DbSet<OperationalFleetState> OperationalFleetStates => Set<OperationalFleetState>();
         public DbSet<OperationalFleetDriver> OperationalFleetDrivers => Set<OperationalFleetDriver>();
+        public DbSet<OperationalBreakdown> OperationalBreakdowns => Set<OperationalBreakdown>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

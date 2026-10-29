@@ -1,0 +1,19 @@
+@model ITServiceDeskApp.ViewModels.Operaciones.BreakdownCreateViewModel
+@using ITServiceDeskApp.Services
+@using System.Text.Json
+@{ViewData["Title"]="Nueva avería";}
+<link rel="stylesheet" href="~/css/averias.css" asp-append-version="true"/>
+<div class="mx-auto" style="max-width:1050px"><header class="averias-hero mb-4"><div><small>OPERACIONES · BITÁCORA DE EQUIPOS</small><h2><i class="bi bi-tools me-2"></i>Nueva avería</h2><p class="mb-0">Registra el daño y el equipo involucrado.</p></div></header>
+<form asp-action="NuevaAveria" method="post" class="card"><div class="card-body p-4"><div asp-validation-summary="All" class="text-danger" role="alert"></div><div class="row g-3">
+<div class="col-md-6"><label asp-for="EventAt" class="form-label">Fecha y hora del evento *</label><input asp-for="EventAt" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" class="form-control" required/></div>
+<div class="col-md-6"><label asp-for="Circuit" class="form-label">Circuito *</label><input asp-for="Circuit" class="form-control" required maxlength="80"/></div>
+<div class="col-md-6"><label asp-for="Equipment" class="form-label">Equipo *</label><input asp-for="Equipment" list="averias-equipos" class="form-control" required maxlength="160"/><datalist id="averias-equipos">@foreach(var item in Model.EquipmentOptions){<option value="@item"></option>}</datalist></div>
+<div class="col-md-6"><label asp-for="Driver" class="form-label">Conductor</label><input asp-for="Driver" list="averias-conductores" class="form-control" maxlength="160"/><datalist id="averias-conductores">@foreach(var item in Model.DriverOptions){<option value="@item"></option>}</datalist></div>
+<div class="col-md-6"><label asp-for="EquipmentStatus" class="form-label">Estatus del equipo *</label><select asp-for="EquipmentStatus" class="form-select" required><option value="">Selecciona el estatus</option>@foreach(var item in OperationalBreakdownCatalog.Options("Estatus Equipo")){<option value="@item">@item</option>}</select></div>
+<div class="col-md-6"><label asp-for="DamageTarget" class="form-label">Daño en equipo *</label><select asp-for="DamageTarget" class="form-select" required><option value="">Selecciona equipo o góndola</option>@foreach(var item in OperationalBreakdownCatalog.Options("DAÑO EN EQUIPO")){<option value="@item">@item</option>}</select></div>
+<div class="col-md-6"><label asp-for="Category" class="form-label">Categoría de daño *</label><select asp-for="Category" class="form-select" required><option value="">Selecciona la categoría</option>@foreach(var item in OperationalBreakdownCatalog.Elements.Keys.OrderBy(x=>x)){<option value="@item">@item</option>}</select></div>
+<div class="col-md-6"><label asp-for="Element" class="form-label">Elemento de daño *</label><select asp-for="Element" class="form-select" required data-selected="@Model.Element"><option value="">Selecciona primero una categoría</option>@if(OperationalBreakdownCatalog.Elements.TryGetValue(Model.Category,out var elements)){foreach(var item in elements){<option value="@item">@item</option>}}</select></div>
+<div class="col-12"><label asp-for="Observation" class="form-label">Observación del daño</label><textarea asp-for="Observation" class="form-control" rows="4" maxlength="4000"></textarea></div>
+</div><p class="small text-muted mt-3 mb-0">* Campos obligatorios. La nueva avería se registra como Abierta. Este registro no cambia automáticamente el estado del camión.</p></div><div class="card-footer d-flex justify-content-end gap-2 p-3"><a class="btn btn-outline-secondary" asp-action="Averias">Cancelar</a><button type="submit" class="btn btn-primary">Registrar avería</button></div></form></div>
+<script id="averias-elements" type="application/json">@Html.Raw(JsonSerializer.Serialize(OperationalBreakdownCatalog.Elements))</script>
+<script src="~/js/averias.js" asp-append-version="true"></script>

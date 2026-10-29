@@ -6,6 +6,7 @@
         <li class="dropdown-header">@Model.Code · @(Model.InLatestUpload ? "En TiHouse" : "Fuera de la carga")</li>
         <li class="px-3 pb-2 small" style="max-width:320px;white-space:normal">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin asignar" : Model.Driver)</li>
         @if(Model.CanManage){
+            <li><a class="dropdown-item" asp-action="NuevaAveria" asp-route-key="@Model.Key"><i class="bi bi-tools me-2"></i>Nueva avería</a></li>
             <li><details><summary class="dropdown-item"><i class="bi bi-person-plus me-2"></i>Asignar / cambiar conductor</summary>
                 <form asp-action="AsignarConductorEquipo" method="post" class="px-3 py-2" style="min-width:300px;max-width:85vw">
                     <input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>

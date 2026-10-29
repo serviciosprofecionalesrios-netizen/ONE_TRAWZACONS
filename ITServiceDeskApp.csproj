@@ -24,6 +24,7 @@
     <Compile Remove="scripts\**\*.cs" />
     <EmbeddedResource Include="Resources/OperationalMastersSeed.json" />
     <EmbeddedResource Include="Resources/HolcimMastersSeed.json" />
+    <EmbeddedResource Include="Resources/AveriasSeed.json" />
   </ItemGroup>
 
 </Project>
