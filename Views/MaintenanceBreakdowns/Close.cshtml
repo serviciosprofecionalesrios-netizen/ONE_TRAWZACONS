@@ -1,0 +1,11 @@
+@model ITServiceDeskApp.Controllers.MaintenanceBreakdownsController.CloseForm
+@using ITServiceDeskApp.Services
+@{ViewData["Title"]="Cierre de avería";var record=Model.Record!;}
+<link rel="stylesheet" href="~/css/averias.css" asp-append-version="true"/>
+<div class="mx-auto" style="max-width:950px"><header class="averias-hero mb-4"><div><small>MANTENIMIENTO · AVERÍA AV-@record.Id</small><h2>Cierre de incidencia · @record.Equipment</h2><p class="mb-0">@record.Category · @record.Element</p></div></header>
+@if(TempData["ClosureOk"] is string success){<div class="alert alert-success">@success</div>}
+<section class="card card-body mb-3"><p><strong>Inicio:</strong> @record.EventAt.ToString("dd/MM/yyyy HH:mm") · <strong>Conductor:</strong> @record.Driver</p><p class="mb-0">@record.Observation</p></section>
+@if(MaintenanceBreakdownBoard.IsOperationallyOpen(record)){
+<form asp-action="Close" method="post" class="card card-body"><input asp-for="Id" type="hidden"/><input asp-for="ReturnToBoard" type="hidden"/><div asp-validation-summary="All" class="text-danger" role="alert"></div><label asp-for="ClosedAt" class="form-label fw-bold">Fecha y hora de cierre *</label><input asp-for="ClosedAt" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm:ss}" step="1" class="form-control mb-2" required/><p class="small text-muted">Hora de Nicaragua. Al cerrar la última avería abierta, el equipo pasará a Equipos descargados.</p><button type="submit" class="btn btn-success align-self-start">Cerrar incidencia y activar equipo</button></form>
+}else{<div class="alert alert-info">Estado: @record.Status · Cierre: @(record.EndAt?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha registrada")</div>}
+<div class="mt-3">@if(Model.ReturnToBoard){<a class="btn btn-outline-primary" asp-controller="Tickets" asp-action="MaintenanceBoard">Volver a la pizarra</a>}else{<a class="btn btn-outline-primary" asp-controller="Operaciones" asp-action="Averias">Volver a Averías</a>}</div></div>

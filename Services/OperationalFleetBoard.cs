@@ -58,7 +58,7 @@ public static class OperationalFleetBoard
                 else continue;
             }
             // Manual activation supplies availability until TiHouse reports an actual trip.
-            equipment.Status = change.Status == "finalizado" && equipment.InLatestUpload && equipment.BaseStatus is "ruta" or "finalizado"
+            equipment.Status = change.Status == "finalizado" && equipment.InLatestUpload && source.LatestUploadAt != change.SourceUploadedAt && equipment.BaseStatus is "ruta" or "finalizado"
                 ? equipment.BaseStatus : change.Status;
             equipment.Reason = change.Reason;
             equipment.ManualStateKey = change.EquipmentKey;

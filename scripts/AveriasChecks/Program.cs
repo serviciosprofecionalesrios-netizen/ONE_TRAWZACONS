@@ -60,7 +60,33 @@ Check(board.Single(x=>x.Id==5).Site=="Sin ubicación registrada","Missing locati
 Check(board.All(x=>x.ElapsedHours==2),"Elapsed time uses Nicaragua timezone");
 Check(MaintenanceBreakdownBoard.Build(new[]{Open(6)},new[]{new OperationalFleetState{EquipmentCode="W-0001",Status="taller-psb"}},boardTime).Single().Site=="PSB","Unlocated breakdown uses the equipment's manual workshop classification");
 Check(MaintenanceBreakdownBoard.Build(new[]{Open(7,"invalid json")},[],boardTime).Count==1,"Malformed legacy metadata cannot hide open breakdowns");
-Console.WriteLine("PASS: Averias and maintenance-board acceptance checks complete");
+Check(MaintenanceBreakdownBoard.Build(new[]{Open(8,"{\"VIGENCIA\":\"NULO\"}")},[],boardTime).Count==0,"Voided source records never appear as operationally open");
+Check(MaintenanceBreakdownBoard.Build(new[]{Open(9,"{\"Estatus\":\"Cerrada\"}")},[],boardTime).Count==0,"Source closure overrides a stale open status");
+Check(MaintenanceBreakdownBoard.Build(new[]{Open(10,"{\"Fecha Fin Evento\":\"29/10/2026 10:00:00\"}")},[],boardTime).Count==0,"Source closing date overrides a stale empty EndAt");
+Check(MaintenanceBreakdownBoard.Build(data,[],boardTime).Count==94,"Only the 94 valid open historical records reach the maintenance board");
+var closeTruck=new OperationalMasterRecord{Kind="equipos",Name="W-CLOSE",Plate="M-CLOSE",RecordKey="close-truck"};
+db.Add(closeTruck);db.SaveChanges();
+var first=Open(0);first.Equipment=closeTruck.Name;
+var second=Open(0);second.Equipment=closeTruck.Plate!;
+db.AddRange(first,second);db.SaveChanges();
+var result=await OperationalBreakdownClosure.CloseAsync(db,new(),first.Id,new DateTime(2026,10,29,9,0,0),"admin@trawzacons.com",boardTime);
+Check(result.Error!=null && first.EndAt==null,"Closing before event start is rejected");
+result=await OperationalBreakdownClosure.CloseAsync(db,new(),first.Id,new DateTime(2026,10,29,13,0,0),"admin@trawzacons.com",boardTime);
+Check(result.Error!=null && first.EndAt==null,"Future closing date is rejected in Nicaragua timezone");
+result=await OperationalBreakdownClosure.CloseAsync(db,new(),first.Id,new DateTime(2026,10,29,11,0,0),"admin@trawzacons.com",boardTime);
+Check(result.Error==null && !result.Activated && first.Status=="Cerrada" && first.EndAt!=null,"Closing one incident cannot activate equipment with another open incident, including plate aliases");
+Check(!MaintenanceBreakdownBoard.IsOperationallyOpen(first) && first.SourceJson!.Contains("admin@trawzacons.com"),"Closure leaves maintenance board and records closing actor");
+var priorUpload=new SeguimientoToneladasViewModel{IsFromUpload=true,LatestUploadAt=boardTime.AddMinutes(-10),LatestUploadEquipment=[closeTruck.Name],Rows=[new(){Equipo=closeTruck.Name,Estado="EN RUTA",FechaEvento=boardTime}]};
+result=await OperationalBreakdownClosure.CloseAsync(db,priorUpload,second.Id,new DateTime(2026,10,29,11,30,0),"admin@trawzacons.com",boardTime);
+Check(result.Error==null && result.Activated,"Closing the last incident activates equipment");
+Check(OperationalFleetBoard.Build(db.OperationalMasterRecords.ToList(),priorUpload,db.OperationalFleetStates.ToList()).Equipment.Single(x=>x.Code==closeTruck.Name).Status=="finalizado","Closure activation moves truck to discharged even when the previous TiHouse row says en route");
+result=await OperationalBreakdownClosure.CloseAsync(db,new(),second.Id,new DateTime(2026,10,29,11,45,0),"admin@trawzacons.com",boardTime);
+Check(result.Error!=null && second.EndAt==new DateTime(2026,10,29,11,30,0),"Repeated closure cannot overwrite stored closing time or activate equipment again");
+var manager=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"taller@example.com"),new Claim(UserAccessProfiles.ClaimType,UserAccessProfiles.MaintenanceEditor)},"test"));
+Check(OperationalBreakdownClosure.CanClose(manager),"Maintenance editor may close incidents");
+var supervisor=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"supervisor@example.com"),new Claim(UserAccessProfiles.ClaimType,UserAccessProfiles.SupervisorOperations)},"test"));
+Check(!OperationalBreakdownClosure.CanClose(supervisor),"Read-only operations supervisor cannot close incidents");
+Console.WriteLine("PASS: Averias, maintenance-board and closure acceptance checks complete");
 sealed class TempData:ITempDataProvider{public IDictionary<string,object> LoadTempData(HttpContext c)=>new Dictionary<string,object>();public void SaveTempData(HttpContext c,IDictionary<string,object> v){}}
 
 
