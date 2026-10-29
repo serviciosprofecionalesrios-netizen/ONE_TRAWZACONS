@@ -14,6 +14,7 @@ namespace ITServiceDeskApp.ViewModels.Tickets
         public int OverdueOrders { get; set; }
         public int NearDueOrders { get; set; }
         public int UnassignedOrders { get; set; }
+        public IReadOnlyList<ITServiceDeskApp.Services.MaintenanceBreakdownBoard.Row> OpenBreakdowns { get; set; } = Array.Empty<ITServiceDeskApp.Services.MaintenanceBreakdownBoard.Row>();
 
         public IReadOnlyList<string> SiteOptions { get; set; } = Array.Empty<string>();
         public IReadOnlyList<string> TechnicianOptions { get; set; } = Array.Empty<string>();

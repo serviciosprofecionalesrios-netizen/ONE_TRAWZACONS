@@ -1533,7 +1533,10 @@ namespace ITServiceDeskApp.Controllers
                 .ThenBy(x => x.Technician)
                 .ToList();
 
-            var siteOptions = MaintenanceSites.ToList();
+            var openBreakdowns = MaintenanceBreakdownBoard.Build(
+                await _context.OperationalBreakdowns.AsNoTracking().Where(x=>x.EndAt==null).ToListAsync(),
+                await _context.OperationalFleetStates.AsNoTracking().ToListAsync(),nowUtc);
+            var siteOptions = MaintenanceSites.Concat(openBreakdowns.Select(x=>x.Site)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             if (!string.IsNullOrWhiteSpace(selectedSite) &&
                 siteOptions.All(x => !x.Equals(selectedSite, StringComparison.OrdinalIgnoreCase)))
             {
@@ -1571,6 +1574,7 @@ namespace ITServiceDeskApp.Controllers
                 OverdueOrders = rows.Count(x => x.RemainingHoursToSla < 0),
                 NearDueOrders = rows.Count(x => x.RemainingHoursToSla >= 0 && x.RemainingHoursToSla <= 4),
                 UnassignedOrders = rows.Count(x => string.Equals(x.Technician, "Sin asignar", StringComparison.OrdinalIgnoreCase)),
+                OpenBreakdowns = openBreakdowns.Where(x=>string.IsNullOrWhiteSpace(selectedSite) || string.Equals(x.Site,selectedSite,StringComparison.OrdinalIgnoreCase)).ToList(),
                 SiteOptions = siteOptions,
                 TechnicianOptions = technicianOptions,
                 StageOptions = stageOptions,

@@ -49,7 +49,18 @@ using var pg=new PostgresApplicationDbContext(new DbContextOptionsBuilder<Postgr
 Check(pg.GetService<IMigrator>().GenerateScript("20261028010000_FleetDriverAssignmentsPostgres","20261029010000_OperationalBreakdownsPostgres").Contains("OperationalBreakdowns"),"PostgreSQL migration script generated without connecting");
 using var sql=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer("Server=localhost;Database=check;Integrated Security=True;TrustServerCertificate=True").Options);
 Check(sql.GetService<IMigrator>().GenerateScript("20261028010000_FleetDriverAssignments","20261029010000_OperationalBreakdowns").Contains("OperationalBreakdowns"),"SQL Server migration script generated without connecting");
-Console.WriteLine("PASS: Averias acceptance checks complete");
+var boardTime=new DateTime(2026,10,29,18,0,0,DateTimeKind.Utc);
+OperationalBreakdown Open(int id,string? source=null)=>new(){Id=id,Equipment="W-0001",EventAt=new DateTime(2026,10,29,10,0,0),Status="Abierta",SourceJson=source};
+var road=Open(1,"{\"Sitio\":\"Carretera\"}");var workshop=Open(2,"{\"Sitio\":\"Plantel Central\"}");
+var closed=Open(3);closed.Status="Cerrada";
+var ended=Open(4);ended.EndAt=boardTime;
+var board=MaintenanceBreakdownBoard.Build(new[]{road,workshop,closed,ended,Open(5)},[],boardTime);
+Check(board.Count==3 && board.Any(x=>x.Site=="Carretera") && board.Any(x=>x.Site=="Plantel Central"),"Maintenance board includes open roadside and workshop breakdowns and excludes closed/ended records");
+Check(board.Single(x=>x.Id==5).Site=="Sin ubicación registrada","Missing location does not hide an open breakdown");
+Check(board.All(x=>x.ElapsedHours==2),"Elapsed time uses Nicaragua timezone");
+Check(MaintenanceBreakdownBoard.Build(new[]{Open(6)},new[]{new OperationalFleetState{EquipmentCode="W-0001",Status="taller-psb"}},boardTime).Single().Site=="PSB","Unlocated breakdown uses the equipment's manual workshop classification");
+Check(MaintenanceBreakdownBoard.Build(new[]{Open(7,"invalid json")},[],boardTime).Count==1,"Malformed legacy metadata cannot hide open breakdowns");
+Console.WriteLine("PASS: Averias and maintenance-board acceptance checks complete");
 sealed class TempData:ITempDataProvider{public IDictionary<string,object> LoadTempData(HttpContext c)=>new Dictionary<string,object>();public void SaveTempData(HttpContext c,IDictionary<string,object> v){}}
 
 
