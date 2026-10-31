@@ -181,6 +181,17 @@ if(args.Length>0) {
   Check(unit.Status==location && (await RenderChip(unit)).Contains("equipo-chip equipo-chip--ruta dropdown-toggle"),"Actual uploaded TiHouse workbook renders loaded color in manual location: "+code);
  }
 }
+var partialSource=new SeguimientoToneladasViewModel {
+ IsFromUpload=true,LatestUploadAt=day,LatestUploadEquipment=["PARTIAL"],LatestUploadRows=[Row("PARTIAL","FINALIZADO")],
+ Rows=colorUnits.Select(x=>Row(x.Item1,"EN RUTA",-60)).ToList()
+};
+var partialBoard=OperationalFleetBoard.Build([],partialSource,colorChanges);
+foreach(var (code,location) in colorUnits){
+ var unit=partialBoard.Equipment.Single(x=>x.Code==code);
+ Check(!unit.InLatestUpload && unit.Status==location && (await RenderChip(unit)).Contains("equipo-chip equipo-chip--ruta dropdown-toggle"),"Partial upload retains historical loaded color in manual location: "+code);
+}
+partialSource.Rows[0].Estado="FINALIZADO";
+Check((await RenderChip(OperationalFleetBoard.Build([],partialSource,colorChanges).Equipment.Single(x=>x.Code=="W-0067"))).Contains("equipo-chip equipo-chip--descargado dropdown-toggle"),"Historical FINALIZADO closes carried load without changing PSB");
 colorSource.LatestUploadRows[0].Estado="FINALIZADO";
 var discharged=OperationalFleetBoard.Build([],colorSource,colorChanges).Equipment.Single(x=>x.Code=="W-0067");
 Check(discharged.Status=="taller-psb" && (await RenderChip(discharged)).Contains("equipo-chip equipo-chip--descargado dropdown-toggle"),"Actual FINALIZADO changes to blue while preserving PSB");

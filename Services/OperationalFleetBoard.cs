@@ -64,6 +64,25 @@ public static class OperationalFleetBoard
             equipment.ManualStateKey = change.EquipmentKey;
             equipment.ManualStateKeys.Add(change.EquipmentKey);
         }
+        // A partial upload updates membership, but does not erase the last known
+        // load of trucks in the historical ledger. Location remains independent.
+        if (board.HasUpload)
+        {
+            var history = source.Rows.Select((row, index) => new { row, index })
+                .Where(x => !string.IsNullOrWhiteSpace(x.row.Equipo))
+                .GroupBy(x => HolcimMasterCatalog.Identifier(x.row.Equipo))
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.row.FechaEvento)
+                    .ThenByDescending(x => x.index).First());
+            foreach (var equipment in byKey.Values)
+            {
+                var master = masters.FirstOrDefault(x => "master:" + x.Id == equipment.Key);
+                var identifiers = new[] { equipment.Code, master?.Name, master?.Plate }
+                    .Select(HolcimMasterCatalog.Identifier).Where(x => x.Length > 0).ToHashSet();
+                var last = history.Where(x => identifiers.Contains(x.Key)).Select(x => x.Value)
+                    .OrderByDescending(x => x.row.FechaEvento).ThenByDescending(x => x.index).FirstOrDefault();
+                if (last != null) equipment.HistoricalLoadStatus = MapState(last.row.Estado);
+            }
+        }
         foreach (var assignment in (assignments ?? []).OrderBy(x => x.UpdatedAtUtc))
         {
             var equipment = byKey.GetValueOrDefault(assignment.EquipmentKey);

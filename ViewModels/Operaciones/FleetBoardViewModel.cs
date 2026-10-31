@@ -17,8 +17,10 @@ public sealed class FleetEquipmentViewModel
     public List<ITServiceDeskApp.Models.OperationalMasterRecord> AvailableDrivers { get; set; } = [];
     public string BaseStatus { get; set; } = "standby";
     public string Status { get; set; } = "standby";
+    public string HistoricalLoadStatus { get; set; } = "standby";
     // TiHouse determines the load; manual classifications determine its location.
-    public string LoadStatus => BaseStatus is "ruta" or "finalizado" ? BaseStatus : Status;
+    public string LoadStatus => BaseStatus is "ruta" or "finalizado" ? BaseStatus
+        : HistoricalLoadStatus is "ruta" or "finalizado" ? HistoricalLoadStatus : Status;
     public string ChipCssClass => LoadStatus == "ruta" ? "equipo-chip--ruta"
         : LoadStatus == "finalizado" ? "equipo-chip--descargado" : "";
     public string? Reason { get; set; }
