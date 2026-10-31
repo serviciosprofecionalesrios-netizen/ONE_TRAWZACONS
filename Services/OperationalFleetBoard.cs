@@ -109,7 +109,7 @@ public static class OperationalFleetBoard
             var identifiers = new[] { equipment.Code, master?.Name, master?.Plate }
                 .Select(HolcimMasterCatalog.Identifier).Where(x => x.Length > 0).ToHashSet();
             equipment.Breakdowns = openBreakdowns.Where(x => identifiers.Contains(HolcimMasterCatalog.Identifier(x.Equipment)))
-                .OrderByDescending(x => x.EventAt).ThenByDescending(x => x.Id)
+                .OrderByDescending(x => x.EventAt).ThenByDescending(x => x.Id).Take(1)
                 .Select(x => new FleetBreakdownViewModel {
                     Id = x.Id, Category = x.Category, Element = x.Element, DamageTarget = x.DamageTarget,
                     Observation = x.Observation, ReportedAt = DateTime.SpecifyKind(x.EventAt, DateTimeKind.Unspecified),
