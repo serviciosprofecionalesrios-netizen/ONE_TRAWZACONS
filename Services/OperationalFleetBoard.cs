@@ -94,6 +94,12 @@ public static class OperationalFleetBoard
                     (!string.IsNullOrWhiteSpace(m.Plate) && HolcimMasterCatalog.Identifier(m.Plate) == code)).ToList();
                 if (matches.Count == 1) equipment = byKey["master:" + matches[0].Id];
             }
+            if (equipment != null && assignment.DriverId == 0)
+            {
+                equipment.Driver = "";
+                equipment.AssignedDriverId = null;
+                continue;
+            }
             var driver = records.SingleOrDefault(x => x.Id == assignment.DriverId && x.Kind == "conductores" && x.IsActive);
             if (equipment != null && driver != null)
             {

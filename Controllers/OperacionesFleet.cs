@@ -23,7 +23,7 @@ public partial class OperacionesController
         return board;
     }
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> AsignarConductorEquipo(string key, int driverId, string loadVersion, CancellationToken cancellationToken)
+    public async Task<IActionResult> AsignarConductorEquipo(string key, int driverId, string loadVersion, CancellationToken cancellationToken, bool desasignar = false)
     {
         if (!OperationalFleetBoard.CanManage(User)) return Forbid();
         var board = BuildFleet(_operacionesSeguimientoStore.Get() ?? new SeguimientoToneladasViewModel());
@@ -33,17 +33,18 @@ public partial class OperacionesController
             return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
         }
         var equipment = board.Equipment.SingleOrDefault(x => x.Key == key);
-        var driver = await _context.OperationalMasterRecords.AsNoTracking().SingleOrDefaultAsync(x => x.Id == driverId && x.Kind == "conductores" && x.IsActive,cancellationToken);
-        if (equipment == null || driver == null) return BadRequest();
+        var driver = desasignar ? null : await _context.OperationalMasterRecords.AsNoTracking().SingleOrDefaultAsync(x => x.Id == driverId && x.Kind == "conductores" && x.IsActive,cancellationToken);
+        if (equipment == null || (!desasignar && driver == null)) return BadRequest();
         var assignment = await _context.OperationalFleetDrivers.FindAsync([key],cancellationToken);
         if (assignment == null) { assignment = new OperationalFleetDriver { EquipmentKey = key }; _context.OperationalFleetDrivers.Add(assignment); }
         assignment.EquipmentCode = equipment.Code;
-        assignment.DriverId = driver.Id;
+        // Zero records an explicit removal, preventing TiHouse from restoring it.
+        assignment.DriverId = desasignar ? 0 : driver!.Id;
         assignment.UpdatedAtUtc = DateTime.UtcNow;
         var actor = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "";
         assignment.ChangedBy = actor.Length > 150 ? actor[..150] : actor;
         await _context.SaveChangesAsync(cancellationToken);
-        TempData["FleetOk"] = $"Conductor {driver.Name} asignado a {equipment.Code}.";
+        TempData["FleetOk"] = desasignar ? $"Conductor desasignado de {equipment.Code}." : $"Conductor {driver!.Name} asignado a {equipment.Code}.";
         return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
     }
     [HttpPost, ValidateAntiForgeryToken]

@@ -248,4 +248,20 @@ foreach(var location in new[]{"carretera","taller-pct","taller-psb","taller-poz"
 var missingDamage=new FleetEquipmentViewModel {Code="NO-INCIDENT",Status="taller-psb"};
 Check((await RenderChip(missingDamage)).Contains("Sin aver&#xED;a abierta registrada."),"Missing incidents are explicitly identified instead of invented");
 
+// Explicit unassignment overrides both a manual assignment and TiHouse's driver.
+await Controller().AsignarConductorEquipo(key,driver1.Id,Board().LoadVersion,default);
+var beforeUnassign=Board().Equipment.Single(x=>x.Key==key);
+Check(await Controller().AsignarConductorEquipo(key,0,Board().LoadVersion,default,desasignar:true) is RedirectToActionResult,"Driver can be explicitly unassigned");
+var unassigned=Board().Equipment.Single(x=>x.Key==key);
+Check(unassigned.Driver=="" && unassigned.AssignedDriverId==null && unassigned.Status==beforeUnassign.Status,"Unassignment clears driver without changing equipment status");
+store.Save(Upload(Row(truck1.Name,"EN RUTA",11,"Conductor del archivo")));
+Check(Board().Equipment.Single(x=>x.Key==key).Driver=="","TiHouse upload cannot undo explicit driver removal");
+var staleRemoval=Controller();
+Check(await staleRemoval.AsignarConductorEquipo(key,0,"stale",default,desasignar:true) is RedirectToActionResult && staleRemoval.TempData.ContainsKey("FleetError"),"Stale unassignment is rejected through upload version check");
+Check(await Controller("supervisor@example.com",UserAccessProfiles.SupervisorOperations).AsignarConductorEquipo(key,0,Board().LoadVersion,default,desasignar:true) is ForbidResult,"Read-only users cannot unassign drivers");
+Check(await Controller().AsignarConductorEquipo("master:999999",0,Board().LoadVersion,default,desasignar:true) is BadRequestResult,"Unknown equipment cannot be unassigned");
+Check(await Controller().AsignarConductorEquipo(key,0,Board().LoadVersion,default) is BadRequestResult,"Zero is not accepted as an ordinary driver assignment");
+await Controller().AsignarConductorEquipo(key,driver2.Id,Board().LoadVersion,default);
+Check(Board().Equipment.Single(x=>x.Key==key).Driver==driver2.Name,"A new driver can be assigned after explicit removal");
+
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

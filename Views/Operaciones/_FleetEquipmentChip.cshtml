@@ -37,6 +37,13 @@
                     <button type="submit" class="btn btn-primary btn-sm" disabled="@(Model.AvailableDrivers.Count == 0)">Guardar conductor</button>
                 </form>
             </details></li>
+            @if(!string.IsNullOrWhiteSpace(Model.Driver)){
+                <li><form asp-action="AsignarConductorEquipo" method="post">
+                    <input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
+                    <input type="hidden" name="driverId" value="0"/><input type="hidden" name="desasignar" value="true"/>
+                    <button class="dropdown-item text-danger" type="submit"><i class="bi bi-person-dash me-2"></i>Desasignar conductor</button>
+                </form></li>
+            }
             <li><details><summary class="dropdown-item"><i class="bi bi-sign-turn-right me-2"></i>Fuera de ruta ▸</summary>
                 <form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="fuera-ruta"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
                     @foreach(var reason in OperationalFleetBoard.Reasons){<button class="dropdown-item ps-4" name="reason" value="@reason" type="submit">@reason</button>}
