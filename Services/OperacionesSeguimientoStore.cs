@@ -26,8 +26,8 @@ namespace ITServiceDeskApp.Services
             var baseDate = model.FechaOperativa ?? DateTime.Now.Date;
             var uploadedAt = DateTime.Now;
 
-            var normalizedRows = model.Rows
-                .Where(IsTritonRow)
+            var importRows = model.Rows.Where(IsTritonRow).ToList();
+            var normalizedRows = importRows
                 .Select(r => MapToEntity(r, baseDate, uploadedAt))
                 .Where(r => !string.IsNullOrWhiteSpace(r.Equipo))
                 .ToList();
@@ -45,6 +45,26 @@ namespace ITServiceDeskApp.Services
             var existingRows = _context.OperacionesSeguimientoRegistros
                 .Where(r => datesToReplace.Contains(r.FechaOperativa))
                 .ToList();
+
+            // When reloading an old import, relocate only an unambiguous match of the same
+            // source event previously attributed to its registration date. Other trips stay intact.
+            var correctedRows = importRows.Where(x => x.FechaRegistroOrigen.HasValue && x.FechaEvento.HasValue && x.FechaRegistroOrigen.Value.Date != x.FechaEvento.Value.Date).ToList();
+            var originalDates = correctedRows.Select(x => x.FechaRegistroOrigen!.Value.Date).Distinct().ToList();
+            if (originalDates.Count > 0)
+            {
+                var legacyRows = _context.OperacionesSeguimientoRegistros.Where(x => originalDates.Contains(x.FechaOperativa)).ToList();
+                foreach (var correction in correctedRows)
+                {
+                    var expected = MapToEntity(correction, baseDate, uploadedAt);
+                    var matches = legacyRows.Where(x => x.FechaEvento == correction.FechaRegistroOrigen &&
+                        x.Equipo.Equals(expected.Equipo,StringComparison.OrdinalIgnoreCase) && x.Procedencia == expected.Procedencia &&
+                        x.Ruta == expected.Ruta && x.Conductor == expected.Conductor && x.Estado == expected.Estado &&
+                        x.Toneladas == expected.Toneladas && x.Viajes == expected.Viajes &&
+                        x.CombustibleGalones == expected.CombustibleGalones && x.PesoSugerido == expected.PesoSugerido).ToList();
+                    if (matches.Count == 1) existingRows.Add(matches[0]);
+                }
+                existingRows = existingRows.DistinctBy(x => x.Id).ToList();
+            }
 
             if (existingRows.Any())
             {

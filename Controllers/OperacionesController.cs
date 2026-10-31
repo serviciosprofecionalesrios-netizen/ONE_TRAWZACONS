@@ -5907,6 +5907,7 @@ namespace ITServiceDeskApp.Controllers
             TryFindColumn(headerMap, out var rutaColumn, "ruta", "trayecto", "origendestino");
             TryFindColumn(headerMap, out var viajesColumn, "viajes", "viaje");
             TryFindColumn(headerMap, out var fechaColumn, "fecha", "fechasalida", "fecha salida", "fechaingreso", "fecha ingreso");
+            TryFindColumn(headerMap, out var fechaSalidaColumn, "fechasalida", "fecha salida");
             TryFindColumn(headerMap, out var combustibleColumn, "cant combustible", "cantcombustible", "cantidad combustible", "combustible");
             TryFindColumn(headerMap, out var pesoSugeridoColumn, "p sugerido", "psugerido", "peso sugerido", "pesosugerido", "sugerido", "psug");
             TryFindColumn(headerMap, out var conductorColumn, "conductor", "chofer", "piloto");
@@ -6013,6 +6014,13 @@ namespace ITServiceDeskApp.Controllers
                         worksheet.Cells[rowIndex, fechaColumn].Value,
                         worksheet.Cells[rowIndex, fechaColumn].Text)
                     : null;
+                var fechaRegistroOrigen = fechaEvento;
+                if (fechaSalidaColumn > 0 && MapEstadoCategoria(estado) == "FINALIZADO")
+                {
+                    var fechaSalida = ReadDateTime(worksheet.Cells[rowIndex, fechaSalidaColumn].Value, worksheet.Cells[rowIndex, fechaSalidaColumn].Text);
+                    // Completed trips belong to the actual discharge date, not their earlier registration date.
+                    if (fechaSalida.HasValue) fechaEvento = fechaSalida;
+                }
 
                 var combustibleLitros = combustibleColumn > 0
                     ? ReadDecimalFromCell(worksheet.Cells[rowIndex, combustibleColumn]) ?? 0
@@ -6034,6 +6042,7 @@ namespace ITServiceDeskApp.Controllers
                     Viajes = safeViajes,
                     CombustibleLitros = combustibleLitros,
                     FechaEvento = fechaEvento,
+                    FechaRegistroOrigen = fechaRegistroOrigen,
                     Conductor = conductor,
                     Estado = estado,
                     PesoSugerido = pesoSugerido,

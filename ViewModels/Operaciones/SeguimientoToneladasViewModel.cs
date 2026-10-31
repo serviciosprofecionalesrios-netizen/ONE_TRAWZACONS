@@ -45,6 +45,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
         public int Viajes { get; set; }
         public decimal CombustibleLitros { get; set; }
         public DateTime? FechaEvento { get; set; }
+        public DateTime? FechaRegistroOrigen { get; set; }
         public string Conductor { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string Eficiencia { get; set; } = string.Empty;
