@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+function initializeToneladasAnalytics() {
     var root = document.getElementById("ops-enhanced-report");
     var seedScript = document.getElementById("ops-analytics-seed");
     if (!root || !seedScript) {
@@ -691,4 +691,6 @@ document.addEventListener("DOMContentLoaded", function () {
             syncPdfDownloadLink();
         });
     }
-});
+}
+document.addEventListener("DOMContentLoaded", initializeToneladasAnalytics);
+document.addEventListener("toneladas:updated", initializeToneladasAnalytics);

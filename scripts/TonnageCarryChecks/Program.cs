@@ -39,6 +39,11 @@ using(var fixture=new ExcelPackage()){
  store.Save(new(){Rows=[corrected],IsFromUpload=true});
  Check(db.OperacionesSeguimientoRegistros.Count()==2,"Reimport remains idempotent after correcting event date");
 }
+var sameDay = new[] { Row("RELOADED", 0, "FINALIZADO", 30), Row("RELOADED", 0, "EN RUTA"), Row("DONE", 0, "EN RUTA"), Row("DONE", 0, "FINALIZADO", 32), Row("OLD", -60, "EN RUTA"), new SeguimientoToneladasRowViewModel { Equipo="UNDATED", Estado="EN RUTA" } };
+var pending = TonnageStatusRows.Select(sameDay, day);
+Check(pending.Count(x => x.Equipo=="DONE")==1 && pending.Single(x=>x.Equipo=="DONE").Estado=="FINALIZADO", "A later discharge closes the previous load on the same day");
+Check(pending.Count(x=>x.Estado=="EN RUTA")==3, "Reloaded, old-month and undated pending loads remain visible");
+Check(pending.Where(x=>x.Estado=="FINALIZADO").Sum(x=>x.Toneladas)==62, "Completed daily production remains intact after reloading");
 if(args.Length>0) {
  ExcelPackage.LicenseContext=LicenseContext.NonCommercial;
  using var package=new ExcelPackage(new FileInfo(args[0]));

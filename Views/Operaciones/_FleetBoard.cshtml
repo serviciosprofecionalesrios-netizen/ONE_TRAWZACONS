@@ -3,6 +3,7 @@
 @{ var displayedEquipment = Model.Equipment.Where(x => x.Status != "standby" || x.Company is "EQUINOX" or "HOLCIM/EQUINOX").ToList(); }
 <section id="fleet-board" class="fleet-board mb-4" aria-label="Estado de todos los equipos">
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2"><strong>Distribución de equipos</strong><span class="small text-muted">@displayedEquipment.Count equipos visibles · @displayedEquipment.Count(x=>x.InLatestUpload) en la última carga de TiHouse</span></div>
+    <p class="small text-muted mb-2"><span class="equipo-chip equipo-chip--ruta">Cargado · En ruta</span> <span class="equipo-chip equipo-chip--descargado">Descargado · Finalizado</span> El color conserva el estado de TiHouse aunque el equipo esté en taller, carretera o fuera de ruta, sin limitarlo a la fecha del día.</p>
     @if(TempData["FleetOk"] is string ok){<div class="alert alert-success">@ok</div>}
     @if(TempData["FleetError"] is string error){<div class="alert alert-warning">@error</div>}
     <p class="small text-muted">Standby muestra equipos EQUINOX o HOLCIM/EQUINOX ausentes de la carga o sin estado reconocido. Activar equipo los coloca como activos y descargados. Fuera de Ruta, Varado y Taller se conservan hasta la activación manual. No se desactivan registros del maestro.</p>

@@ -15,6 +15,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 void Check(bool value,string message){if(!value)throw new Exception(message);Console.WriteLine("PASS: "+message);}
 var options=new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
@@ -135,4 +137,52 @@ foreach(var email in new[]{"admin@trawzacons.com","roldanzamora@trawzacons.com",
 Check(pg.GetService<IMigrator>().GenerateScript("20261027020000_OperationalFleetPostgres","20261028010000_FleetDriverAssignmentsPostgres").Contains("OperationalFleetDrivers"),"PostgreSQL assignment migration generated without connecting to database");
 Check(sql.GetService<IMigrator>().GenerateScript("20261027020000_OperationalFleet","20261028010000_FleetDriverAssignments").Contains("OperationalFleetDrivers"),"SQL Server assignment migration generated without connecting to database");
 Console.WriteLine("PASS: fleet activation, driver assignments, upload persistence, permissions and migration scripts.");
+// Regression: a manual location must not erase TiHouse's load color.
+var colorUnits = new[]{("W-0067","taller-psb"),("W-0102","taller-psb"),("W-0089","carretera")};
+var colorSource = new SeguimientoToneladasViewModel {
+ IsFromUpload=true, LatestUploadAt=day.AddDays(4), LatestUploadEquipment=colorUnits.Select(x=>x.Item1).ToList(),
+ LatestUploadRows=colorUnits.Select(x=>Row(x.Item1,"EN RUTA",-60)).ToList()
+};
+var colorChanges=colorUnits.Select(x=>new OperationalFleetState{EquipmentKey="unit:"+HolcimMasterCatalog.Identifier(x.Item1),EquipmentCode=x.Item1,Status=x.Item2,UpdatedAtUtc=day}).ToList();
+var colorBoard=OperationalFleetBoard.Build([],colorSource,colorChanges);
+var renderBuilder=Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(new Microsoft.AspNetCore.Builder.WebApplicationOptions{ApplicationName=typeof(OperacionesController).Assembly.FullName});
+Microsoft.Extensions.DependencyInjection.MvcServiceCollectionExtensions.AddControllersWithViews(renderBuilder.Services).AddApplicationPart(typeof(OperacionesController).Assembly);
+await using var renderApp=renderBuilder.Build();
+using var renderScope=Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(renderApp.Services);
+var razor=Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Microsoft.AspNetCore.Mvc.Razor.IRazorViewEngine>(renderScope.ServiceProvider);
+async Task<string> RenderChip(FleetEquipmentViewModel equipment) {
+ var http=new DefaultHttpContext{RequestServices=renderScope.ServiceProvider};
+ var renderRoutes=new RouteData(); renderRoutes.Routers.Add(new RouteCollection()); renderRoutes.Values["controller"]="Operaciones";
+ var action=new ActionContext(http,renderRoutes,new ActionDescriptor());
+ var view=razor.GetView(null,"/Views/Operaciones/_FleetEquipmentChip.cshtml",false);
+ Check(view.Success,"Actual fleet chip Razor view resolves");
+ using var writer=new StringWriter();
+ var data=new ViewDataDictionary<FleetEquipmentViewModel>(new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),new Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary()){Model=equipment};
+ var context=new ViewContext(action,view.View!,data,new TempDataDictionary(http,new TempData()),writer,new HtmlHelperOptions());
+ await view.View!.RenderAsync(context);
+ return writer.ToString();
+}
+foreach(var (code,location) in colorUnits){
+ var unit=colorBoard.Equipment.Single(x=>x.Code==code);
+ Check(unit.Status==location && unit.BaseStatus=="ruta","Old pending load keeps manual location: "+code);
+ var html=await RenderChip(unit);
+ Check(html.Contains("equipo-chip equipo-chip--ruta dropdown-toggle") && !html.Contains("equipo-chip--descargado"),"Rendered chip is gold in PSB/road: "+code);
+}
+if(args.Length>0) {
+ OfficeOpenXml.ExcelPackage.LicenseContext=OfficeOpenXml.LicenseContext.NonCommercial;
+ using var package=new OfficeOpenXml.ExcelPackage(new FileInfo(args[0]));
+ var parser=typeof(OperacionesController).GetMethod("ParseToneladasRowsFromWorkbook",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic)!;
+ object?[] parseArgs=[package.Workbook,null,null];
+ var actual=(List<SeguimientoToneladasRowViewModel>)parser.Invoke(null,parseArgs)!;
+ var actualSource=new SeguimientoToneladasViewModel{IsFromUpload=true,LatestUploadAt=day,LatestUploadEquipment=actual.Select(x=>x.Equipo).ToList(),LatestUploadRows=actual};
+ var actualBoard=OperationalFleetBoard.Build([],actualSource,colorChanges);
+ foreach(var (code,location) in colorUnits) {
+  var unit=actualBoard.Equipment.Single(x=>x.Code==code);
+  Check(unit.Status==location && (await RenderChip(unit)).Contains("equipo-chip equipo-chip--ruta dropdown-toggle"),"Actual uploaded TiHouse workbook renders loaded color in manual location: "+code);
+ }
+}
+colorSource.LatestUploadRows[0].Estado="FINALIZADO";
+var discharged=OperationalFleetBoard.Build([],colorSource,colorChanges).Equipment.Single(x=>x.Code=="W-0067");
+Check(discharged.Status=="taller-psb" && (await RenderChip(discharged)).Contains("equipo-chip equipo-chip--descargado dropdown-toggle"),"Actual FINALIZADO changes to blue while preserving PSB");
+
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

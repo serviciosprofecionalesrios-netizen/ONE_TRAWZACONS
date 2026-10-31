@@ -1154,7 +1154,7 @@
     }
 </style>
 
-<div class="ops-shell">
+<div class="ops-shell" id="toneladas-content">
     <div class="ops-header module-banner">
         <div class="ops-header__title">
             <h2 class="fw-bold mb-2"><i class="bi bi-truck-front" aria-hidden="true"></i>Seguimiento de toneladas</h2>
@@ -1582,7 +1582,7 @@
         <div class="upload-zone__body">
             @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
             {
-                <div class="alert alert-danger mb-2" role="alert">
+                <div class="alert alert-danger mb-2" role="alert" data-upload-error>
                     @Model.ErrorMessage
                 </div>
             }
@@ -1605,7 +1605,7 @@
                       asp-action="SeguimientoToneladas"
                       method="post"
                       enctype="multipart/form-data"
-                      class="upload-panel__form d-flex flex-wrap align-items-end gap-2">
+                      id="toneladas-upload-form" class="upload-panel__form d-flex flex-wrap align-items-end gap-2">
                     @Html.AntiForgeryToken()
 
                     <div class="upload-panel__input-wrap">
@@ -1630,6 +1630,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/operaciones-toneladas-upload.js" asp-append-version="true"></script>
     <script src="~/js/operaciones-toneladas-goals.js" asp-append-version="true"></script>
     <script src="~/js/operaciones-seguimiento-toneladas-enhanced.js" asp-append-version="true"></script>
     <script src="~/js/operaciones-fleet-board.js" asp-append-version="true"></script>

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initializeFleetBoard() {
     if (!window.bootstrap?.Dropdown) return;
     document.querySelectorAll('.fleet-board [data-bs-toggle="dropdown"]').forEach(toggle => {
         bootstrap.Dropdown.getOrCreateInstance(toggle, {
@@ -6,4 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
             popperConfig: config => ({ ...config, strategy: 'fixed' })
         });
     });
-});
+}
+document.addEventListener('DOMContentLoaded', initializeFleetBoard);
+document.addEventListener('toneladas:updated', initializeFleetBoard);

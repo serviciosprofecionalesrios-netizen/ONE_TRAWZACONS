@@ -1,7 +1,7 @@
 @model ITServiceDeskApp.ViewModels.Operaciones.FleetEquipmentViewModel
 @using ITServiceDeskApp.Services
 <div class="dropdown equipo-chip-dropdown">
-    <button class="equipo-chip @(Model.Status=="finalizado" ? "equipo-chip--descargado" : Model.Status=="ruta" ? "equipo-chip--ruta" : "") dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="@($"{Model.MasterDisplayId ?? "Sin vínculo a maestro"} · {Model.Company} · Conductor: {(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin conductor en la carga" : Model.Driver)}")"><i class="bi bi-truck-front"></i>@Model.Code</button>
+    <button class="equipo-chip @Model.ChipCssClass dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="@($"{Model.MasterDisplayId ?? "Sin vínculo a maestro"} · {Model.Company} · {(Model.LoadStatus == "ruta" ? "Cargado · Pendiente de descarga" : Model.LoadStatus == "finalizado" ? "Descargado · Finalizado" : "Sin estado de carga en TiHouse")} · Conductor: {(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin conductor en la carga" : Model.Driver)}")"><i class="bi bi-truck-front"></i>@Model.Code</button>
     <ul class="dropdown-menu" style="max-height:70vh;overflow-y:auto">
         <li class="dropdown-header">@Model.Code · @(Model.InLatestUpload ? "En TiHouse" : "Fuera de la carga")</li>
         <li class="px-3 pb-2 small" style="max-width:320px;white-space:normal">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin asignar" : Model.Driver)</li>
