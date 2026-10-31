@@ -9,10 +9,10 @@
     <p class="small text-muted">Standby muestra equipos EQUINOX o HOLCIM/EQUINOX sin un estado de carga reconocido. Los estados conocidos se conservan aunque el equipo no aparezca en la última carga. Activar equipo los coloca como activos y descargados. Fuera de Ruta, Varado y Taller se conservan hasta la activación manual. No se desactivan registros del maestro.</p>
     @if(!Model.HasUpload){<div class="alert alert-info">Sin una carga de TiHouse registrada: los equipos EQUINOX del maestro se muestran en Standby, salvo clasificaciones manuales. Los datos de ejemplo no activan equipos.</div>}
     <div class="row g-3">
-    @foreach(var status in new[]{"finalizado","ruta","standby","fuera-ruta","carretera","taller"}){
+    @foreach(var status in new[]{"finalizado","ruta","standby","imc-roja","imc-amarilla","fuera-ruta","carretera","taller"}){
         var units=displayedEquipment.Where(x=>status=="taller" ? x.CardStatus.StartsWith("taller-") : x.CardStatus==status).ToList();
         <div class="@(status is "standby" or "fuera-ruta" or "otros" ? "col-12" : "col-lg-6")">
-            <div class="varado-panel @(status=="carretera" ? "varado-panel--carretera" : status.StartsWith("taller") ? "varado-panel--taller" : "")" style="@(status=="standby" ? "border-top:4px solid #64748b;background:#f1f5f9" : "")">
+            <div class="varado-panel @(status=="carretera" ? "varado-panel--carretera" : status.StartsWith("taller") ? "varado-panel--taller" : status.StartsWith("imc-") ? "varado-panel--"+status : "")" style="@(status=="standby" ? "border-top:4px solid #64748b;background:#f1f5f9" : "")">
                 <div class="varado-panel__title"><i class="bi @(status=="standby" ? "bi-pause-circle" : status=="fuera-ruta" ? "bi-sign-turn-right" : "bi-truck-front") me-2"></i>@OperationalFleetBoard.StatusLabel(status) (@units.Count)</div>
                 @if(status=="fuera-ruta"){
                     <div class="row g-3">@foreach(var reason in OperationalFleetBoard.Reasons.Append("Sin motivo registrado")){

@@ -217,4 +217,35 @@ var downloadedSection=cardsHtml.IndexOf("Equipos descargados (1)",StringComparis
 Check(downloadedSection>=0 && routeSection>downloadedSection && standbySection>routeSection,"Actual rendered card counts match load states");
 Check(cardsHtml.IndexOf(">W-0114</button>",StringComparison.Ordinal)>routeSection && cardsHtml.IndexOf(">W-0114</button>",StringComparison.Ordinal)<standbySection && cardsHtml.IndexOf(">W-0001</button>",StringComparison.Ordinal)>routeSection && cardsHtml.IndexOf(">W-0001</button>",StringComparison.Ordinal)<standbySection,"Actual board renders loaded units only in route card");
 
+// IMC classifications persist independently of TiHouse's load state.
+foreach(var imc in new[]{"imc-roja","imc-amarilla"}) {
+ Check(await Controller().ActualizarEstadoEquipo(key,imc,null,Board().LoadVersion,default) is RedirectToActionResult,"Save IMC classification: "+imc);
+ var marked=Board().Equipment.Single(x=>x.Key==key);
+ Check(marked.Status==imc && marked.CardStatus==imc && marked.ChipCssClass=="equipo-chip--"+imc,"IMC has its own card and takes color precedence over load: "+imc);
+ var imcHtml=await RenderView(new FleetBoardViewModel {Equipment=[marked]},"/Views/Operaciones/_FleetBoard.cshtml");
+ Check(imcHtml.Contains(OperationalFleetBoard.StatusLabel(imc)+" (1)") && imcHtml.Contains("equipo-chip equipo-chip--"+imc+" dropdown-toggle"),"IMC card and colored chip render: "+imc);
+ store.Save(Upload(Row(truck1.Name,"EN RUTA",10)));
+ Check(Board().Equipment.Single(x=>x.Key==key).Status==imc,"IMC remains after a new TiHouse upload: "+imc);
+}
+Check(await Controller("supervisor@example.com",UserAccessProfiles.SupervisorOperations).ActualizarEstadoEquipo(key,"imc-roja",null,Board().LoadVersion,default) is ForbidResult,"Read-only supervisor cannot assign IMC");
+var damageNow=new DateTime(2026,10,31,18,30,0,DateTimeKind.Utc);
+var damageMaster=new OperationalMasterRecord {Id=9001,Kind="equipos",Name="DAMAGE",Plate="M-123456",IsActive=true};
+var damageRecords=new[]{
+ new OperationalBreakdown {Id=701,Equipment="M123456",EventAt=new DateTime(2026,10,30,9,15,0),Category="Motor",Element="Radiador",DamageTarget="Equipo",Observation="Fuga <script>no ejecutar</script>"},
+ new OperationalBreakdown {Id=702,Equipment="DAMAGE",EventAt=new DateTime(2026,10,31,10,0,0),Category="Frenos",Element="Bomba",DamageTarget="Góndola"},
+ new OperationalBreakdown {Id=703,Equipment="DAMAGE",EventAt=new DateTime(2026,10,29),Category="Cerrada",EndAt=new DateTime(2026,10,30),Status="Cerrada"},
+ new OperationalBreakdown {Id=704,Equipment="DAMAGE",EventAt=new DateTime(2026,10,29),Category="Anulada",SourceJson="{\"VIGENCIA\":\"NULO\"}"}
+};
+foreach(var location in new[]{"carretera","taller-pct","taller-psb"}) {
+ var damageBoard=OperationalFleetBoard.Build([damageMaster],new(),[new(){EquipmentKey="master:9001",EquipmentCode="DAMAGE",Status=location}],breakdowns:damageRecords,nowUtc:damageNow);
+ var unit=damageBoard.Equipment.Single();
+ Check(unit.Status==location && unit.Breakdowns.Count==2,"Only open, valid damage records match unit code and plate: "+location);
+ Check(unit.Breakdowns.Single(x=>x.Id==701).ElapsedLabel=="1 d 3 h 15 min","Elapsed time uses Nicaragua event time against UTC clock");
+ var damageHtml=await RenderChip(unit);
+ Check(damageHtml.Contains("Radiador") && damageHtml.Contains("Motor") && damageHtml.Contains("30/10/2026 09:15") && damageHtml.Contains("1 d 3 h 15 min") && damageHtml.Contains("data-breakdown-events="),"Tooltip and dropdown render damage, element, report time and elapsed duration: "+location);
+ Check(!damageHtml.Contains("<script>no ejecutar</script>"),"Damage observations are HTML encoded");
+}
+var missingDamage=new FleetEquipmentViewModel {Code="NO-INCIDENT",Status="taller-psb"};
+Check((await RenderChip(missingDamage)).Contains("Sin aver&#xED;a abierta registrada."),"Missing incidents are explicitly identified instead of invented");
+
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

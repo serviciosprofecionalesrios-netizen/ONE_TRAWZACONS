@@ -1,10 +1,29 @@
 @model ITServiceDeskApp.ViewModels.Operaciones.FleetEquipmentViewModel
 @using ITServiceDeskApp.Services
+@using System.Text.Json
+@{
+    var baseTitle = $"{Model.MasterDisplayId ?? "Sin vínculo a maestro"} · {Model.Company} · {(Model.LoadStatus == "ruta" ? "Cargado · Pendiente de descarga" : Model.LoadStatus == "finalizado" ? "Descargado · Finalizado" : "Sin estado de carga en TiHouse")} · Conductor: {(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin conductor en la carga" : Model.Driver)}";
+    if (Model.Status.StartsWith("imc-")) baseTitle += $" · {OperationalFleetBoard.StatusLabel(Model.Status)}";
+    if (Model.ShowsBreakdownDetails && Model.Breakdowns.Count == 0) baseTitle += "\nSin avería abierta registrada.";
+    var tooltip = baseTitle + string.Concat(Model.Breakdowns.Select(x => $"\n\n{x.Details}\nTiempo transcurrido: {x.ElapsedLabel}"));
+    var eventsJson = JsonSerializer.Serialize(Model.Breakdowns.Select(x => new { details = x.Details, reportedAt = x.ReportedAtUnixMs }));
+}
 <div class="dropdown equipo-chip-dropdown">
-    <button class="equipo-chip @Model.ChipCssClass dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="@($"{Model.MasterDisplayId ?? "Sin vínculo a maestro"} · {Model.Company} · {(Model.LoadStatus == "ruta" ? "Cargado · Pendiente de descarga" : Model.LoadStatus == "finalizado" ? "Descargado · Finalizado" : "Sin estado de carga en TiHouse")} · Conductor: {(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin conductor en la carga" : Model.Driver)}")"><i class="bi bi-truck-front"></i>@Model.Code</button>
+    <button class="equipo-chip @Model.ChipCssClass dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="@tooltip" data-tooltip-base="@baseTitle" data-breakdown-events="@eventsJson"><i class="bi bi-truck-front"></i>@Model.Code</button>
     <ul class="dropdown-menu" style="max-height:70vh;overflow-y:auto">
         <li class="dropdown-header">@Model.Code · @(Model.InLatestUpload ? "En TiHouse" : "Fuera de la carga")</li>
         <li class="px-3 pb-2 small" style="max-width:320px;white-space:normal">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin asignar" : Model.Driver)</li>
+        @foreach(var incident in Model.Breakdowns){
+            <li class="px-3 py-2 small border-top" style="max-width:360px;white-space:normal">
+                <strong>Daño:</strong> @incident.Category<br/>
+                <strong>Elemento dañado:</strong> @incident.Element<br/>
+                <strong>Daño en:</strong> @incident.DamageTarget<br/>
+                <strong>Reportado:</strong> @incident.ReportedAt.ToString("dd/MM/yyyy HH:mm") (Nicaragua)<br/>
+                <strong>Tiempo transcurrido:</strong> <span data-breakdown-reported-at="@incident.ReportedAtUnixMs">@incident.ElapsedLabel</span>
+                @if(!string.IsNullOrWhiteSpace(incident.Observation)){<div>@incident.Observation</div>}
+                <a class="d-block mt-1" asp-action="AveriaDetalle" asp-route-id="@incident.Id">Ver avería</a>
+            </li>
+        }
         @if(Model.CanManage){
             <li><a class="dropdown-item" asp-action="NuevaAveria" asp-route-key="@Model.Key"><i class="bi bi-tools me-2"></i>Nueva avería</a></li>
             <li><details><summary class="dropdown-item"><i class="bi bi-person-plus me-2"></i>Asignar / cambiar conductor</summary>
@@ -23,7 +42,7 @@
                     @foreach(var reason in OperationalFleetBoard.Reasons){<button class="dropdown-item ps-4" name="reason" value="@reason" type="submit">@reason</button>}
                 </form>
             </details></li>
-            @foreach(var state in new[]{"carretera","taller-pct","taller-psb","taller-poz"}){
+            @foreach(var state in new[]{"imc-roja","imc-amarilla","carretera","taller-pct","taller-psb","taller-poz"}){
                 <li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="@state"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit">@OperationalFleetBoard.StatusLabel(state)</button></form></li>
             }
             @if(Model.Status=="standby" || Model.ManualStateKey!=null){

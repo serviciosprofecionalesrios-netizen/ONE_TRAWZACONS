@@ -7,15 +7,16 @@ namespace ITServiceDeskApp.Services;
 public static class OperationalFleetBoard
 {
     public static readonly string[] Reasons = ["Plantel Contratista", "Otros", "Viajes Externos", "Conductor de Pase"];
-    public static readonly string[] ManualStatuses = ["auto", "finalizado", "fuera-ruta", "carretera", "taller-pct", "taller-psb", "taller-poz"];
+    public static readonly string[] ManualStatuses = ["auto", "finalizado", "fuera-ruta", "carretera", "taller-pct", "taller-psb", "taller-poz", "imc-roja", "imc-amarilla"];
     public static bool CanManage(ClaimsPrincipal user) => UserAccessProfiles.CanMaintainDrivers(user) || UserAccessProfiles.CanMaintainOperationalMasters(user);
     public static string Version(DateTime? uploadedAt) => uploadedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "none";
     public static string StatusLabel(string status) => status switch {
         "finalizado" => "Equipos descargados", "ruta" => "Equipos en ruta", "standby" => "Equipos en Standby",
         "fuera-ruta" => "Equipos Fuera de Ruta", "carretera" => "Varado en Carretera",
-        "taller" => "En Taller", "taller-pct" => "En Taller · PCT", "taller-psb" => "En Taller · PSB", "taller-poz" => "En Taller · POZ", _ => "Otros estados del archivo"
+        "taller" => "En Taller", "taller-pct" => "En Taller · PCT", "taller-psb" => "En Taller · PSB", "taller-poz" => "En Taller · POZ",
+        "imc-roja" => "IMC (Roja)", "imc-amarilla" => "IMC (Amarilla)", _ => "Otros estados del archivo"
     };
-    public static FleetBoardViewModel Build(IEnumerable<OperationalMasterRecord> catalog, SeguimientoToneladasViewModel source, IEnumerable<OperationalFleetState> changes, IEnumerable<OperationalFleetDriver>? assignments = null)
+    public static FleetBoardViewModel Build(IEnumerable<OperationalMasterRecord> catalog, SeguimientoToneladasViewModel source, IEnumerable<OperationalFleetState> changes, IEnumerable<OperationalFleetDriver>? assignments = null, IEnumerable<OperationalBreakdown>? breakdowns = null, DateTime? nowUtc = null)
     {
         var records = catalog.ToList();
         var masters = records.Where(x => x.Kind == "equipos" && x.IsActive).ToList();
@@ -99,6 +100,21 @@ public static class OperationalFleetBoard
                 equipment.Driver = driver.Name;
                 equipment.AssignedDriverId = driver.Id;
             }
+        }
+        var openBreakdowns = (breakdowns ?? []).Where(MaintenanceBreakdownBoard.IsOperationallyOpen).ToList();
+        var localNow = DateTime.SpecifyKind((nowUtc ?? DateTime.UtcNow).AddHours(-6), DateTimeKind.Unspecified);
+        foreach (var equipment in byKey.Values.Where(x => x.ShowsBreakdownDetails))
+        {
+            var master = masters.FirstOrDefault(x => "master:" + x.Id == equipment.Key);
+            var identifiers = new[] { equipment.Code, master?.Name, master?.Plate }
+                .Select(HolcimMasterCatalog.Identifier).Where(x => x.Length > 0).ToHashSet();
+            equipment.Breakdowns = openBreakdowns.Where(x => identifiers.Contains(HolcimMasterCatalog.Identifier(x.Equipment)))
+                .OrderByDescending(x => x.EventAt).ThenByDescending(x => x.Id)
+                .Select(x => new FleetBreakdownViewModel {
+                    Id = x.Id, Category = x.Category, Element = x.Element, DamageTarget = x.DamageTarget,
+                    Observation = x.Observation, ReportedAt = DateTime.SpecifyKind(x.EventAt, DateTimeKind.Unspecified),
+                    Elapsed = localNow > x.EventAt ? localNow - x.EventAt : TimeSpan.Zero
+                }).ToList();
         }
         board.Equipment = byKey.Values.OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase).ToList();
         return board;

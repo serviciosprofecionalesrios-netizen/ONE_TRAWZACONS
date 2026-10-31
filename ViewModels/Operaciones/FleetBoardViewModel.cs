@@ -24,7 +24,9 @@ public sealed class FleetEquipmentViewModel
     // Active cards follow the same load state as the chip. Manual locations stay put.
     public string CardStatus => Status is "standby" or "finalizado" or "ruta"
         && LoadStatus is "ruta" or "finalizado" ? LoadStatus : Status;
-    public string ChipCssClass => LoadStatus == "ruta" ? "equipo-chip--ruta"
+    public string ChipCssClass => Status == "imc-roja" ? "equipo-chip--imc-roja"
+        : Status == "imc-amarilla" ? "equipo-chip--imc-amarilla"
+        : LoadStatus == "ruta" ? "equipo-chip--ruta"
         : LoadStatus == "finalizado" ? "equipo-chip--descargado" : "";
     public string? Reason { get; set; }
     public string? ManualStateKey { get; set; }
@@ -32,4 +34,20 @@ public sealed class FleetEquipmentViewModel
     public bool InLatestUpload { get; set; }
     public string LoadVersion { get; set; } = "none";
     public bool CanManage { get; set; }
+    public bool ShowsBreakdownDetails => Status is "carretera" or "taller-pct" or "taller-psb";
+    public List<FleetBreakdownViewModel> Breakdowns { get; set; } = [];
+}
+public sealed class FleetBreakdownViewModel
+{
+    public int Id { get; set; }
+    public string Category { get; set; } = "";
+    public string Element { get; set; } = "";
+    public string DamageTarget { get; set; } = "";
+    public string? Observation { get; set; }
+    public DateTime ReportedAt { get; set; }
+    public TimeSpan Elapsed { get; set; }
+    public string ElapsedLabel => $"{(int)Elapsed.TotalDays} d {Elapsed.Hours} h {Elapsed.Minutes} min";
+    public long ReportedAtUnixMs => new DateTimeOffset(ReportedAt, TimeSpan.FromHours(-6)).ToUnixTimeMilliseconds();
+    public string Details => $"Daño: {Category}\nElemento dañado: {Element}\nDaño en: {DamageTarget}\nReportado: {ReportedAt:dd/MM/yyyy HH:mm} (Nicaragua)"
+        + (string.IsNullOrWhiteSpace(Observation) ? "" : $"\nObservación: {Observation}");
 }
