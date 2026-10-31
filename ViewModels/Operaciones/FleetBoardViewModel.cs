@@ -21,6 +21,9 @@ public sealed class FleetEquipmentViewModel
     // TiHouse determines the load; manual classifications determine its location.
     public string LoadStatus => BaseStatus is "ruta" or "finalizado" ? BaseStatus
         : HistoricalLoadStatus is "ruta" or "finalizado" ? HistoricalLoadStatus : Status;
+    // Active cards follow the same load state as the chip. Manual locations stay put.
+    public string CardStatus => Status is "standby" or "finalizado" or "ruta"
+        && LoadStatus is "ruta" or "finalizado" ? LoadStatus : Status;
     public string ChipCssClass => LoadStatus == "ruta" ? "equipo-chip--ruta"
         : LoadStatus == "finalizado" ? "equipo-chip--descargado" : "";
     public string? Reason { get; set; }

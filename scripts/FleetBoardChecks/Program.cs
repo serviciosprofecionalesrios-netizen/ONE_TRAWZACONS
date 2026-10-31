@@ -150,14 +150,15 @@ Microsoft.Extensions.DependencyInjection.MvcServiceCollectionExtensions.AddContr
 await using var renderApp=renderBuilder.Build();
 using var renderScope=Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(renderApp.Services);
 var razor=Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Microsoft.AspNetCore.Mvc.Razor.IRazorViewEngine>(renderScope.ServiceProvider);
-async Task<string> RenderChip(FleetEquipmentViewModel equipment) {
+Task<string> RenderChip(FleetEquipmentViewModel equipment) => RenderView(equipment,"/Views/Operaciones/_FleetEquipmentChip.cshtml");
+async Task<string> RenderView<T>(T model, string path) {
  var http=new DefaultHttpContext{RequestServices=renderScope.ServiceProvider};
  var renderRoutes=new RouteData(); renderRoutes.Routers.Add(new RouteCollection()); renderRoutes.Values["controller"]="Operaciones";
  var action=new ActionContext(http,renderRoutes,new ActionDescriptor());
- var view=razor.GetView(null,"/Views/Operaciones/_FleetEquipmentChip.cshtml",false);
+ var view=razor.GetView(null,path,false);
  Check(view.Success,"Actual fleet chip Razor view resolves");
  using var writer=new StringWriter();
- var data=new ViewDataDictionary<FleetEquipmentViewModel>(new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),new Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary()){Model=equipment};
+ var data=new ViewDataDictionary<T>(new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),new Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary()){Model=model};
  var context=new ViewContext(action,view.View!,data,new TempDataDictionary(http,new TempData()),writer,new HtmlHelperOptions());
  await view.View!.RenderAsync(context);
  return writer.ToString();
@@ -195,5 +196,25 @@ Check((await RenderChip(OperationalFleetBoard.Build([],partialSource,colorChange
 colorSource.LatestUploadRows[0].Estado="FINALIZADO";
 var discharged=OperationalFleetBoard.Build([],colorSource,colorChanges).Equipment.Single(x=>x.Code=="W-0067");
 Check(discharged.Status=="taller-psb" && (await RenderChip(discharged)).Contains("equipo-chip equipo-chip--descargado dropdown-toggle"),"Actual FINALIZADO changes to blue while preserving PSB");
+
+// A chip's load color and its active card must agree, even after partial uploads.
+var cardUnits = new[] {
+ new FleetEquipmentViewModel {Code="W-0114",Company="EQUINOX",Status="finalizado",HistoricalLoadStatus="ruta"},
+ new FleetEquipmentViewModel {Code="W-0001",Company="EQUINOX",Status="standby",HistoricalLoadStatus="ruta"},
+ new FleetEquipmentViewModel {Code="W-0025",Company="EQUINOX",Status="standby",HistoricalLoadStatus="finalizado"},
+ new FleetEquipmentViewModel {Code="UNRECOGNIZED",Company="EQUINOX",Status="standby"},
+ new FleetEquipmentViewModel {Code="W-0067",Company="EQUINOX",Status="taller-psb",HistoricalLoadStatus="ruta"},
+ new FleetEquipmentViewModel {Code="W-0089",Company="EQUINOX",Status="carretera",HistoricalLoadStatus="ruta"},
+ new FleetEquipmentViewModel {Code="OUTSIDE",Company="EQUINOX",Status="fuera-ruta",HistoricalLoadStatus="ruta",Reason="Otros"}
+};
+Check(cardUnits[0].CardStatus=="ruta" && cardUnits[1].CardStatus=="ruta", "Loaded units leave discharged and standby cards");
+Check(cardUnits[2].CardStatus=="finalizado" && cardUnits[3].CardStatus=="standby", "Known discharged units leave standby; unknown units stay");
+Check(cardUnits[4].CardStatus=="taller-psb" && cardUnits[5].CardStatus=="carretera" && cardUnits[6].CardStatus=="fuera-ruta", "Manual PSB, roadside and outside-route locations remain intact");
+var cardsHtml=await RenderView(new FleetBoardViewModel {Equipment=cardUnits.ToList()},"/Views/Operaciones/_FleetBoard.cshtml");
+var routeSection=cardsHtml.IndexOf("Equipos en ruta (2)",StringComparison.Ordinal);
+var standbySection=cardsHtml.IndexOf("Equipos en Standby (1)",StringComparison.Ordinal);
+var downloadedSection=cardsHtml.IndexOf("Equipos descargados (1)",StringComparison.Ordinal);
+Check(downloadedSection>=0 && routeSection>downloadedSection && standbySection>routeSection,"Actual rendered card counts match load states");
+Check(cardsHtml.IndexOf(">W-0114</button>",StringComparison.Ordinal)>routeSection && cardsHtml.IndexOf(">W-0114</button>",StringComparison.Ordinal)<standbySection && cardsHtml.IndexOf(">W-0001</button>",StringComparison.Ordinal)>routeSection && cardsHtml.IndexOf(">W-0001</button>",StringComparison.Ordinal)<standbySection,"Actual board renders loaded units only in route card");
 
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}
