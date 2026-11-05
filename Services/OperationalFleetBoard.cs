@@ -112,20 +112,25 @@ public static class OperationalFleetBoard
                 equipment.AssignedDriverId = driver.Id;
             }
         }
-        var openBreakdowns = (breakdowns ?? []).Where(MaintenanceBreakdownBoard.IsOperationallyOpen).ToList();
+        var validBreakdowns = (breakdowns ?? []).Where(MaintenanceBreakdownBoard.IsValidRecord).ToList();
         var localNow = DateTime.SpecifyKind((nowUtc ?? DateTime.UtcNow).AddHours(-6), DateTimeKind.Unspecified);
         foreach (var equipment in byKey.Values.Where(x => x.ShowsBreakdownDetails))
         {
             var master = masters.FirstOrDefault(x => "master:" + x.Id == equipment.Key);
             var identifiers = new[] { equipment.Code, master?.Name, master?.Plate }
                 .Select(HolcimMasterCatalog.Identifier).Where(x => x.Length > 0).ToHashSet();
-            equipment.Breakdowns = openBreakdowns.Where(x => identifiers.Contains(HolcimMasterCatalog.Identifier(x.Equipment)))
+            equipment.Breakdowns = validBreakdowns.Where(x => identifiers.Contains(HolcimMasterCatalog.Identifier(x.Equipment)))
                 .OrderByDescending(x => x.EventAt).ThenByDescending(x => x.Id).Take(1)
-                .Select(x => new FleetBreakdownViewModel {
+                .Select(x => {
+                    var closedAt=MaintenanceBreakdownBoard.ClosingDate(x);
+                    var isClosed=!MaintenanceBreakdownBoard.IsOperationallyOpen(x);
+                    var endpoint=isClosed?closedAt:localNow;
+                    return new FleetBreakdownViewModel {
                     Id = x.Id, Category = x.Category, Element = x.Element, DamageTarget = x.DamageTarget,
                     Observation = x.Observation, ReportedAt = DateTime.SpecifyKind(x.EventAt, DateTimeKind.Unspecified),
-                    Elapsed = localNow > x.EventAt ? localNow - x.EventAt : TimeSpan.Zero
-                }).ToList();
+                    IsClosed=isClosed,ClosedAt=closedAt,HasDuration=!isClosed || (closedAt.HasValue && closedAt>=x.EventAt),
+                    Elapsed = endpoint.HasValue && endpoint>x.EventAt ? endpoint.Value - x.EventAt : TimeSpan.Zero
+                };}).ToList();
         }
         board.Equipment = byKey.Values.OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase).ToList();
         return board;

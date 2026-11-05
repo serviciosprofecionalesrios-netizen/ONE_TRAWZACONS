@@ -6,9 +6,9 @@
     if(Model.LoadStatus=="ruta") baseTitle += $"\nPeso sugerido: {(Model.SuggestedWeight.HasValue ? Model.SuggestedWeight.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" Tn" : "Sin registro")}";
     if(Model.LoadStatus=="finalizado") baseTitle += $"\nToneladas finalizadas: {(Model.CompletedTonnes.HasValue ? Model.CompletedTonnes.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" Tn" : "Sin registro")}\nCombustible despachado: {(Model.DispatchedFuelGallons.HasValue ? Model.DispatchedFuelGallons.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" gal" : "Sin registro")}";
     if (Model.Status.StartsWith("imc-")) baseTitle += $" · {OperationalFleetBoard.StatusLabel(Model.Status)}";
-    if (Model.ShowsBreakdownDetails && Model.Breakdowns.Count == 0) baseTitle += "\nSin avería abierta registrada.";
-    var tooltip = baseTitle + string.Concat(Model.Breakdowns.Select(x => $"\n\n{x.Details}\nTiempo transcurrido: {x.ElapsedLabel}"));
-    var eventsJson = JsonSerializer.Serialize(Model.Breakdowns.Select(x => new { details = x.Details, reportedAt = x.ReportedAtUnixMs }));
+    if (Model.ShowsBreakdownDetails && Model.Breakdowns.Count == 0) baseTitle += "\nSin avería registrada.";
+    var tooltip = baseTitle + string.Concat(Model.Breakdowns.Select(x => $"\n\n{x.Details}\n{x.DurationLabel}: {x.ElapsedLabel}"));
+    var eventsJson = JsonSerializer.Serialize(Model.Breakdowns.Select(x => new { details = x.Details, reportedAt = x.ReportedAtUnixMs, isClosed=x.IsClosed,closedAt=x.HasDuration?x.ClosedAtUnixMs:null,elapsedLabel=x.ElapsedLabel }));
 }
 <div class="dropdown equipo-chip-dropdown">
     <button class="equipo-chip @Model.ChipCssClass dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="@tooltip" data-tooltip-base="@baseTitle" data-breakdown-events="@eventsJson"><i class="bi bi-truck-front"></i>@Model.Code</button>
@@ -17,11 +17,14 @@
         <li class="px-3 pb-2 small" style="max-width:320px;white-space:normal">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin asignar" : Model.Driver)</li>
         @foreach(var incident in Model.Breakdowns){
             <li class="px-3 py-2 small border-top" style="max-width:360px;white-space:normal">
+                <strong>Última avería registrada · @(incident.IsClosed?"Cerrada":"Abierta")</strong><br/>
                 <strong>Daño:</strong> @incident.Category<br/>
                 <strong>Elemento dañado:</strong> @incident.Element<br/>
                 <strong>Daño en:</strong> @incident.DamageTarget<br/>
                 <strong>Reportado:</strong> @incident.ReportedAt.ToString("dd/MM/yyyy HH:mm") (Nicaragua)<br/>
-                <strong>Tiempo transcurrido:</strong> <span data-breakdown-reported-at="@incident.ReportedAtUnixMs">@incident.ElapsedLabel</span>
+                @if(incident.ClosedAt.HasValue){<strong>Cierre:</strong> @incident.ClosedAt.Value.ToString("dd/MM/yyyy HH:mm")<br/>}
+                <strong>@incident.DurationLabel:</strong>
+                @if(incident.IsClosed){<span>@incident.ElapsedLabel</span>}else{<span data-breakdown-reported-at="@incident.ReportedAtUnixMs">@incident.ElapsedLabel</span>}
                 @if(!string.IsNullOrWhiteSpace(incident.Observation)){<div>@incident.Observation</div>}
                 <a class="d-block mt-1" asp-action="AveriaDetalle" asp-route-id="@incident.Id">Ver avería</a>
             </li>

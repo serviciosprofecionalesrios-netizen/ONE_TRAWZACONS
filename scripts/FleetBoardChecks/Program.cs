@@ -234,10 +234,10 @@ var damageRecords=new[]{
  new OperationalBreakdown {Id=701,Equipment="M123456",EventAt=new DateTime(2026,10,30,9,15,0),Category="Motor",Element="Radiador",DamageTarget="Equipo",Observation="Fuga <script>no ejecutar</script>"},
  new OperationalBreakdown {Id=702,Equipment="DAMAGE",EventAt=new DateTime(2026,10,31,10,0,0),Category="Frenos",Element="Bomba",DamageTarget="Góndola",Observation="Fuga <script>no ejecutar</script>"},
  new OperationalBreakdown {Id=703,Equipment="DAMAGE",EventAt=new DateTime(2026,10,31,12,0,0),Category="Cerrada",EndAt=new DateTime(2026,10,31,12,15,0),Status="Cerrada"},
- new OperationalBreakdown {Id=704,Equipment="DAMAGE",EventAt=new DateTime(2026,10,29),Category="Anulada",SourceJson="{\"VIGENCIA\":\"NULO\"}"}
+ new OperationalBreakdown {Id=704,Equipment="DAMAGE",EventAt=new DateTime(2026,11,1),Category="Anulada",SourceJson="{\"VIGENCIA\":\"NULO\"}"}
 };
 foreach(var location in new[]{"carretera","taller-pct","taller-psb","taller-poz"}) {
- var damageBoard=OperationalFleetBoard.Build([damageMaster],new(),[new(){EquipmentKey="master:9001",EquipmentCode="DAMAGE",Status=location}],breakdowns:damageRecords,nowUtc:damageNow);
+ var damageBoard=OperationalFleetBoard.Build([damageMaster],new(),[new(){EquipmentKey="master:9001",EquipmentCode="DAMAGE",Status=location}],breakdowns:damageRecords.Where(x=>x.Id!=703),nowUtc:damageNow);
  var unit=damageBoard.Equipment.Single();
  Check(unit.Status==location && unit.Breakdowns.Count==1 && unit.Breakdowns[0].Id==702,"Only the latest active breakdown is shown for unit code and plate: "+location);
  Check(unit.Breakdowns.Single().ElapsedLabel=="0 d 2 h 30 min","Elapsed time uses Nicaragua event time against UTC clock");
@@ -246,7 +246,16 @@ foreach(var location in new[]{"carretera","taller-pct","taller-psb","taller-poz"
  Check(!damageHtml.Contains("<script>no ejecutar</script>"),"Damage observations are HTML encoded");
 }
 var missingDamage=new FleetEquipmentViewModel {Code="NO-INCIDENT",Status="taller-psb"};
-Check((await RenderChip(missingDamage)).Contains("Sin aver&#xED;a abierta registrada."),"Missing incidents are explicitly identified instead of invented");
+Check((await RenderChip(missingDamage)).Contains("Sin aver&#xED;a registrada."),"Missing incidents are explicitly identified instead of invented");
+var closedLatest=OperationalFleetBoard.Build([damageMaster],new(),[new(){EquipmentKey="master:9001",EquipmentCode="DAMAGE",Status="taller-psb"}],breakdowns:damageRecords,nowUtc:damageNow).Equipment.Single();
+Check(closedLatest.Breakdowns.Single().Id==703 && closedLatest.Breakdowns.Single().IsClosed && closedLatest.Breakdowns.Single().ElapsedLabel=="0 d 0 h 15 min","Latest valid closed incident replaces an older open one and uses actual closing time");
+var closedLater=OperationalFleetBoard.Build([damageMaster],new(),[new(){EquipmentKey="master:9001",EquipmentCode="DAMAGE",Status="taller-psb"}],breakdowns:damageRecords,nowUtc:damageNow.AddDays(30)).Equipment.Single();
+Check(closedLater.Breakdowns.Single().ElapsedLabel=="0 d 0 h 15 min","Closed-incident duration does not accumulate days after closing");
+var closedHtml=System.Net.WebUtility.HtmlDecode(await RenderChip(closedLatest));
+Check(closedHtml.Contains("Cerrada") && closedHtml.Contains("Duración de la avería:") && !closedHtml.Contains("data-breakdown-reported-at="),"Closed tooltip is explicitly identified and excluded from the live dropdown timer");
+var newestOpen=new OperationalBreakdown{Id=705,Equipment="DAMAGE",EventAt=new DateTime(2026,10,31,12,20,0),Category="Nueva avería"};
+var newest=OperationalFleetBoard.Build([damageMaster],new(),[new(){EquipmentKey="master:9001",EquipmentCode="DAMAGE",Status="taller-psb"}],breakdowns:damageRecords.Append(newestOpen),nowUtc:damageNow).Equipment.Single().Breakdowns.Single();
+Check(newest.Id==705 && !newest.IsClosed && newest.ElapsedLabel=="0 d 0 h 10 min","A newer active incident replaces the earlier closed incident and starts its own elapsed time");
 
 // Explicit unassignment overrides both a manual assignment and TiHouse's driver.
 await Controller().AsignarConductorEquipo(key,driver1.Id,Board().LoadVersion,default);

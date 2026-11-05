@@ -48,9 +48,15 @@ public sealed class FleetBreakdownViewModel
     public string DamageTarget { get; set; } = "";
     public string? Observation { get; set; }
     public DateTime ReportedAt { get; set; }
+    public bool IsClosed { get; set; }
+    public DateTime? ClosedAt { get; set; }
+    public bool HasDuration { get; set; } = true;
+    public string DurationLabel => IsClosed ? "Duración de la avería" : "Tiempo transcurrido";
     public TimeSpan Elapsed { get; set; }
-    public string ElapsedLabel => $"{(int)Elapsed.TotalDays} d {Elapsed.Hours} h {Elapsed.Minutes} min";
+    public string ElapsedLabel => HasDuration ? $"{(int)Elapsed.TotalDays} d {Elapsed.Hours} h {Elapsed.Minutes} min" : "Sin fecha de cierre válida";
+    public long? ClosedAtUnixMs => ClosedAt.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(ClosedAt.Value,DateTimeKind.Unspecified),TimeSpan.FromHours(-6)).ToUnixTimeMilliseconds() : null;
     public long ReportedAtUnixMs => new DateTimeOffset(ReportedAt, TimeSpan.FromHours(-6)).ToUnixTimeMilliseconds();
-    public string Details => $"Daño: {Category}\nElemento dañado: {Element}\nDaño en: {DamageTarget}\nReportado: {ReportedAt:dd/MM/yyyy HH:mm} (Nicaragua)"
+    public string Details => $"Última avería registrada · {(IsClosed ? "Cerrada" : "Abierta")}\nDaño: {Category}\nElemento dañado: {Element}\nDaño en: {DamageTarget}\nReportado: {ReportedAt:dd/MM/yyyy HH:mm} (Nicaragua)"
+        + (ClosedAt.HasValue ? $"\nCierre: {ClosedAt:dd/MM/yyyy HH:mm} (Nicaragua)" : "")
         + (string.IsNullOrWhiteSpace(Observation) ? "" : $"\nObservación: {Observation}");
 }

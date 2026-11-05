@@ -16,7 +16,7 @@ public partial class OperacionesController
     {
         var catalog = _context.OperationalMasterRecords.AsNoTracking().ToList();
         var board = OperationalFleetBoard.Build(catalog,source,_context.OperationalFleetStates.AsNoTracking().ToList(),_context.OperationalFleetDrivers.AsNoTracking().ToList(),
-            _context.OperationalBreakdowns.AsNoTracking().Where(x => x.EndAt == null).ToList());
+            _context.OperationalBreakdowns.AsNoTracking().ToList());
         board.CanManage = OperationalFleetBoard.CanManage(User);
         var drivers = catalog.Where(x => x.Kind == "conductores" && x.IsActive).OrderBy(x => x.Name).ToList();
         foreach(var equipment in board.Equipment) { equipment.CanManage = board.CanManage; if(board.CanManage) equipment.AvailableDrivers = drivers; }

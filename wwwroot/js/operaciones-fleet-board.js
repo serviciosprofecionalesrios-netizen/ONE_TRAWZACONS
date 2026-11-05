@@ -11,8 +11,8 @@ function initializeFleetBoard() {
 document.addEventListener('DOMContentLoaded', initializeFleetBoard);
 document.addEventListener('toneladas:updated', initializeFleetBoard);
 
-function fleetElapsedLabel(reportedAt) {
-    var minutes = Math.max(0, Math.floor((Date.now() - Number(reportedAt)) / 60000));
+function fleetElapsedLabel(reportedAt, closedAt) {
+    var minutes = Math.max(0, Math.floor(((closedAt == null ? Date.now() : Number(closedAt)) - Number(reportedAt)) / 60000));
     return Math.floor(minutes / 1440) + ' d ' + Math.floor(minutes % 1440 / 60) + ' h ' + minutes % 60 + ' min';
 }
 
@@ -24,7 +24,9 @@ function updateFleetBreakdownTimes() {
         try {
             var events = JSON.parse(button.getAttribute('data-breakdown-events') || '[]');
             button.title = (button.getAttribute('data-tooltip-base') || '') + events.map(function (event) {
-                return '\n\n' + event.details + '\nTiempo transcurrido: ' + fleetElapsedLabel(event.reportedAt);
+                var label = event.isClosed ? 'Duración de la avería' : 'Tiempo transcurrido';
+                var duration = event.isClosed && event.closedAt == null ? event.elapsedLabel : fleetElapsedLabel(event.reportedAt,event.isClosed ? event.closedAt : null);
+                return '\n\n' + event.details + '\n' + label + ': ' + duration;
             }).join('');
         } catch (_) { /* Keep the server-rendered tooltip if data is unavailable. */ }
     });

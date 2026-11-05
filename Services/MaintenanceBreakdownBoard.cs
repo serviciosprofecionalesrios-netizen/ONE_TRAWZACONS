@@ -19,6 +19,10 @@ public static class MaintenanceBreakdownBoard
         if(string.Equals(sourceStatus,"Cerrada",StringComparison.OrdinalIgnoreCase)) return false;
         return OperationalBreakdownCatalog.Date(values.GetValueOrDefault("Fecha Fin Evento") ?? "")==null;
     }
+    public static bool IsValidRecord(OperationalBreakdown record) =>
+        !string.Equals(Metadata(record).GetValueOrDefault("VIGENCIA")?.Trim(),"NULO",StringComparison.OrdinalIgnoreCase);
+    public static DateTime? ClosingDate(OperationalBreakdown record) => record.EndAt ??
+        OperationalBreakdownCatalog.Date(Metadata(record).GetValueOrDefault("Fecha Fin Evento") ?? "");
     public static DateTime? Deadline(OperationalBreakdown record)
     {
         if(record.SlaDeadline.HasValue)return record.SlaDeadline;
