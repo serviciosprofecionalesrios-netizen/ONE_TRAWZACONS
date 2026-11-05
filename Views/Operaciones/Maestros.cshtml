@@ -6,7 +6,9 @@
     var companyFilter = ViewData["Company"] as string;
     ViewData["Title"] = OperationalMasterCatalog.Title(type);
     var canCreate = ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainMaster(User, type);
-    var columnCount = 6 + (type == "equipos" ? 1 : 0) + (type == "conductores" ? (canCreate ? 2 : 1) : 0);
+    var canChangeState = ITServiceDeskApp.Security.UserAccessProfiles.CanChangeMasterState(User);
+    var showActions = canChangeState || (type == "conductores" && canCreate);
+    var columnCount = 7 + (type == "equipos" ? 1 : 0) + (showActions ? 1 : 0);
 }
 <div class="container-fluid py-4">
     <div class="module-banner mb-4"><div><h2><i class="bi @(type == "conductores" ? "bi-person-vcard" : type == "gondolas" ? "bi-truck-flatbed" : "bi-truck")"></i>@ViewData["Title"]</h2><p class="mb-0">Catálogo operativo clasificado por empresa, con un solo ID para registros compartidos.</p></div>@if(canCreate){<a asp-action="MaestroNuevo" asp-route-type="@type" class="btn btn-light">Nuevo registro</a>}</div>
@@ -25,12 +27,12 @@
         <div class="row g-2 align-items-end">
             <div class="col-md"><label for="master-search" class="form-label">Buscar</label><input id="master-search" class="form-control" name="q" value="@ViewData["Search"]" placeholder="Nombre, código, placa, propietario o referencia Holcim"/></div>
             <div class="col-md-3"><label for="master-company" class="form-label">Empresa de operación</label><select id="master-company" name="company" class="form-select"><option value="">Todas las empresas</option>@foreach(var company in HolcimMasterCatalog.Companies){<option value="@company" selected="@(company==companyFilter)">@(company=="HOLCIM/EQUINOX" ? "Compartidos · HOLCIM/EQUINOX" : company + " (incluye compartidos)")</option>}</select></div>
-            @if(type == "conductores"){<div class="col-md-2"><label for="master-status" class="form-label">Estado</label><select id="master-status" class="form-select" name="status"><option value="activos" selected="@(ViewData["Status"] as string == "activos")">Activos</option><option value="inactivos" selected="@(ViewData["Status"] as string == "inactivos")">Inactivos</option><option value="todos" selected="@(ViewData["Status"] as string == "todos")">Todos</option></select></div>}
+            <div class="col-md-2"><label for="master-status" class="form-label">Estado</label><select id="master-status" class="form-select" name="status"><option value="activos" selected="@(ViewData["Status"] as string == "activos")">Activos</option><option value="inactivos" selected="@(ViewData["Status"] as string == "inactivos")">Inactivos</option><option value="todos" selected="@(ViewData["Status"] as string == "todos")">Todos</option></select></div>
             <div class="col-md-auto"><button class="btn btn-primary">Filtrar</button></div>
         </div>
     </form>
     <div class="card table-responsive"><table class="table table-hover align-middle mb-0" style="min-width:1100px">
-        <thead><tr><th class="text-nowrap">ID único</th><th style="min-width:260px">@OperationalMasterCatalog.NameLabel(type)</th>@if(type == "equipos"){<th class="text-nowrap">Placa de cabezal</th>}<th class="text-nowrap">Empresa de operación</th><th>Tenencia</th><th style="min-width:180px">Propietario</th><th>Información Holcim</th>@if(type == "conductores"){<th>Estado</th>@if(canCreate){<th>Acciones</th>}}</tr></thead>
+        <thead><tr><th class="text-nowrap">ID único</th><th style="min-width:260px">@OperationalMasterCatalog.NameLabel(type)</th>@if(type == "equipos"){<th class="text-nowrap">Placa de cabezal</th>}<th class="text-nowrap">Empresa de operación</th><th>Tenencia</th><th style="min-width:180px">Propietario</th><th>Información Holcim</th><th>Estado</th>@if(showActions){<th>Acciones</th>}</tr></thead>
         <tbody>
         @foreach(var row in Model){
             var detail = HolcimMasterCatalog.Detail(row.HolcimSourceJson);
@@ -40,10 +42,14 @@
                 <td class="text-nowrap"><span class="badge @(row.CompanyClassification=="HOLCIM/EQUINOX" ? "bg-primary" : row.CompanyClassification=="HOLCIM" ? "bg-info text-dark" : "bg-secondary")">@row.CompanyClassification</span></td>
                 <td>@row.Tenure</td><td>@row.Owner</td>
                 <td>@if(detail!=null){<button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="collapse" data-bs-target="#holcim-source-@row.Id" aria-expanded="false" aria-controls="holcim-source-@row.Id">Ver datos de origen</button>}else{<span class="text-muted">—</span>}</td>
-                @if(type == "conductores"){
-                    <td><span class="badge @(row.IsActive ? "bg-success" : "bg-secondary")">@(row.IsActive ? "Activo" : "Inactivo")</span></td>
-                    @if(canCreate){<td><div class="d-flex gap-2"><a asp-action="ConductorEditar" asp-route-id="@row.Id" class="btn btn-outline-primary btn-sm">Editar</a><form asp-action="ConductorEstado" method="post" onsubmit="return confirm('¿Confirmas cambiar el estado del conductor? Se conservará su historial.');"><input type="hidden" name="id" value="@row.Id"/><input type="hidden" name="active" value="@(!row.IsActive ? "true" : "false")"/><button class="btn @(row.IsActive ? "btn-outline-danger" : "btn-outline-success") btn-sm">@(row.IsActive ? "Desactivar" : "Reactivar")</button></form></div></td>}
-                }
+                <td><span class="badge @(row.IsActive ? "bg-success" : "bg-secondary")">@(row.IsActive ? "Activo" : "Inactivo")</span></td>
+                @if(showActions){<td><div class="d-flex gap-2">
+                    @if(type=="conductores" && canCreate){<a asp-action="ConductorEditar" asp-route-id="@row.Id" class="btn btn-outline-primary btn-sm">Editar</a>}
+                    @if(canChangeState){
+                        <form asp-action="MaestroEstado" method="post"><input type="hidden" name="id" value="@row.Id"/><input type="hidden" name="active" value="true"/><button class="btn btn-outline-success btn-sm" type="submit" disabled="@row.IsActive">Activar</button></form>
+                        <form asp-action="MaestroEstado" method="post"><input type="hidden" name="id" value="@row.Id"/><input type="hidden" name="active" value="false"/><button class="btn btn-outline-danger btn-sm" type="submit" disabled="@(!row.IsActive)">Desactivar</button></form>
+                    }
+                </div></td>}
             </tr>
             @if(detail!=null){<tr><td colspan="@columnCount" class="p-0 border-0"><div class="collapse" id="holcim-source-@row.Id"><div class="p-3 bg-light">@await Html.PartialAsync("_HolcimMasterSource",detail)</div></div></td></tr>}
         }

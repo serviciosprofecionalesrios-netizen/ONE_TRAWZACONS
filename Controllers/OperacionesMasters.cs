@@ -87,7 +87,7 @@ public partial class OperacionesController
             query = company == "HOLCIM/EQUINOX" ? query.Where(x => x.CompanyClassification == company) : query.Where(x => x.CompanyClassification == company || x.CompanyClassification == "HOLCIM/EQUINOX");
         }
         ViewData["Company"] = company;
-        if (type == "conductores" && status != "todos") query = query.Where(x => x.IsActive == (status != "inactivos"));
+        if (status != "todos") query = query.Where(x => x.IsActive == (status != "inactivos"));
         ViewData["Status"] = status;
         if (!string.IsNullOrWhiteSpace(q)) { var text = q.Trim(); query = query.Where(x => x.Name.Contains(text) || (x.Plate != null && x.Plate.Contains(text)) || x.Owner.Contains(text) || (x.HolcimReference != null && x.HolcimReference.Contains(text))); }
         var count = await query.CountAsync(cancellationToken);
@@ -170,13 +170,25 @@ public partial class OperacionesController
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ConductorEstado(int id, bool active, CancellationToken cancellationToken)
     {
-        if (!ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainDrivers(User)) return Forbid();
+        if (!ITServiceDeskApp.Security.UserAccessProfiles.CanChangeMasterState(User)) return Forbid();
         var row = await _context.OperationalMasterRecords.SingleOrDefaultAsync(x => x.Id == id && x.Kind == "conductores", cancellationToken);
         if (row == null) return NotFound();
         row.IsActive = active;
         await _context.SaveChangesAsync(cancellationToken);
         TempData["MasterOk"] = $"Conductor {row.DisplayId} {(active ? "reactivado" : "desactivado")}. Se conserva su historial.";
         return RedirectToAction(nameof(Maestros), new { type = "conductores", status = "todos" });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> MaestroEstado(int id, bool active, CancellationToken cancellationToken)
+    {
+        if (!ITServiceDeskApp.Security.UserAccessProfiles.CanChangeMasterState(User)) return Forbid();
+        var row=await _context.OperationalMasterRecords.SingleOrDefaultAsync(x=>x.Id==id,cancellationToken);
+        if(row==null || !OperationalMasterCatalog.Kinds.Contains(row.Kind)) return NotFound();
+        row.IsActive=active;
+        await _context.SaveChangesAsync(cancellationToken);
+        TempData["MasterOk"]=$"{OperationalMasterCatalog.NameLabel(row.Kind)} {row.DisplayId} {(active?"activado":"desactivado")}. Se conserva su historial.";
+        return RedirectToAction(nameof(Maestros),new{type=row.Kind,status="todos"});
     }
 
 }

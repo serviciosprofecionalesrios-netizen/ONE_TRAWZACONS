@@ -45,14 +45,16 @@ var id=valid.Id; Assert(id>0 && valid.Name=="José Antonio Pérez López" && val
 controller=Controller(managers[1]);
 var duplicate=new OperationalMasterRecord{Kind="conductores",FirstName="JOSE",SecondName=" ANTONIO ",FirstSurname="PEREZ",SecondSurname="LOPEZ",Tenure="Propio",Owner="other"};
 Assert(await controller.MaestroNuevo(duplicate,default) is ViewResult && !controller.ModelState.IsValid && db.OperationalMasterRecords.Count()==1,"Normalized duplicate rejected");
-controller=Controller(managers[2]);
-Assert(await controller.ConductorEstado(id,false,default) is RedirectToActionResult && !valid.IsActive,"Hellen can deactivate");
+controller=Controller(managers[1]);
+Assert(await controller.ConductorEstado(id,false,default) is ForbidResult && valid.IsActive,"Other driver editors cannot change activation state");
+controller=Controller(managers[0]);
+Assert(await controller.ConductorEstado(id,false,default) is RedirectToActionResult && !valid.IsActive,"Roldan can deactivate");
 Assert(db.OperationalMasterRecords.Count()==1 && valid.Id==id,"Deactivation retains record and ID");
 controller=Controller("leslieantonioespinoza@trawzacons.com");
-Assert(await controller.ConductorEstado(id,true,default) is ForbidResult && !valid.IsActive,"Unauthorized reactivation rejected");
+Assert(await controller.ConductorEstado(id,true,default) is RedirectToActionResult && valid.IsActive,"Leslie can reactivate through the legacy driver endpoint");
 Assert(await controller.ConductorEditar(id,default) is ForbidResult,"Unauthorized edit rejected");
 controller=Controller(managers[3]);
-Assert(await controller.ConductorEstado(id,true,default) is RedirectToActionResult && valid.IsActive,"Gabriela can reactivate");
+Assert(await controller.ConductorEstado(id,false,default) is ForbidResult && valid.IsActive,"Other driver editors cannot deactivate through the legacy endpoint");
 var edited=new OperationalMasterRecord{FirstName="José",SecondName="Alberto",FirstSurname="Pérez",SecondSurname="López",Tenure="Propio",Owner="TRAWZACONS"};
 Assert(await controller.ConductorEditar(id,edited,default) is RedirectToActionResult && valid.Id==id && valid.Name=="José Alberto Pérez López","Edit preserves ID");
 controller=Controller(managers[0]);
@@ -92,7 +94,23 @@ var pgScript=pg.GetService<IMigrator>().GenerateScript("20261020010000_Operation
 Assert(pgScript.Contains("boolean NOT NULL DEFAULT TRUE") && pgScript.Contains("SourceKey") && pgScript.Contains("SecondSurname"),"Postgres migration");
 using var ss=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer("Server=localhost;Database=check;Integrated Security=True;TrustServerCertificate=True").Options);
 Assert(ss.GetService<IMigrator>().GenerateScript("20261020010000_OperationalMasters","20261020020000_DriverMasterManagement").Contains("IsActive"),"SQL Server migration");
-Console.WriteLine("PASS: named-user permissions, narrowed truck scope, mandatory four-part names, accent/space/case duplicates, create/edit/deactivate/reactivate, immutable IDs, source restart safety, status filters and both migrations.");
+foreach(var kind in OperationalMasterCatalog.Kinds){
+ var item=new OperationalMasterRecord{Kind=kind,Name="STATE "+kind,RecordKey="state:"+kind,Owner="Test",Tenure="Propio"};db.Add(item);db.SaveChanges();var originalId=item.Id;var originalKey=item.RecordKey;
+ foreach(var email in new[]{"admin@trawzacons.com","roldanzamora@trawzacons.com","leslieantonioespinoza@trawzacons.com","Espinozaleslieantonioespinoza@trawzacons.com"}){
+  Assert(await Controller(email).MaestroEstado(item.Id,false,default) is RedirectToActionResult && !item.IsActive,email+" deactivates "+kind);
+  Assert((await Controller(email).Maestros(kind,status:"inactivos") as ViewResult)?.Model is IReadOnlyList<OperationalMasterRecord> rows && rows.Any(x=>x.Id==item.Id) && rows.All(x=>!x.IsActive),"Inactive records remain discoverable for "+kind);
+  Assert(await Controller(email).MaestroEstado(item.Id,true,default) is RedirectToActionResult && item.IsActive,email+" activates "+kind);
+  Assert(item.Id==originalId && item.RecordKey==originalKey,"Reintegration preserves master identity");
+  var http=new DefaultHttpContext{User=Principal(email)};http.Request.Method="POST";var routes=new RouteData();routes.Values["controller"]="Operaciones";
+  var filter=new AuthorizationFilterContext(new ActionContext(http,routes,new ActionDescriptor{RouteValues=new Dictionary<string,string?>{{"action","MaestroEstado"}}}),[]);
+  new AccessProfileAuthorizationFilter().OnAuthorization(filter);Assert(filter.Result==null,"Global authorization permits master status action for "+email);
+ }
+ foreach(var email in new[]{"monitoreo2@trawzacons.com","monitoreo@trawzacons.com","yerlinrocha@trawzacons.com"})
+  Assert(await Controller(email).MaestroEstado(item.Id,false,default) is ForbidResult && item.IsActive,"Only designated users may change state: "+email);
+}
+Assert(await Controller("admin@trawzacons.com").MaestroEstado(int.MaxValue,false,default) is NotFoundResult,"Unknown IDs cannot be changed");
+Assert(typeof(OperacionesController).GetMethod("MaestroEstado")!.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute),true).Length==1,"All master state changes require CSRF protection");
+Console.WriteLine("PASS: master activation/deactivation for administrators, Roldan and Leslie across all three catalogs; inactive filters, preserved IDs, restricted permissions and existing driver management.");
 sealed class TestTempDataProvider : ITempDataProvider {
  public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();
  public void SaveTempData(HttpContext context,IDictionary<string,object> values){}
