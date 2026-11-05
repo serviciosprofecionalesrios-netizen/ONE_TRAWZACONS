@@ -3,6 +3,8 @@
 @using System.Text.Json
 @{
     var baseTitle = $"{Model.MasterDisplayId ?? "Sin vínculo a maestro"} · {Model.Company} · {(Model.LoadStatus == "ruta" ? "Cargado · Pendiente de descarga" : Model.LoadStatus == "finalizado" ? "Descargado · Finalizado" : "Sin estado de carga en TiHouse")} · Conductor: {(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin conductor en la carga" : Model.Driver)}";
+    if(Model.LoadStatus=="ruta") baseTitle += $"\nPeso sugerido: {(Model.SuggestedWeight.HasValue ? Model.SuggestedWeight.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" Tn" : "Sin registro")}";
+    if(Model.LoadStatus=="finalizado") baseTitle += $"\nToneladas finalizadas: {(Model.CompletedTonnes.HasValue ? Model.CompletedTonnes.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" Tn" : "Sin registro")}\nCombustible despachado: {(Model.DispatchedFuelGallons.HasValue ? Model.DispatchedFuelGallons.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" gal" : "Sin registro")}";
     if (Model.Status.StartsWith("imc-")) baseTitle += $" · {OperationalFleetBoard.StatusLabel(Model.Status)}";
     if (Model.ShowsBreakdownDetails && Model.Breakdowns.Count == 0) baseTitle += "\nSin avería abierta registrada.";
     var tooltip = baseTitle + string.Concat(Model.Breakdowns.Select(x => $"\n\n{x.Details}\nTiempo transcurrido: {x.ElapsedLabel}"));

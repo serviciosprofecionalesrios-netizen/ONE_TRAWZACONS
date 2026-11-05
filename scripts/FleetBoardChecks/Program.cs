@@ -264,4 +264,21 @@ Check(await Controller().AsignarConductorEquipo(key,0,Board().LoadVersion,defaul
 await Controller().AsignarConductorEquipo(key,driver2.Id,Board().LoadVersion,default);
 Check(Board().Equipment.Single(x=>x.Key==key).Driver==driver2.Name,"A new driver can be assigned after explicit removal");
 
+var loadedFigures=Row(truck1.Name,"EN RUTA",12);loadedFigures.PesoSugerido=32.8m;loadedFigures.Toneladas=31m;loadedFigures.CombustibleLitros=70m;
+store.Save(Upload(loadedFigures));
+var loadedUnit=Board().Equipment.Single(x=>x.Code==truck1.Name);
+Check(loadedUnit.SuggestedWeight==32.8m && loadedUnit.CompletedTonnes==null,"Loaded tooltip uses suggested weight rather than final tonnage");
+var loadedHtml=System.Net.WebUtility.HtmlDecode(await RenderChip(loadedUnit));
+Check(loadedHtml.Contains("Peso sugerido:") && !loadedHtml.Contains("Toneladas finalizadas:"),"Loaded tooltip renders only its relevant load figure");
+var completedFigures=Row(truck1.Name,"FINALIZADO",13);completedFigures.Toneladas=32.85m;completedFigures.CombustibleLitros=76.5m;
+store.Save(Upload(completedFigures));
+var completedUnit=Board().Equipment.Single(x=>x.Code==truck1.Name);
+Check(completedUnit.CompletedTonnes==32.85m && completedUnit.DispatchedFuelGallons==76.5m && completedUnit.SuggestedWeight==null,"Discharged figures come from the latest completed trip, not prior accumulated trips");
+var completedHtml=System.Net.WebUtility.HtmlDecode(await RenderChip(completedUnit));
+Check(completedHtml.Contains("Toneladas finalizadas:") && completedHtml.Contains("Combustible despachado:") && completedHtml.Contains(" gal") && !completedHtml.Contains("Peso sugerido:"),"Discharged tooltip renders final tonnes and fuel in gallons");
+store.Save(Upload(Row(truck2.Name,"EN RUTA",14)));
+var historicalUnit=Board().Equipment.Single(x=>x.Code==truck1.Name);
+Check(historicalUnit.CompletedTonnes==32.85m && historicalUnit.DispatchedFuelGallons==76.5m,"Partial upload retains figures with the historical load it displays");
+var noFiguresHtml=System.Net.WebUtility.HtmlDecode(await RenderChip(new(){Code="MANUAL",Status="finalizado"}));
+Check(noFiguresHtml.Contains("Sin registro"),"Manual activation without a trip does not invent tonnage or fuel");
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

@@ -136,7 +136,7 @@ namespace ITServiceDeskApp.Services
             model.LatestUploadRows = metadata == null ? [] : !string.IsNullOrWhiteSpace(metadata.EquipmentSnapshotJson)
                 ? JsonSerializer.Deserialize<List<SeguimientoToneladasRowViewModel>>(metadata.EquipmentSnapshotJson) ?? []
                 : _context.OperacionesSeguimientoRegistros.AsNoTracking().Where(x => x.UploadedAt == metadata.UpdatedAt)
-                    .Select(x => new SeguimientoToneladasRowViewModel {Equipo=x.Equipo,Estado=x.Estado,Conductor=x.Conductor,FechaEvento=x.FechaEvento ?? x.FechaOperativa}).ToList();
+                    .Select(x => new SeguimientoToneladasRowViewModel {Equipo=x.Equipo,Estado=x.Estado,Conductor=x.Conductor,FechaEvento=x.FechaEvento ?? x.FechaOperativa,PesoSugerido=x.PesoSugerido,Toneladas=x.Toneladas,CombustibleLitros=x.CombustibleGalones}).ToList();
             model.LatestUploadEquipment = model.LatestUploadRows.Select(x => x.Equipo).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
             return model;

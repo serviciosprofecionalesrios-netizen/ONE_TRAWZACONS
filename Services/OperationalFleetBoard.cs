@@ -42,6 +42,7 @@ public static class OperationalFleetBoard
             equipment.InLatestUpload = true;
             equipment.Driver = last.Conductor;
             equipment.Status = equipment.BaseStatus = MapState(last.Estado);
+            SetLoadFigures(equipment,last);
         }
         // A manual classification always wins, across uploads and dates, until a user clears it.
         foreach (var change in changes.Where(x => ManualStatuses.Contains(x.Status) && x.Status != "auto").OrderBy(x => x.UpdatedAtUtc))
@@ -81,7 +82,11 @@ public static class OperationalFleetBoard
                     .Select(HolcimMasterCatalog.Identifier).Where(x => x.Length > 0).ToHashSet();
                 var last = history.Where(x => identifiers.Contains(x.Key)).Select(x => x.Value)
                     .OrderByDescending(x => x.row.FechaEvento).ThenByDescending(x => x.index).FirstOrDefault();
-                if (last != null) equipment.HistoricalLoadStatus = MapState(last.row.Estado);
+                if (last != null)
+                {
+                    equipment.HistoricalLoadStatus = MapState(last.row.Estado);
+                    if(equipment.BaseStatus is not ("ruta" or "finalizado")) SetLoadFigures(equipment,last.row);
+                }
             }
         }
         foreach (var assignment in (assignments ?? []).OrderBy(x => x.UpdatedAtUtc))
@@ -124,6 +129,14 @@ public static class OperationalFleetBoard
         }
         board.Equipment = byKey.Values.OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase).ToList();
         return board;
+    }
+    private static void SetLoadFigures(FleetEquipmentViewModel equipment, SeguimientoToneladasRowViewModel row)
+    {
+        var state=MapState(row.Estado);
+        equipment.SuggestedWeight=state=="ruta"?row.PesoSugerido:null;
+        equipment.CompletedTonnes=state=="finalizado"?row.Toneladas:null;
+        // The legacy row property is named Litros, but TiHouse and persistence store gallons.
+        equipment.DispatchedFuelGallons=state=="finalizado"?row.CombustibleLitros:null;
     }
     private static string MapState(string? value)
     {
