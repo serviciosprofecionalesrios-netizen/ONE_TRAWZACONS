@@ -1,6 +1,8 @@
 (function (root) {
     function monthGoal(date, goals, fallback) {
-        return goals.find(g => g.year === date.getFullYear() && g.month === date.getMonth() + 1) || fallback;
+        const period = date.getFullYear() * 12 + date.getMonth() + 1;
+        return goals.filter(g => g.year * 12 + g.month <= period)
+            .sort((a, b) => (b.year * 12 + b.month) - (a.year * 12 + a.month))[0] || fallback;
     }
     function rangeGoal(from, to, goals, fallback) {
         let total = 0;

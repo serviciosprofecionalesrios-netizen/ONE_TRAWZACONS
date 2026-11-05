@@ -64,6 +64,7 @@ public sealed class AccessProfileAuthorizationFilter : IAuthorizationFilter
         var isReadRequest = HttpMethods.IsGet(context.HttpContext.Request.Method) ||
                             HttpMethods.IsHead(context.HttpContext.Request.Method);
         if(controller.Equals("MaintenanceBreakdowns",StringComparison.OrdinalIgnoreCase) && ITServiceDeskApp.Services.OperationalBreakdownClosure.CanClose(user)) return;
+        if(controller.Equals("Operaciones",StringComparison.OrdinalIgnoreCase) && action.Equals("ActualizarMetaProduccionMensual",StringComparison.OrdinalIgnoreCase) && UserAccessProfiles.CanEditProductionGoals(user)) return;
         var isToneladasUpload = HttpMethods.IsPost(context.HttpContext.Request.Method) &&
             controller.Equals("Operaciones", StringComparison.OrdinalIgnoreCase) &&
             action.Equals("SeguimientoToneladas", StringComparison.OrdinalIgnoreCase);

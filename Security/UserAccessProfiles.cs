@@ -104,6 +104,9 @@ public static class UserAccessProfiles
     public static bool CanMaintainMaster(System.Security.Claims.ClaimsPrincipal user, string kind) =>
         kind == "conductores" ? CanMaintainDrivers(user) : CanMaintainOperationalMasters(user);
 
+    public static bool CanEditProductionGoals(System.Security.Claims.ClaimsPrincipal user) =>
+        CanMaintainDrivers(user) || CanMaintainOperationalMasters(user);
+
     public static bool CanMaintainOperationalMasters(System.Security.Claims.ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true &&
         (IsAdministrator(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value) ||

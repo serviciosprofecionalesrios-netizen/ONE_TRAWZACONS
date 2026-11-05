@@ -429,6 +429,7 @@ namespace ITServiceDeskApp.Controllers
             decimal metaDiariaPavonAsmObjetivo,
             bool confirmarCambioMeta = false)
         {
+            if (!ITServiceDeskApp.Security.UserAccessProfiles.CanEditProductionGoals(User)) return Forbid();
             // Seguimiento de toneladas opera solo para TRITON.
             metaMensualPavonAsm = 0m;
             metaDiariaPavonAsmObjetivo = 0m;
@@ -3814,8 +3815,8 @@ namespace ITServiceDeskApp.Controllers
         {
             var entries = savedGoals ?? LoadOperacionesMetasProduccionMensual();
             var item = entries
-                .Where(x => x.Year == fechaReferencia.Year && x.Month == fechaReferencia.Month)
-                .OrderByDescending(x => x.UpdatedAt)
+                .Where(x => x.Year < fechaReferencia.Year || (x.Year == fechaReferencia.Year && x.Month <= fechaReferencia.Month))
+                .OrderByDescending(x => x.Year).ThenByDescending(x => x.Month).ThenByDescending(x => x.UpdatedAt)
                 .FirstOrDefault();
 
             if (item is null)
@@ -3959,21 +3960,9 @@ namespace ITServiceDeskApp.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "No fue posible guardar las metas de toneladas en la base de datos; se usará el respaldo local.");
+                _logger.LogWarning(ex, "No fue posible guardar las metas de toneladas en la base de datos.");
+                throw;
             }
-
-            var path = GetOperacionesMetasProduccionMensualPath();
-            var directory = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            var json = JsonSerializer.Serialize(cleanEntries, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-            System.IO.File.WriteAllText(path, json);
         }
 
         private string GetOperacionesMetasProduccionMensualPath()
