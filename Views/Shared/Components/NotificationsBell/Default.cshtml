@@ -24,7 +24,7 @@
             <div class="notif-list">
                 @foreach (var item in Model.Items)
                 {
-                    <a class="notif-link" asp-controller="Tickets" asp-action="Details" asp-route-id="@item.TicketId">
+                    <a class="notif-link" href="@(item.Url ?? Url.Action("Details", "Tickets", new { id = item.TicketId }))">
                         <article class="@item.CardCssClass">
                             <div class="notif-main">
                                 <div class="@item.IconCssClass">

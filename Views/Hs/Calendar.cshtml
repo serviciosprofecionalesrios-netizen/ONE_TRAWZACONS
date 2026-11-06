@@ -1,58 +1,69 @@
-@model List<ITServiceDeskApp.ViewModels.Hs.HsCalendarItemViewModel>
-
+@model ITServiceDeskApp.ViewModels.Hs.HsOperationalCalendar
+@using System.Globalization
+@using System.Text.Json
 @{
-    ViewData["Title"] = "Calendario H&S";
-    var fallback = ViewBag.CalendarFallback is bool value && value;
-    var total = Model.Count;
-    var vencidos = Model.Count(x => x.Date.Date < DateTime.Today);
-    var proximos7 = Model.Count(x => x.Date.Date >= DateTime.Today && x.Date.Date <= DateTime.Today.AddDays(7));
+ ViewData["Title"] = "Calendario operativo H&S";
+ var es = CultureInfo.GetCultureInfo("es-NI");
+ var previous = Model.View == "month" ? Model.Anchor.AddMonths(-1) : Model.Anchor.AddDays(-7);
+ var next = Model.View == "month" ? Model.Anchor.AddMonths(1) : Model.Anchor.AddDays(7);
+ string Navigate(DateTime d, string v) => Url.Action("Calendar", new { date=d.ToString("yyyy-MM-dd"), view=v, driver=Model.Driver, training=Model.Training, status=Model.Status, site=Model.Site })!;
 }
-
+<link rel="stylesheet" href="~/css/hs-calendar.css" asp-append-version="true" />
 <div class="container-fluid mt-3">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 module-banner">
-        <div>
-            <h2 class="mb-1"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Calendario H&amp;S</span></h2>
-            <div class="text-muted">Agenda operativa de vencimientos, inspecciones, permisos, capacitaciones y revision documental.</div>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a asp-controller="Hs" asp-action="Dashboard" class="btn btn-primary"><i class="bi bi-speedometer2"></i> Dashboard H&amp;S</a>
-            <a asp-controller="Hs" asp-action="InspectionCreate" class="btn btn-outline-success"><i class="bi bi-clipboard2-check"></i> Inspeccion</a>
-            <a asp-controller="Hs" asp-action="TrainingCreate" class="btn btn-outline-info"><i class="bi bi-mortarboard"></i> Capacitacion</a>
-            <a asp-controller="Hs" asp-action="PermitCreate" class="btn btn-outline-warning"><i class="bi bi-shield-check"></i> Permiso</a>
-        </div>
+ <div class="module-banner d-flex flex-wrap justify-content-between gap-2 mb-3">
+  <div><h2>Calendario operativo H&amp;S</h2><p class="mb-0">Agenda y vencimientos oficiales · Nicaragua</p></div>
+  <div><a asp-action="Dashboard" class="btn btn-outline-primary">Dashboard</a> <a asp-action="TrainingCreate" class="btn btn-primary">Programar capacitación</a></div>
+ </div>
+ @if(Model.SourceWarning != null){<div class="alert alert-warning">@Model.SourceWarning</div>}
+ <div class="row g-3 mb-3">
+ @foreach(var k in new[]{("Conductores activos",Model.ActiveDrivers,"primary"),("Capacitaciones vigentes (>30 días)",Model.Valid,"success"),("Próximas a vencer (1–30 días)",Model.Due,"warning"),("Vencidas / vencen hoy",Model.Expired,"danger")}){
+ <div class="col-6 col-xl-3"><div class="card shadow-sm h-100"><div class="card-body"><small>@k.Item1</small><div class="fs-2 fw-bold text-@k.Item3">@k.Item2</div></div></div></div>
+ }
+ </div>
+ <form method="get" class="card card-body mb-3">
+  <input type="hidden" name="date" value="@Model.Anchor.ToString("yyyy-MM-dd")"/><input type="hidden" name="view" value="@Model.View"/>
+  <div class="row g-2 align-items-end">
+   <div class="col-sm-6 col-lg-3"><label for="hsDriver" class="form-label">Conductor activo</label><select id="hsDriver" name="driver" class="form-select"><option value="">Todos</option>@foreach(var d in Model.Drivers){<option value="@d.Key" selected="@(Model.Driver==d.Key)">@d.Value</option>}</select></div>
+   <div class="col-sm-6 col-lg-3"><label for="hsTraining" class="form-label">Capacitación</label><select id="hsTraining" name="training" class="form-select"><option value="">Todas</option>@foreach(var t in Model.Trainings){<option selected="@(Model.Training==t)">@t</option>}</select></div>
+   <div class="col-sm-6 col-lg-2"><label for="hsState" class="form-label">Vencimiento</label><select id="hsState" name="status" class="form-select"><option value="">Todos</option>@foreach(var t in new[]{("vigente","Vigente"),("porvencer","Próxima a vencer"),("vencida","Vencida / hoy")}){<option value="@t.Item1" selected="@(Model.Status==t.Item1)">@t.Item2</option>}</select></div>
+   <div class="col-sm-6 col-lg-2"><label for="hsSite" class="form-label">Sede de actividad</label><select id="hsSite" name="site" class="form-select"><option value="">Todas</option>@foreach(var t in Model.Sites){<option selected="@(Model.Site==t)">@t</option>}</select></div>
+   <div class="col-lg-2"><button class="btn btn-primary">Filtrar</button> <a asp-action="Calendar" class="btn btn-outline-secondary">Limpiar</a></div>
+  </div>
+ </form>
+ <div class="card shadow-sm mb-3">
+ <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+ <div class="btn-group"><a href="@Navigate(previous,Model.View)" class="btn btn-outline-primary" aria-label="Período anterior">‹</a><a asp-action="Calendar" class="btn btn-outline-primary">Hoy</a><a href="@Navigate(next,Model.View)" class="btn btn-outline-primary" aria-label="Período siguiente">›</a></div>
+ <strong>@Model.Start.ToString("dd MMM",es) — @Model.End.AddDays(-1).ToString("dd MMM yyyy",es)</strong>
+ <div class="btn-group"><a href="@Navigate(Model.Anchor,"week")" class="btn @(Model.View=="week"?"btn-primary":"btn-outline-primary")">Semana</a><a href="@Navigate(Model.Anchor,"month")" class="btn @(Model.View=="month"?"btn-primary":"btn-outline-primary")">Mes</a></div>
+ </div>
+ <div class="hs-scroll"><div class="hs-calendar @(Model.View=="week"?"hs-week":"hs-month")">
+ @for(var day=Model.Start;day<Model.End;day=day.AddDays(1)){
+  var items=Model.Events.Where(x=>x.Date.Date==day).ToList();
+  <section class="hs-day"><button type="button" class="hs-day-title" data-day="@day.ToString("yyyy-MM-dd")">@day.ToString("ddd dd MMM",es) <span class="badge text-bg-light">@items.Count</span></button>
+  <div class="hs-day-events">
+  @foreach(var item in items.Where(x=>x.AllDay || Model.View=="month")){
+   <button type="button" class="hs-event hs-tone-@item.Tone" data-day="@day.ToString("yyyy-MM-dd")">@if(item.RedIndicator){<span class="hs-red" title="Alerta de vencimiento" aria-label="Alerta de vencimiento">●</span>}<strong>@item.Title</strong><small>@item.Driver</small><small>@(item.AllDay?"Todo el día":item.Date.ToString("HH:mm")) · @item.StatusLabel</small></button>
+  }
+  </div>
+  @if(Model.View=="week"){
+   @for(var hour=0;hour<24;hour++){
+    <div class="hs-hour"><button class="hs-hour-label" type="button" data-day="@day.ToString("yyyy-MM-dd")" aria-label="Ver @day.ToString("dd/MM") a las @hour horas">@hour.ToString("00"):00</button>
+    @foreach(var item in items.Where(x=>!x.AllDay && x.Date.Hour==hour)){<button type="button" class="hs-event hs-tone-@item.Tone" data-day="@day.ToString("yyyy-MM-dd")"><strong>@item.Date.ToString("HH:mm") @item.Title</strong><small>@item.Driver · @item.StatusLabel</small></button>}
     </div>
-
-    @if (fallback)
-    {
-        <div class="alert alert-info">
-            Aun no hay eventos reales registrados. Se muestra un programa preventivo base para que el gestor H&amp;S pueda empezar a planificar.
-        </div>
-    }
-
-    <div class="row g-3 mb-3">
-        <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Actividades visibles</div><div class="fs-3 fw-bold">@total</div></div></div></div>
-        <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Vencidas</div><div class="fs-3 fw-bold text-danger">@vencidos</div></div></div></div>
-        <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted">Proximos 7 dias</div><div class="fs-3 fw-bold text-warning">@proximos7</div></div></div></div>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Programa H&amp;S</div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Fecha</th><th>Tipo</th><th>Actividad</th><th>Estado</th></tr></thead>
-                <tbody>
-                @foreach (var item in Model.OrderBy(x => x.Date))
-                {
-                    var estado = item.Date.Date < DateTime.Today ? "Vencida" : item.Date.Date == DateTime.Today ? "Hoy" : "Programada";
-                    <tr>
-                        <td style="width:160px;">@item.Date.ToString("dd/MM/yyyy")</td>
-                        <td style="width:170px;"><span class="badge text-bg-@item.Tone">@item.Type</span></td>
-                        <td>@item.Title</td>
-                        <td style="width:160px;"><span class="badge @(estado == "Vencida" ? "text-bg-danger" : estado == "Hoy" ? "text-bg-warning" : "text-bg-success")">@estado</span></td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
+   }
+  }
+  </section>
+ }
+ </div></div>
+ <div class="card-footer small">Verde: más de 30 días · Amarillo: 16–30 · Naranja: 1–15 · Rojo: hoy o vencida. ● rojo: alerta preventiva. Selecciona una fecha para consultar el detalle.</div>
+ </div>
+ <details class="card card-body mb-4"><summary class="fw-bold">Alertas pendientes <span class="badge text-bg-danger">@Model.Alerts.Count</span></summary>
+ <p class="small text-muted mt-2">Incluye vencidas de períodos anteriores. Se actualizan desde Control de Documentos. Registros sin fecha no se contabilizan como vencimientos.</p>
+ <div class="table-responsive"><table class="table"><thead><tr><th>Conductor</th><th>Capacitación</th><th>Vence</th><th>Días</th><th>Estado</th><th></th></tr></thead><tbody>
+ @foreach(var x in Model.Alerts){<tr><td>@x.Driver <small>@x.Code</small></td><td>@x.Training</td><td>@x.Date.ToString("dd/MM/yyyy")</td><td>@x.Days</td><td><span class="hs-tone-@x.Tone p-1">@x.StatusLabel</span></td><td><a href="@x.Url">Consultar registro</a></td></tr>}
+ @if(Model.Alerts.Count==0){<tr><td colspan="6">Sin alertas para los filtros seleccionados.</td></tr>}
+ </tbody></table></div></details>
 </div>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="hsDayDrawer" data-can-edit="@((ITServiceDeskApp.Security.UserAccessProfiles.CanCompleteHsDocuments(User) || ITServiceDeskApp.Security.UserAccessProfiles.IsAdministrator(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value)).ToString().ToLowerInvariant())" aria-labelledby="hsDayTitle"><div class="offcanvas-header"><h4 id="hsDayTitle"></h4><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button></div><div class="offcanvas-body" id="hsDayBody"></div></div>
+<script id="hsEvents" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Events))</script>
+<script src="~/js/hs-calendar.js" asp-append-version="true"></script>

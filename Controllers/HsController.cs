@@ -16,7 +16,7 @@ using OfficeOpenXml;
 namespace ITServiceDeskApp.Controllers
 {
     [Authorize(Roles = "Administrator,CoordinadorIT,GerenciaGeneral,GestorHS,GerenteHS,SupervisorHS")]
-    public class HsController : Controller
+    public partial class HsController : Controller
     {
         private static readonly string[] Sites =
         {
@@ -804,30 +804,6 @@ namespace ITServiceDeskApp.Controllers
             return RedirectToAction(nameof(Documents));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Calendar()
-        {
-            var nowUtc = DateTime.UtcNow;
-            var actions = await _context.HsCorrectiveActions.AsNoTracking().Where(x => x.Status != "Cerrada").ToListAsync();
-            var inspections = await _context.HsInspections.AsNoTracking().Where(x => x.InspectionDateUtc >= nowUtc.AddDays(-7)).ToListAsync();
-            var trainings = await _context.HsTrainingRecords.AsNoTracking().Where(x => x.ExpirationDateUtc >= nowUtc.AddDays(-30)).ToListAsync();
-            var permits = await _context.HsWorkPermits.AsNoTracking().Where(x => x.EndAtUtc >= nowUtc.AddDays(-7)).ToListAsync();
-            var documents = await _context.HsDocuments.AsNoTracking().Where(x => x.ReviewDateUtc >= nowUtc.AddDays(-30)).ToListAsync();
-
-            var items = BuildCalendarItems(actions, inspections, trainings, permits, documents, nowUtc)
-                .OrderBy(x => x.Date)
-                .Take(200)
-                .ToList();
-
-            if (items.Count == 0)
-            {
-                items = BuildDefaultCalendarItems(DateTime.Today).ToList();
-                ViewBag.CalendarFallback = true;
-            }
-
-            return View(items);
-        }
-
         private async Task RefreshOverdueActionsAsync(DateTime nowUtc)
         {
             var overdue = await _context.HsCorrectiveActions
@@ -1127,17 +1103,6 @@ namespace ITServiceDeskApp.Controllers
                     Tone = document.ReviewDateUtc.Value.Date <= nowUtc.Date ? "warning" : "secondary"
                 };
             }
-        }
-
-        private static IEnumerable<HsCalendarItemViewModel> BuildDefaultCalendarItems(DateTime today)
-        {
-            var monthStart = new DateTime(today.Year, today.Month, 1);
-            yield return new HsCalendarItemViewModel { Date = today, Type = "Inspeccion", Title = "Inspeccion general de areas operativas", Tone = "success" };
-            yield return new HsCalendarItemViewModel { Date = today.AddDays(2), Type = "Capacitacion", Title = "Charla de seguridad: reporte de actos y condiciones inseguras", Tone = "info" };
-            yield return new HsCalendarItemViewModel { Date = today.AddDays(5), Type = "Accion", Title = "Revision semanal de acciones correctivas abiertas", Tone = "warning" };
-            yield return new HsCalendarItemViewModel { Date = today.AddDays(7), Type = "Permiso", Title = "Revision de permisos de trabajo de alto riesgo", Tone = "primary" };
-            yield return new HsCalendarItemViewModel { Date = monthStart.AddDays(14), Type = "Documento", Title = "Revision mensual de matriz IPER y AST/JSA", Tone = "secondary" };
-            yield return new HsCalendarItemViewModel { Date = monthStart.AddMonths(1).AddDays(-1), Type = "Auditoria", Title = "Cierre mensual H&S y reporte gerencial", Tone = "dark" };
         }
 
         private string CurrentUserName()

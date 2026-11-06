@@ -148,6 +148,9 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<ITServiceDeskApp.Services.HsCalendarSource>();
+builder.Services.AddSingleton<ITServiceDeskApp.Services.HsAlertInbox>();
+builder.Services.AddHostedService<ITServiceDeskApp.Services.HsExpiryMonitor>();
 var app = builder.Build();
 var allowStartupWithoutDatabase = app.Environment.IsDevelopment();
 

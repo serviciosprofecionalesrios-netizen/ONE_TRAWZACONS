@@ -13,10 +13,12 @@ namespace ITServiceDeskApp.ViewComponents
     public class NotificationsBellViewComponent : ViewComponent
     {
         private readonly ApplicationDbContext _context;
+        private readonly ITServiceDeskApp.Services.HsCalendarSource _hsSource;
 
-        public NotificationsBellViewComponent(ApplicationDbContext context)
+        public NotificationsBellViewComponent(ApplicationDbContext context, ITServiceDeskApp.Services.HsCalendarSource hsSource)
         {
             _context = context;
+            _hsSource = hsSource;
         }
 
         public async Task<IViewComponentResult> InvokeAsync()
@@ -77,6 +79,22 @@ namespace ITServiceDeskApp.ViewComponents
                 TotalCount = total,
                 Items = notifications
             };
+
+            var profile = ITServiceDeskApp.Security.UserAccessProfiles.Resolve(HttpContext.User);
+            var hsProfile = profile == null || profile is ITServiceDeskApp.Security.UserAccessProfiles.Administrator
+                or ITServiceDeskApp.Security.UserAccessProfiles.OperationsHsEditor
+                or ITServiceDeskApp.Security.UserAccessProfiles.OperationsHsReadOnly
+                or ITServiceDeskApp.Security.UserAccessProfiles.OperationsHsReporter;
+            if (hsProfile && new[] { "Administrator", "CoordinadorIT", "GerenciaGeneral", "GestorHS", "GerenteHS", "SupervisorHS" }.Any(User.IsInRole))
+            {
+                var alerts = _hsSource.Read(ITServiceDeskApp.Services.HsCalendarSource.Local(now).Date).Alerts;
+                model.TotalCount += alerts.Count;
+                model.Items = alerts.Take(8).Select(x => new NotificationItemViewModel {
+                    Url = x.Url, Title = x.Training, Summary = $"{x.Driver} · {x.Date:dd/MM/yyyy} · {x.Days} días · {x.StatusLabel}",
+                    TicketNumber = x.Code, PriorityLabel = x.StatusLabel, PriorityCssClass = "badge text-bg-danger",
+                    CardCssClass = "notif-card", IconSymbolCssClass = "bi bi-mortarboard", TimeLabel = $"Vence {x.Date:dd/MM/yyyy}"
+                }).Concat(model.Items).Take(20).ToList();
+            }
 
             return View(model);
         }

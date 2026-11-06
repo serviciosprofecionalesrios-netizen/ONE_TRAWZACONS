@@ -15,7 +15,7 @@
         <tbody>
         @foreach (var item in Model)
         {
-            <tr>
+            <tr id="training-@item.Id">
                 <td>@item.TrainingDateUtc.ToLocalTime().ToString("dd/MM/yyyy")</td>
                 <td>@item.Topic</td>
                 <td>@(item.EmployeeName ?? item.Audience)</td>

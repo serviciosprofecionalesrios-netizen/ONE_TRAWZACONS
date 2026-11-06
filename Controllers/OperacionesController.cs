@@ -6437,6 +6437,9 @@ namespace ITServiceDeskApp.Controllers
         }
 
         private ControlDocumentosViewModel BuildControlDocumentosModel(bool includeInactive = false)
+            => BuildControlDocumentosModelCore(includeInactive, calendarOnly: false);
+
+        private ControlDocumentosViewModel BuildControlDocumentosModelCore(bool includeInactive, bool calendarOnly)
         {
             var model = new ControlDocumentosViewModel {
                 FuenteArchivo = "Maestros y registros documentales", FechaGeneracion = DateTime.Now, IncludeInactive = includeInactive,
@@ -6469,6 +6472,7 @@ namespace ITServiceDeskApp.Controllers
             model.EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders().Concat(model.EncabezadosCapacitacion).Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
             model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion, includeInactive);
             HideUnusedControlDocumentoTrainings(model);
+            if (calendarOnly) return model;
             model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
             model.HistorialCambios = LoadControlDocumentosHistory().OrderByDescending(x => x.FechaCambio).Take(300).ToList();
             model.TendenciaSemanal = BuildControlDocumentosTrendByDay(model.HistorialCambios, 7);

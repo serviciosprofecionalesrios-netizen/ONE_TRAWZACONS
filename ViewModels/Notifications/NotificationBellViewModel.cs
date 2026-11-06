@@ -13,6 +13,7 @@ namespace ITServiceDeskApp.ViewModels.Notifications
 
     public class NotificationItemViewModel
     {
+        public string? Url { get; set; }
         public int TicketId { get; set; }
         public string TicketNumber { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
