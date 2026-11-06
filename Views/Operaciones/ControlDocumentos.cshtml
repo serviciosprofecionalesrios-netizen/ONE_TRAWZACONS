@@ -2025,6 +2025,10 @@
                                     </button>
                                 </div>
                                 @await Html.PartialAsync("_DocumentMasterState", (Id: fila.MasterId, IsActive: fila.IsActive, IncludeInactive: Model.IncludeInactive))
+                                @if (Model.DriverView == "desactivados" && !fila.MasterId.HasValue && ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainDrivers(User))
+                                {
+                                    <a class="btn btn-sm btn-outline-success mt-1" asp-action="MaestroNuevo" asp-route-type="conductores" asp-route-documentDriver="@fila.Conductor" title="Completar el alta en el maestro para activar y conservar sus documentos">Activar</a>
+                                }
                             </td>
                             @for (var capIndex = 0; capIndex < Model.EncabezadosCapacitacion.Count; capIndex++)
                             {

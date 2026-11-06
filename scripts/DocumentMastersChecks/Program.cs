@@ -218,7 +218,22 @@ var afterLinkArchive=(ControlDocumentosViewModel)((ViewResult)await Controller()
 var linkedRow=linkedView.Filas.Single(x=>x.MasterId==linkedMaster.Id);
 Check(linkedRow.Capacitaciones.Single(x=>x.NombreCapacitacion=="IPER").FechaIso=="2026-10-20"&&!afterLinkArchive.Filas.Any(x=>x.Conductor==legacyName),"Alta en maestro vincula automáticamente el histórico conservando sus fechas");
 Check(!linkedRow.IsNewAdmission,"Histórico vinculado conserva su procedencia y no se etiqueta como nuevo");
-Console.WriteLine("PASS: master-document integration, training rules, activation and driver view groups.");
+var activationName="Histórico por activar con nombre corregido";
+var activationRows=JsonSerializer.Deserialize<List<Dictionary<string,object>>>(File.ReadAllText(importedPath))!;
+activationRows.Add(new(){["Nombre"]=activationName,["Datos"]=new Dictionary<string,string>{{"Solicitud de origen","activation-fixture"}},["Fechas"]=new Dictionary<string,string>{{"IPER","12/10/2026"}},["CreatedAt"]="2026-10-12T00:00:00",["UpdatedAt"]="2026-10-12T00:00:00"});
+File.WriteAllText(importedPath,JsonSerializer.Serialize(activationRows));
+OperacionesController ActivationActor(){var actor=Controller();actor.HttpContext.User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"admin@trawzacons.com"),new Claim(ClaimTypes.Role,"Administrator")},"test"));return actor;}
+var activationActor=ActivationActor();var countBeforeActivation=db.OperationalMasterRecords.Count();
+Check(activationActor.MaestroNuevo("conductores",activationName) is ViewResult && (string?)activationActor.ViewData["DocumentDriverName"]==activationName && db.OperationalMasterRecords.Count()==countBeforeActivation,"Activar histórico abre alta contextual sin crear registros por GET");
+var activationModel=new OperationalMasterRecord{Kind="conductores",FirstName="Juan",SecondName="Carlos",FirstSurname="Ejemplo",SecondSurname="Prueba",Tenure="Propio",Owner="Test",CompanyClassification="EQUINOX"};
+var activationResult=await ActivationActor().MaestroNuevo(activationModel,default,activationName) as RedirectToActionResult;
+Check(activationResult?.ActionName=="ControlDocumentos"&&activationModel.IsActive,"Guardar y activar crea maestro activo y retorna a documentos");
+var activatedDocuments=(ControlDocumentosViewModel)((ViewResult)await ActivationActor().ControlDocumentos()).Model!;
+Check(activatedDocuments.Filas.Single(x=>x.MasterId==activationModel.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="IPER").FechaIso=="2026-10-12","Activación conserva documentos incluso al corregir el nombre mediante vínculo de origen");
+Check(ActivationActor().MaestroNuevo("conductores",activationName) is NotFoundResult,"Registro ya vinculado no ofrece otra alta duplicada");
+var deniedActivation=Controller();deniedActivation.HttpContext.User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"hs@example.com"),new Claim(ClaimTypes.Role,"GestorHS")},"test"));
+Check(deniedActivation.MaestroNuevo("conductores",activationName) is ForbidResult,"Activación con alta respeta los permisos existentes del maestro");
+Console.WriteLine("PASS: document groups and contextual driver activation.");
 sealed class TestTempDataProvider : ITempDataProvider { public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){} }
 sealed class TestEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment {
  public string ContentRootPath {get;set;}="";public string WebRootPath {get;set;}="";public string EnvironmentName{get;set;}="Testing";public string ApplicationName{get;set;}="Check";

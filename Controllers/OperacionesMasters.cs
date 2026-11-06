@@ -96,12 +96,41 @@ public partial class OperacionesController
         return View(await query.OrderBy(x => x.Name).ThenBy(x => x.Id).Skip(pagination.Skip).Take(25).ToListAsync(cancellationToken));
     }
     [HttpGet]
-    public IActionResult MaestroNuevo(string type = "equipos") => !ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainMaster(User, type) ? Forbid() : OperationalMasterCatalog.Kinds.Contains(type) ? View(new OperationalMasterRecord { Kind = type }) : NotFound();
+    public IActionResult MaestroNuevo(string type = "equipos", string? documentDriver = null)
+    {
+        if (!ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainMaster(User, type)) return Forbid();
+        if (!OperationalMasterCatalog.Kinds.Contains(type)) return NotFound();
+        var model = new OperationalMasterRecord { Kind = type };
+        if (!string.IsNullOrWhiteSpace(documentDriver))
+        {
+            var source = ResolveArchivedDriverForActivation(type, documentDriver);
+            if (source == null) return NotFound();
+            ViewData["DocumentDriverName"] = source.Conductor;
+            model.Name = source.Conductor;
+            model.Tenure = source.Tenure;
+            model.Owner = source.Owner;
+        }
+        return View(model);
+    }
+    private ITServiceDeskApp.ViewModels.Operaciones.ControlDocumentosRowViewModel? ResolveArchivedDriverForActivation(string kind, string name)
+    {
+        if (kind != "conductores") return null;
+        var matches = BuildControlDocumentosModel().Filas.Where(x =>
+            NormalizeControlDocumentoKey(x.Conductor) == NormalizeControlDocumentoKey(name)).ToList();
+        return matches.Count == 1 && !matches[0].MasterId.HasValue && matches[0].IsInDeactivatedView ? matches[0] : null;
+    }
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> MaestroNuevo([Bind("Kind,Name,Plate,Tenure,Owner,FirstName,SecondName,FirstSurname,SecondSurname,CompanyClassification")] OperationalMasterRecord model, CancellationToken cancellationToken)
+    public async Task<IActionResult> MaestroNuevo([Bind("Kind,Name,Plate,Tenure,Owner,FirstName,SecondName,FirstSurname,SecondSurname,CompanyClassification")] OperationalMasterRecord model, CancellationToken cancellationToken, string? documentDriver = null)
     {
         if (!ITServiceDeskApp.Security.UserAccessProfiles.CanMaintainMaster(User, model.Kind)) return Forbid();
         if (!OperationalMasterCatalog.Kinds.Contains(model.Kind)) return BadRequest();
+        if (!string.IsNullOrWhiteSpace(documentDriver))
+        {
+            var source = ResolveArchivedDriverForActivation(model.Kind, documentDriver);
+            if (source == null) return BadRequest("El registro documental ya está vinculado o no está disponible. Actualiza Control de Documentos.");
+            ViewData["DocumentDriverName"] = source.Conductor;
+            model.SourceKey = OperationalMasterCatalog.Key("conductores", source.Conductor);
+        }
         ValidateMasterCompany(model);
         if (model.Kind == "conductores") ValidateDriverName(model);
         if (model.Kind == "equipos" && string.IsNullOrWhiteSpace(model.Plate)) ModelState.AddModelError(nameof(model.Plate), "La placa del cabezal es obligatoria.");
@@ -115,6 +144,11 @@ public partial class OperacionesController
         try { await _context.SaveChangesAsync(cancellationToken); }
         catch (DbUpdateException) { ModelState.AddModelError(string.Empty, "No se pudo guardar. Comprueba que el registro no exista e intenta nuevamente."); return View(model); }
         TempData["MasterOk"] = "Registro agregado correctamente.";
+        if (!string.IsNullOrWhiteSpace(documentDriver))
+        {
+            TempData["ControlDocumentosOk"] = "Conductor activado en el maestro y vinculado a sus documentos existentes.";
+            return RedirectToAction(nameof(ControlDocumentos));
+        }
         return RedirectToAction(nameof(Maestros), new { type = model.Kind });
     }
     private void ValidateDriverName(OperationalMasterRecord model)
