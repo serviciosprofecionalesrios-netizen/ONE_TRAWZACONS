@@ -2,6 +2,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 {
     public sealed class ControlDocumentosViewModel
     {
+        public bool IncludeInactive { get; set; }
         public string FuenteArchivo { get; set; } = string.Empty;
         public string? ErrorMessage { get; set; }
         public IReadOnlyList<string> EncabezadosCapacitacion { get; set; } = Array.Empty<string>();
@@ -22,6 +23,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosRowViewModel
     {
+        public bool? IsActive { get; set; }
         public IReadOnlyList<string> NombresOrigen { get; set; } = Array.Empty<string>();
         public int? MasterId { get; set; }
         public string MasterCode { get; set; } = "";
@@ -53,6 +55,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosEquipoGondolaRowViewModel
     {
+        public bool? IsActive { get; set; }
         public int? MasterId { get; set; }
         public string MasterCode { get; set; } = "";
         public int Id { get; set; }

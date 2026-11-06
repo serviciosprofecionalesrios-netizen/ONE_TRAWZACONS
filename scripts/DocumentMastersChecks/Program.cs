@@ -16,6 +16,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.DataProtection;
 void Check(bool pass,string name) { if(!pass) throw new Exception(name); Console.WriteLine("PASS: "+name); }
 using var db=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 var root=Path.Combine(Path.GetTempPath(),"document-master-check-"+Guid.NewGuid());
@@ -27,7 +30,7 @@ OperacionesController Controller() {
  };
 }
 IFormCollection Form(params (string,string)[] fields)=>new FormCollection(fields.ToDictionary(x=>x.Item1,x=>new StringValues(x.Item2)));
-ControlDocumentosViewModel Documents()=> (ControlDocumentosViewModel)typeof(OperacionesController).GetMethod("BuildControlDocumentosModel",BindingFlags.NonPublic|BindingFlags.Instance)!.Invoke(Controller(),null)!;
+ControlDocumentosViewModel Documents(bool includeInactive=false)=> (ControlDocumentosViewModel)typeof(OperacionesController).GetMethod("BuildControlDocumentosModel",BindingFlags.NonPublic|BindingFlags.Instance)!.Invoke(Controller(),new object[]{includeInactive})!;
 OperationalMasterCatalog.Seed(db);
 var driver=db.OperationalMasterRecords.First(x=>x.Kind=="conductores");
 var truck=db.OperationalMasterRecords.First(x=>x.Kind=="equipos");
@@ -153,7 +156,44 @@ foreach(var position in new[]{"Supervisor","Conductor"}){
  Controller().NuevoIngresoPersonal(Form(("master_record_id",driver.Id.ToString()),("tipo","1. Solicitud Ingreso"),("asunto",driver.Name),("cargo",position)));
  Check(Documents().EncabezadosCapacitacion.Any(Restricted)==(position=="Supervisor"),"Visibility follows recorded position: "+position);
 }
-Console.WriteLine("PASS: master-document integration and H&S training validity and applicability.");
+foreach(var kind in new[]{"conductores","equipos","gondolas"}){
+ var master=new OperationalMasterRecord{Kind=kind,Name="Document state "+kind,RecordKey="document-state:"+kind,Owner="Test",Tenure="Propio"};db.Add(master);db.SaveChanges();
+ var actor=Controller();
+ var disabled=await actor.MaestroEstado(master.Id,false,default,controlDocumentos:true,includeInactive:true) as RedirectToActionResult;
+ Check(disabled?.ActionName=="ControlDocumentos" && disabled.RouteValues?["includeInactive"] is true,"State change returns to documents and preserves inactive selection: "+kind);
+ Check(actor.TempData.ContainsKey("ControlDocumentosOk"),"Status confirmation appears in documents: "+kind);
+ Check(!db.OperationalMasterRecords.AsNoTracking().Single(x=>x.Id==master.Id).IsActive,"Document action persists deactivation in shared master: "+kind);
+ var all=Documents(true);
+ Check(all.IncludeInactive && (kind=="conductores" ? all.Filas.Any(x=>x.MasterId==master.Id && x.IsActive==false) : all.EquiposGondolas.Any(x=>x.MasterId==master.Id && x.IsActive==false)),"Inactive undocumented master can be found for reactivation: "+kind);
+ Check(kind=="conductores" ? !Documents().Filas.Any(x=>x.MasterId==master.Id) : !Documents().EquiposGondolas.Any(x=>x.MasterId==master.Id),"Default view retains existing active-only behavior for undocumented masters: "+kind);
+ await Controller().MaestroEstado(master.Id,true,default,controlDocumentos:true);
+ Check(db.OperationalMasterRecords.AsNoTracking().Single(x=>x.Id==master.Id).IsActive,"Document action reactivates original master ID: "+kind);
+ var forbidden=Controller();forbidden.HttpContext.User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"hs@example.com"),new Claim(ClaimTypes.Role,"GestorHS")},"test"));
+ Check(await forbidden.MaestroEstado(master.Id,false,default,controlDocumentos:true) is ForbidResult && master.IsActive,"Other HS users cannot bypass shared activation permissions: "+kind);
+}
+var documentedId=driver.Id;var requestCount=db.OperacionesIngresoPersonalSolicitudes.Count();
+await Controller().MaestroEstado(documentedId,false,default,controlDocumentos:true);
+Check(Documents().Filas.Single(x=>x.MasterId==documentedId).IsActive==false && db.OperacionesIngresoPersonalSolicitudes.Count()==requestCount,"Deactivating documented driver keeps history and marks inactive");
+await Controller().MaestroEstado(documentedId,true,default,controlDocumentos:true);
+var renderBuilder=Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(new Microsoft.AspNetCore.Builder.WebApplicationOptions{ApplicationName=typeof(OperacionesController).Assembly.FullName});
+renderBuilder.Services.AddControllersWithViews().AddApplicationPart(typeof(OperacionesController).Assembly);
+renderBuilder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+await using var renderApp=renderBuilder.Build();using var renderScope=renderApp.Services.CreateScope();
+var razor=renderScope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Mvc.Razor.IRazorViewEngine>();
+async Task<string> StateButtons(int? masterId,bool? active,string email){
+ var http=new DefaultHttpContext{RequestServices=renderScope.ServiceProvider,User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,email),new Claim(ClaimTypes.Role,"GestorHS")},"test"))};
+ var routes=new RouteData();routes.Routers.Add(new RouteCollection());routes.Values["controller"]="Operaciones";
+ var action=new ActionContext(http,routes,new ActionDescriptor());var view=razor.GetView(null,"/Views/Operaciones/_DocumentMasterState.cshtml",false);
+ Check(view.Success,"Actual document activation controls resolve");using var writer=new StringWriter();
+ var data=new ViewDataDictionary<(int? Id,bool? IsActive,bool IncludeInactive)>(new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),new Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary()){Model=(masterId,active,true)};
+ await view.View!.RenderAsync(new ViewContext(action,view.View,data,new TempDataDictionary(http,new TestTempDataProvider()),writer,new HtmlHelperOptions()));return writer.ToString();
+}
+var activeHtml=await StateButtons(driver.Id,true,"leslieantonioespinoza@trawzacons.com");
+Check(activeHtml.Contains("Desactivar") && activeHtml.Contains("__RequestVerificationToken") && activeHtml.Contains("controlDocumentos"),"Leslie sees a protected deactivate form returning to documents");
+Check((await StateButtons(driver.Id,false,"leslieantonioespinoza@trawzacons.com")).Contains("Activar"),"Inactive master renders activation button");
+Check(!(await StateButtons(driver.Id,true,"hs@example.com")).Contains("<form"),"HS user without shared permission sees no activation form");
+Check(!(await StateButtons(null,null,"leslieantonioespinoza@trawzacons.com")).Contains("<form"),"Unlinked historical document cannot change another master");
+Console.WriteLine("PASS: master-document integration, training rules and document master activation.");
 sealed class TestTempDataProvider : ITempDataProvider { public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){} }
 sealed class TestEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment {
  public string ContentRootPath {get;set;}="";public string WebRootPath {get;set;}="";public string EnvironmentName{get;set;}="Testing";public string ApplicationName{get;set;}="Check";

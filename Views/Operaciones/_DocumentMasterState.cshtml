@@ -1,0 +1,18 @@
+@model (int? Id, bool? IsActive, bool IncludeInactive)
+@using ITServiceDeskApp.Security
+@if (Model.Id.HasValue && Model.IsActive.HasValue)
+{
+    <div class="d-flex flex-wrap align-items-center gap-2 my-1">
+        <span class="badge @(Model.IsActive.Value ? "bg-success" : "bg-secondary")">@(Model.IsActive.Value ? "Activo" : "Inactivo")</span>
+        @if (UserAccessProfiles.CanChangeMasterState(User))
+        {
+            <form asp-controller="Operaciones" asp-action="MaestroEstado" method="post" class="m-0">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="active" value="@((!Model.IsActive.Value).ToString().ToLowerInvariant())" />
+                <input type="hidden" name="controlDocumentos" value="true" />
+                <input type="hidden" name="includeInactive" value="@Model.IncludeInactive.ToString().ToLowerInvariant()" />
+                <button type="submit" class="btn btn-sm @(Model.IsActive.Value ? "btn-outline-danger" : "btn-outline-success")">@(Model.IsActive.Value ? "Desactivar" : "Activar")</button>
+            </form>
+        }
+    </div>
+}

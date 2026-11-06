@@ -709,9 +709,9 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ControlDocumentos()
+        public async Task<IActionResult> ControlDocumentos(bool includeInactive = false)
         {
-            var model = BuildControlDocumentosModel();
+            var model = BuildControlDocumentosModel(includeInactive);
             model.AlertasResumen = await EjecutarAlertasControlDocumentosAsync(model);
             return View(model);
         }
@@ -6436,10 +6436,10 @@ namespace ITServiceDeskApp.Controllers
             return builder.ToString().Normalize(NormalizationForm.FormC);
         }
 
-        private ControlDocumentosViewModel BuildControlDocumentosModel()
+        private ControlDocumentosViewModel BuildControlDocumentosModel(bool includeInactive = false)
         {
             var model = new ControlDocumentosViewModel {
-                FuenteArchivo = "Maestros y registros documentales", FechaGeneracion = DateTime.Now,
+                FuenteArchivo = "Maestros y registros documentales", FechaGeneracion = DateTime.Now, IncludeInactive = includeInactive,
                 EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders()
             };
             var excelPath = Path.Combine(_environment.ContentRootPath, "Data", "Operaciones", "Capacitaciones C-SAFE.xlsx");
@@ -6467,17 +6467,17 @@ namespace ITServiceDeskApp.Controllers
             var capturedTrainingHeaders = _context.OperacionesIngresoPersonalSolicitudes.AsNoTracking().Select(x => x.PayloadJson).AsEnumerable()
                 .Select(DeserializeEquipoGondolaPayload).SelectMany(payload => HsTrainingDocumentFields.Where(field => !string.IsNullOrWhiteSpace(FirstPayloadValue(payload, field.Value))).Select(field => field.Key));
             model.EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders().Concat(model.EncabezadosCapacitacion).Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
-            model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion);
+            model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion, includeInactive);
             HideUnusedControlDocumentoTrainings(model);
             model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
             model.HistorialCambios = LoadControlDocumentosHistory().OrderByDescending(x => x.FechaCambio).Take(300).ToList();
             model.TendenciaSemanal = BuildControlDocumentosTrendByDay(model.HistorialCambios, 7);
             model.TendenciaMensual = BuildControlDocumentosTrendByMonth(model.HistorialCambios, 6);
-            model.EquiposGondolas = BuildControlDocumentosEquipoGondolaRows();
+            model.EquiposGondolas = BuildControlDocumentosEquipoGondolaRows(includeInactive);
             return model;
         }
 
-        private IReadOnlyList<ControlDocumentosEquipoGondolaRowViewModel> BuildControlDocumentosEquipoGondolaRows()
+        private IReadOnlyList<ControlDocumentosEquipoGondolaRowViewModel> BuildControlDocumentosEquipoGondolaRows(bool includeInactive = false)
         {
             var requests = _context.OperacionesIngresoEquipoGondolaSolicitudes.AsNoTracking().OrderByDescending(x => x.UpdatedAt).ToList();
             var rows = requests.Select(ToControlDocumentosEquipoGondolaRow).ToList();
@@ -6493,7 +6493,7 @@ namespace ITServiceDeskApp.Controllers
             foreach (var master in masters)
             {
                 var matches = requests.Where(x => assigned[x.Id] == master.Id).ToList();
-                if (!master.IsActive && matches.Count == 0) continue;
+                if (!includeInactive && !master.IsActive && matches.Count == 0) continue;
                 var row = matches.Count > 0 ? ToControlDocumentosEquipoGondolaRow(matches[0]) : new ControlDocumentosEquipoGondolaRowViewModel {
                     Tipo = master.Kind == "equipos" ? "Ingreso de Equipo" : "Ingreso de Gondola", Asunto = master.Name,
                     Estado = "Pendiente de completar", UpdatedAt = master.CreatedAt,
@@ -6509,6 +6509,7 @@ namespace ITServiceDeskApp.Controllers
                 }
                 var ids = matches.Select(x => x.Id).ToHashSet(); rows.RemoveAll(x => ids.Contains(x.Id));
                 row.MasterId = master.Id; row.MasterCode = master.DisplayId;
+                row.IsActive = master.IsActive;
                 row.Tenencia = master.Tenure; row.Propietario = master.Owner;
                 if (master.Kind == "equipos") { row.CodigoCabezal = master.Name; row.PlacaCabezal = master.Plate ?? ""; }
                 else row.PlacaGondola = master.Name;
@@ -6670,7 +6671,7 @@ namespace ITServiceDeskApp.Controllers
             };
         }
 
-        private IReadOnlyList<ControlDocumentosRowViewModel> BuildControlDocumentosPersonaRows(IReadOnlyList<string> encabezados)
+        private IReadOnlyList<ControlDocumentosRowViewModel> BuildControlDocumentosPersonaRows(IReadOnlyList<string> encabezados, bool includeInactive = false)
         {
             var headers = encabezados.Count > 0
                 ? encabezados
@@ -6690,7 +6691,7 @@ namespace ITServiceDeskApp.Controllers
                 var key = $"id:{master.Id}";
                 if (!groups.TryGetValue(key, out var persona))
                 {
-                    if (!master.IsActive) continue;
+                    if (!includeInactive && !master.IsActive) continue;
                     persona = new ControlDocumentosPersonaRecord();
                     groups[key] = persona;
                 }
@@ -6729,6 +6730,7 @@ namespace ITServiceDeskApp.Controllers
                     return new ControlDocumentosRowViewModel
                     {
                         Conductor = persona.Nombre,
+                        IsActive = masters.FirstOrDefault(master => master.Id == persona.MasterId)?.IsActive,
                         NombresOrigen = persona.NombresOrigen,
                         Datos = persona.Datos,
                         MasterId = persona.MasterId, MasterCode = persona.MasterCode, RequestId = persona.RequestId, Tenure = persona.Tenure, Owner = persona.Owner,

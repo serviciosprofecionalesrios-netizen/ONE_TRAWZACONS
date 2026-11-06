@@ -1413,6 +1413,10 @@
     }
 
     <div class="doc-actions">
+        <form asp-controller="Operaciones" asp-action="ControlDocumentos" method="get" class="d-flex align-items-center gap-2">
+            <label class="form-check-label"><input type="checkbox" name="includeInactive" value="true" checked="@Model.IncludeInactive" class="form-check-input" /> Incluir inactivos</label>
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Aplicar</button>
+        </form>
         <button type="button"
                 class="btn btn-sm btn-primary"
                 data-bs-toggle="collapse"
@@ -1702,7 +1706,9 @@
                                 <td>@item.Tenencia</td><td>@item.Propietario</td>
                                 @if(isEquipo){<td>@item.VencimientoEmisionGases</td><td>@item.VencimientoInspeccionMecanica</td><td>@item.VencimientoSeguroVehicular</td>}
                                 <td>@item.FechaInicio</td><td>@item.FechaFin</td><td>@(string.IsNullOrWhiteSpace(item.PorcentajeRealizado) ? "—" : item.PorcentajeRealizado + "%")</td>
-                                <td><a class="btn btn-sm btn-outline-primary text-nowrap" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-kind="@kind" asp-route-masterId="@item.MasterId" asp-route-requestId="@(item.Id > 0 ? item.Id : (int?)null)">Completar / editar</a></td>
+                                <td><a class="btn btn-sm btn-outline-primary text-nowrap" asp-controller="Operaciones" asp-action="NuevoIngresoEquipoGondola" asp-route-kind="@kind" asp-route-masterId="@item.MasterId" asp-route-requestId="@(item.Id > 0 ? item.Id : (int?)null)">Completar / editar</a>
+                                    @await Html.PartialAsync("_DocumentMasterState", (Id: item.MasterId, IsActive: item.IsActive, IncludeInactive: Model.IncludeInactive))
+                                </td>
                             </tr>
                         }
                         @if(rows.Count == 0){<tr><td colspan="@(isEquipo ? 16 : 11)" class="text-muted">No hay @(isEquipo ? "equipos" : "góndolas") registrados.</td></tr>}
@@ -1963,6 +1969,7 @@
                                         <i class="bi bi-layout-sidebar-inset-reverse"></i>
                                     </button>
                                 </div>
+                                @await Html.PartialAsync("_DocumentMasterState", (Id: fila.MasterId, IsActive: fila.IsActive, IncludeInactive: Model.IncludeInactive))
                             </td>
                             @for (var capIndex = 0; capIndex < Model.EncabezadosCapacitacion.Count; capIndex++)
                             {

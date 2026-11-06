@@ -180,14 +180,15 @@ public partial class OperacionesController
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> MaestroEstado(int id, bool active, CancellationToken cancellationToken)
+    public async Task<IActionResult> MaestroEstado(int id, bool active, CancellationToken cancellationToken, bool controlDocumentos = false, bool includeInactive = false)
     {
         if (!ITServiceDeskApp.Security.UserAccessProfiles.CanChangeMasterState(User)) return Forbid();
         var row=await _context.OperationalMasterRecords.SingleOrDefaultAsync(x=>x.Id==id,cancellationToken);
         if(row==null || !OperationalMasterCatalog.Kinds.Contains(row.Kind)) return NotFound();
         row.IsActive=active;
         await _context.SaveChangesAsync(cancellationToken);
-        TempData["MasterOk"]=$"{OperationalMasterCatalog.NameLabel(row.Kind)} {row.DisplayId} {(active?"activado":"desactivado")}. Se conserva su historial.";
+        TempData[controlDocumentos ? "ControlDocumentosOk" : "MasterOk"]=$"{OperationalMasterCatalog.NameLabel(row.Kind)} {row.DisplayId} {(active?"activado":"desactivado")}. Se conserva su historial.";
+        if (controlDocumentos) return RedirectToAction(nameof(ControlDocumentos), new { includeInactive });
         return RedirectToAction(nameof(Maestros),new{type=row.Kind,status="todos"});
     }
 
