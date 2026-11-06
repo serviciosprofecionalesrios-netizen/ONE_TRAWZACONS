@@ -808,7 +808,10 @@
         left: 0;
         z-index: 4;
         min-width: 360px;
-        background: inherit;
+        width: 360px;
+        max-width: 360px;
+        white-space: normal;
+        background: #ffffff;
         box-shadow: 5px 0 10px rgba(15, 23, 42, 0.08);
     }
 
@@ -820,7 +823,7 @@
         font-weight: 700;
         color: #1f2937;
         display: grid;
-        grid-template-columns: minmax(170px, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 0.4rem;
         padding: 0;
@@ -829,10 +832,43 @@
     }
 
     .doc-conductor-name {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        min-width: 0;
+        line-height: 1.4;
     }
+    .doc-conductor-meta {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem 0.45rem;
+        min-width: 0;
+        font-weight: 500;
+    }
+    .doc-conductor-meta small { white-space: normal; overflow-wrap: anywhere; }
+    .doc-conductor-cell-actions { overflow: hidden; }
+    .doc-scroll-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem;
+        border: 1px solid #dce4f0;
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        background: #f8fbff;
+        box-shadow: 0 3px 8px #0f172a0d;
+    }
+    .doc-scroll-toolbar[hidden] { display: none; }
+    .doc-scroll-caption { font-size: 0.72rem; font-weight: 700; color: #475569; white-space: nowrap; }
+    .doc-top-scroll { flex: 1; min-width: 0; height: 22px; overflow-x: scroll; overflow-y: hidden; scrollbar-color: #64748b #e2e8f0; }
+    .doc-top-scroll-track { height: 1px; }
+    .doc-top-scroll:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+    .doc-scroll-toolbar .btn { flex: 0 0 auto; min-width: 32px; }
+
 
     .doc-conductor-state {
         display: inline-flex;
@@ -871,7 +907,7 @@
     .doc-conductor-cell-actions {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
+        align-items: start;
         gap: 0.35rem;
         width: 100%;
     }
@@ -1356,12 +1392,10 @@
         }
 
         .doc-conductor-btn {
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: minmax(0, 1fr) auto;
         }
 
-        .doc-conductor-state {
-            display: none;
-        }
+        .doc-scroll-caption { display: none; }
 
         .doc-op-badge {
             font-size: 0.62rem;
@@ -1870,7 +1904,13 @@
             </div>
         </div>
 
-        <div class="doc-table-wrap doc-panel-personas">
+        <div class="doc-scroll-toolbar doc-panel-personas" id="docScrollToolbar" hidden>
+            <span class="doc-scroll-caption">Desplazar tabla</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="docScrollLeft" aria-label="Mover tabla a la izquierda">←</button>
+            <div class="doc-top-scroll" id="docTopScroll" tabindex="0" role="region" aria-label="Barra superior de desplazamiento horizontal de documentos"><div class="doc-top-scroll-track" id="docTopScrollTrack"></div></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="docScrollRight" aria-label="Mover tabla a la derecha">→</button>
+        </div>
+        <div class="doc-table-wrap doc-panel-personas" id="docTableViewport" tabindex="0" role="region" aria-label="Tabla de documentos de conductores">
             <table class="table table-sm align-middle doc-table">
                 <thead>
                     <tr>
@@ -1954,13 +1994,15 @@
                                             aria-expanded="false"
                                             aria-controls="@detailId">
                                         <span class="doc-conductor-name">@fila.Conductor</span>
-                                        @if(fila.MasterId.HasValue){<small class="text-muted">@fila.MasterCode</small>}
-                                        else { <small class="text-warning">Pendiente de vincular con el maestro</small> }
-                                        <span class="doc-conductor-state doc-conductor-state--@conductorEstadoClass">
-                                            <span class="doc-semaforo-dot doc-semaforo-dot--@conductorEstadoClass"></span>
-                                            <span>@conductorEstadoLabel</span>
+                                        <i class="bi bi-chevron-down doc-chevron" aria-hidden="true"></i>
+                                        <span class="doc-conductor-meta">
+                                            @if(fila.MasterId.HasValue){<small class="text-muted">@fila.MasterCode</small>}
+                                            else { <small class="text-warning">Pendiente de vincular con el maestro</small> }
+                                            <span class="doc-conductor-state doc-conductor-state--@conductorEstadoClass">
+                                                <span class="doc-semaforo-dot doc-semaforo-dot--@conductorEstadoClass"></span>
+                                                <span>@conductorEstadoLabel</span>
+                                            </span>
                                         </span>
-                                        <i class="bi bi-chevron-down doc-chevron"></i>
                                     </button>
                                     <button type="button"
                                             class="btn btn-sm btn-outline-dark doc-panel-btn js-open-drawer"
@@ -2207,6 +2249,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/document-table-scroll.js" asp-append-version="true" defer></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             var drawerRows = @Html.Raw(drawerRowsJson);
