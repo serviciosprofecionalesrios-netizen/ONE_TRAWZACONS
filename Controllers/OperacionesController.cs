@@ -709,10 +709,20 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ControlDocumentos(bool includeInactive = false)
+        public async Task<IActionResult> ControlDocumentos(bool includeInactive = false, string driverView = "principal")
         {
-            var model = BuildControlDocumentosModel(includeInactive);
-            model.AlertasResumen = await EjecutarAlertasControlDocumentosAsync(model);
+            var model = BuildControlDocumentosModelCore(includeInactive, calendarOnly: false, allDrivers: true);
+            model.DriverView = driverView == "desactivados" ? "desactivados" : "principal";
+            model.MainDriverCount = model.Filas.Count(x => !x.IsInDeactivatedView);
+            model.DeactivatedDriverCount = model.Filas.Count(x => x.IsInDeactivatedView);
+            model.Filas = model.Filas.Where(x => x.IsInDeactivatedView == (model.DriverView == "desactivados")).ToList();
+            HideUnusedControlDocumentoTrainings(model);
+            model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
+            // Historical/unlinked records remain available for consultation, without dispatching operational alerts.
+            if (model.DriverView == "principal")
+                model.AlertasResumen = await EjecutarAlertasControlDocumentosAsync(new ControlDocumentosViewModel {
+                    Filas = model.Filas.Where(x => x.IsActive == true).ToList()
+                });
             return View(model);
         }
 
@@ -6439,7 +6449,7 @@ namespace ITServiceDeskApp.Controllers
         private ControlDocumentosViewModel BuildControlDocumentosModel(bool includeInactive = false)
             => BuildControlDocumentosModelCore(includeInactive, calendarOnly: false);
 
-        private ControlDocumentosViewModel BuildControlDocumentosModelCore(bool includeInactive, bool calendarOnly)
+        private ControlDocumentosViewModel BuildControlDocumentosModelCore(bool includeInactive, bool calendarOnly, bool allDrivers = false)
         {
             var model = new ControlDocumentosViewModel {
                 FuenteArchivo = "Maestros y registros documentales", FechaGeneracion = DateTime.Now, IncludeInactive = includeInactive,
@@ -6470,7 +6480,7 @@ namespace ITServiceDeskApp.Controllers
             var capturedTrainingHeaders = _context.OperacionesIngresoPersonalSolicitudes.AsNoTracking().Select(x => x.PayloadJson).AsEnumerable()
                 .Select(DeserializeEquipoGondolaPayload).SelectMany(payload => HsTrainingDocumentFields.Where(field => !string.IsNullOrWhiteSpace(FirstPayloadValue(payload, field.Value))).Select(field => field.Key));
             model.EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders().Concat(model.EncabezadosCapacitacion).Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
-            model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion, includeInactive);
+            model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion, includeInactive || allDrivers);
             HideUnusedControlDocumentoTrainings(model);
             if (calendarOnly) return model;
             model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
@@ -6735,6 +6745,10 @@ namespace ITServiceDeskApp.Controllers
                     {
                         Conductor = persona.Nombre,
                         IsActive = masters.FirstOrDefault(master => master.Id == persona.MasterId)?.IsActive,
+                        // Imported CSV history carries its original request reference. Runtime admissions
+                        // without that provenance stay in the main view, even before master registration.
+                        IsNewAdmission = !persona.Datos.Keys.Any(k => NormalizeHeader(k) == "solicituddeorigen") &&
+                            (persona.RequestId.HasValue || persona.MasterId.HasValue),
                         NombresOrigen = persona.NombresOrigen,
                         Datos = persona.Datos,
                         MasterId = persona.MasterId, MasterCode = persona.MasterCode, RequestId = persona.RequestId, Tenure = persona.Tenure, Owner = persona.Owner,

@@ -1448,7 +1448,8 @@
 
     <div class="doc-actions">
         <form asp-controller="Operaciones" asp-action="ControlDocumentos" method="get" class="d-flex align-items-center gap-2">
-            <label class="form-check-label"><input type="checkbox" name="includeInactive" value="true" checked="@Model.IncludeInactive" class="form-check-input" /> Incluir inactivos</label>
+            <input type="hidden" name="driverView" value="@Model.DriverView" />
+            <label class="form-check-label"><input type="checkbox" name="includeInactive" value="true" checked="@Model.IncludeInactive" class="form-check-input" /> Incluir equipos y góndolas inactivos</label>
             <button type="submit" class="btn btn-sm btn-outline-secondary">Aplicar</button>
         </form>
         <button type="button"
@@ -1568,6 +1569,17 @@
         </div>
     </div>
 
+    <div class="doc-panel-personas mb-3">
+        <nav class="d-flex flex-wrap gap-2 mb-2" aria-label="Grupos de conductores">
+            <a asp-action="ControlDocumentos" asp-route-driverView="principal" asp-route-includeInactive="@Model.IncludeInactive" asp-route-view="personas" class="btn btn-sm @(Model.DriverView == "principal" ? "btn-primary" : "btn-outline-primary")" aria-current="@(Model.DriverView == "principal" ? "page" : null)">Conductores · @Model.MainDriverCount</a>
+            <a asp-action="ControlDocumentos" asp-route-driverView="desactivados" asp-route-includeInactive="@Model.IncludeInactive" asp-route-view="personas" class="btn btn-sm @(Model.DriverView == "desactivados" ? "btn-secondary" : "btn-outline-secondary")" aria-current="@(Model.DriverView == "desactivados" ? "page" : null)">Conductores desactivados · @Model.DeactivatedDriverCount</a>
+        </nav>
+        @if (Model.DriverView == "desactivados") {
+            <p class="small text-muted mb-0">Registros pendientes de vincular al maestro y conductores inactivos. Cuando se vinculen a un conductor activo del maestro, aparecerán en la vista principal.</p>
+        } else {
+            <p class="small text-muted mb-0">Conductores activos y nuevos ingresos. La etiqueta «Nuevo ingreso» identifica registros nuevos sin antecedentes en los archivos importados.</p>
+        }
+    </div>
     <div class="doc-view-switch" role="group" aria-label="Cambiar vista de control documental">
         <button type="button"
                 class="btn btn-sm btn-outline-primary js-doc-view-switch is-active"
@@ -1997,7 +2009,8 @@
                                         <i class="bi bi-chevron-down doc-chevron" aria-hidden="true"></i>
                                         <span class="doc-conductor-meta">
                                             @if(fila.MasterId.HasValue){<small class="text-muted">@fila.MasterCode</small>}
-                                            else { <small class="text-warning">Pendiente de vincular con el maestro</small> }
+                                            else if (!fila.IsNewAdmission) { <small class="text-warning">Pendiente de vincular con el maestro</small> }
+                                            @if (fila.IsNewAdmission && !fila.IsInDeactivatedView) { <span class="badge bg-info text-dark">Nuevo ingreso</span> }
                                             <span class="doc-conductor-state doc-conductor-state--@conductorEstadoClass">
                                                 <span class="doc-semaforo-dot doc-semaforo-dot--@conductorEstadoClass"></span>
                                                 <span>@conductorEstadoLabel</span>

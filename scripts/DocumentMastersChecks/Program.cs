@@ -193,7 +193,32 @@ Check(activeHtml.Contains("Desactivar") && activeHtml.Contains("__RequestVerific
 Check((await StateButtons(driver.Id,false,"leslieantonioespinoza@trawzacons.com")).Contains("Activar"),"Inactive master renders activation button");
 Check(!(await StateButtons(driver.Id,true,"hs@example.com")).Contains("<form"),"HS user without shared permission sees no activation form");
 Check(!(await StateButtons(null,null,"leslieantonioespinoza@trawzacons.com")).Contains("<form"),"Unlinked historical document cannot change another master");
-Console.WriteLine("PASS: master-document integration, training rules and document master activation.");
+// Public document views must partition existing history without changing master states.
+var legacyName="Histórico sin vínculo prueba";
+var importedPath=Path.Combine(root,"Data","Operaciones","ControlDocumentosPersonas.json");
+var importedRows=JsonSerializer.Deserialize<List<Dictionary<string,object>>>(File.ReadAllText(importedPath))!;
+importedRows.Add(new(){["Nombre"]=legacyName,["Datos"]=new Dictionary<string,string>{{"Solicitud de origen","csv-fixture"}},["Fechas"]=new Dictionary<string,string>{{"IPER","20/10/2026"}},["CreatedAt"]="2026-10-20T00:00:00",["UpdatedAt"]="2026-10-20T00:00:00"});
+File.WriteAllText(importedPath,JsonSerializer.Serialize(importedRows));
+var newName="Ingreso nuevo sin catálogo prueba";
+db.OperacionesIngresoPersonalSolicitudes.Add(new(){Tipo="Control documentos H&S - Persona",Asunto=newName,SolicitanteNombre=newName,PayloadJson=JsonSerializer.Serialize(new Dictionary<string,string[]>{{"nombres_apellidos",new[]{newName}}}),CreatedAt=DateTime.Now,UpdatedAt=DateTime.Now});
+var inactiveMaster=new OperationalMasterRecord{Kind="conductores",Name="Inactivo sin documentos prueba",RecordKey="inactive-group-fixture",IsActive=false};
+db.Add(inactiveMaster);db.SaveChanges();
+var masterStates=db.OperationalMasterRecords.AsNoTracking().ToDictionary(x=>x.Id,x=>x.IsActive);
+var principal=(ControlDocumentosViewModel)((ViewResult)await Controller().ControlDocumentos()).Model!;
+var archived=(ControlDocumentosViewModel)((ViewResult)await Controller().ControlDocumentos(driverView:"desactivados")).Model!;
+Check(!principal.Filas.Any(x=>x.Conductor==legacyName)&&archived.Filas.Any(x=>x.Conductor==legacyName),"Histórico sin vínculo se consulta sólo en conductores desactivados");
+Check(principal.Filas.Any(x=>x.Conductor==newName&&x.IsNewAdmission)&&!archived.Filas.Any(x=>x.Conductor==newName),"Nuevo ingreso sin antecedentes permanece en la vista principal");
+Check(archived.Filas.Any(x=>x.MasterId==inactiveMaster.Id)&&!principal.Filas.Any(x=>x.MasterId==inactiveMaster.Id),"Maestro inactivo sin documentos también aparece en desactivados");
+Check(principal.Filas.All(x=>!x.IsInDeactivatedView)&&archived.Filas.All(x=>x.IsInDeactivatedView),"Las dos vistas son disjuntas y sus KPI usan sólo sus filas");
+Check(principal.MainDriverCount==principal.Filas.Count&&principal.DeactivatedDriverCount==archived.Filas.Count,"Contadores de navegación coinciden con los listados");
+Check(db.OperationalMasterRecords.AsNoTracking().All(x=>x.IsActive==masterStates[x.Id]),"Clasificar registros no modifica estados reales");
+var linkedMaster=new OperationalMasterRecord{Kind="conductores",Name=legacyName,RecordKey=OperationalMasterCatalog.Key("conductores",legacyName),IsActive=true};db.Add(linkedMaster);db.SaveChanges();
+var linkedView=(ControlDocumentosViewModel)((ViewResult)await Controller().ControlDocumentos()).Model!;
+var afterLinkArchive=(ControlDocumentosViewModel)((ViewResult)await Controller().ControlDocumentos(driverView:"desactivados")).Model!;
+var linkedRow=linkedView.Filas.Single(x=>x.MasterId==linkedMaster.Id);
+Check(linkedRow.Capacitaciones.Single(x=>x.NombreCapacitacion=="IPER").FechaIso=="2026-10-20"&&!afterLinkArchive.Filas.Any(x=>x.Conductor==legacyName),"Alta en maestro vincula automáticamente el histórico conservando sus fechas");
+Check(!linkedRow.IsNewAdmission,"Histórico vinculado conserva su procedencia y no se etiqueta como nuevo");
+Console.WriteLine("PASS: master-document integration, training rules, activation and driver view groups.");
 sealed class TestTempDataProvider : ITempDataProvider { public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){} }
 sealed class TestEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment {
  public string ContentRootPath {get;set;}="";public string WebRootPath {get;set;}="";public string EnvironmentName{get;set;}="Testing";public string ApplicationName{get;set;}="Check";

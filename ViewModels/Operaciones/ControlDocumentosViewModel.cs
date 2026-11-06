@@ -3,6 +3,9 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
     public sealed class ControlDocumentosViewModel
     {
         public bool IncludeInactive { get; set; }
+        public string DriverView { get; set; } = "principal";
+        public int MainDriverCount { get; set; }
+        public int DeactivatedDriverCount { get; set; }
         public string FuenteArchivo { get; set; } = string.Empty;
         public string? ErrorMessage { get; set; }
         public IReadOnlyList<string> EncabezadosCapacitacion { get; set; } = Array.Empty<string>();
@@ -24,6 +27,9 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
     public sealed class ControlDocumentosRowViewModel
     {
         public bool? IsActive { get; set; }
+        public bool IsNewAdmission { get; set; }
+        public bool IsInDeactivatedView => IsActive == false ||
+            (MasterId.HasValue ? !IsActive.HasValue : !IsNewAdmission);
         public IReadOnlyList<string> NombresOrigen { get; set; } = Array.Empty<string>();
         public int? MasterId { get; set; }
         public string MasterCode { get; set; } = "";
