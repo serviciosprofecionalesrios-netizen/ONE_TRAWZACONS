@@ -16,7 +16,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
         public int TotalConductores => Filas.Count;
         public int TotalCapacitaciones => EncabezadosCapacitacion.Count;
-        public int TotalRegistros => TotalConductores * TotalCapacitaciones;
+        public int TotalRegistros => Filas.Sum(row => row.Capacitaciones.Count(cap => cap.Aplica));
         public int TotalEquiposGondolas => EquiposGondolas.Count;
     }
 
@@ -37,6 +37,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosCapacitacionEstadoViewModel
     {
+        public bool Aplica { get; set; } = true;
         public string NombreCapacitacion { get; set; } = string.Empty;
         public string Fecha { get; set; } = "-";
         public string FechaIso { get; set; } = string.Empty;

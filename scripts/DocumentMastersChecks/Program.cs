@@ -92,13 +92,13 @@ var importDirectory=Path.Combine(root,"Data","Operaciones");Directory.CreateDire
 var importedTarget=db.OperationalMasterRecords.First(x=>x.Kind=="conductores" && x.IsActive && x.Id!=driver.Id);
 File.WriteAllText(Path.Combine(importDirectory,"ControlDocumentosPersonas.json"),JsonSerializer.Serialize(new[]{
  new {Nombre="Nombre alternativo confirmado",SourceKey=driver.SourceKey,MasterId=(int?)null,Fechas=new Dictionary<string,string>{{"IPER","01/09/2026"}},Datos=new Dictionary<string,string>{{"Cargo","Operador"}}},
- new {Nombre=driver.Name,SourceKey=(string?)null,MasterId=(int?)importedTarget.Id,Fechas=new Dictionary<string,string>{{"ATS","02/09/2026"}},Datos=new Dictionary<string,string>()}
+ new {Nombre=driver.Name,SourceKey=(string?)null,MasterId=(int?)importedTarget.Id,Fechas=new Dictionary<string,string>{{"Prevención de Incendios","02/09/2026"}},Datos=new Dictionary<string,string>()}
 }));
 var linked=Documents();
 Check(linked.TotalConductores==32,"Confirmed imported alias joins existing TW driver without adding a duplicate");
 Check(linked.Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="IPER").FechaIso=="2026-09-01","Imported training retained on master driver");
 Check(linked.Filas.Single(x=>x.MasterId==driver.Id).Datos["Cargo"]=="Operador","Imported profile retained after merging with existing document");
-Check(linked.Filas.Single(x=>x.MasterId==importedTarget.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="ATS").FechaIso=="2026-09-02" && !linked.Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="ATS").TieneFecha,"Explicit master ID wins over a conflicting name without mixing people's training");
+Check(linked.Filas.Single(x=>x.MasterId==importedTarget.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="Prevención de Incendios").FechaIso=="2026-09-02" && !linked.Filas.Single(x=>x.MasterId==driver.Id).Capacitaciones.Single(x=>x.NombreCapacitacion=="Prevención de Incendios").TieneFecha,"Explicit master ID wins over a conflicting name without mixing people's training");
 var catalog=db.OperationalMasterRecords.AsNoTracking().ToList();
 Check(OperationalMasterIdentity.Resolve(catalog,"conductores",driver.Id,other.Name)?.Id==driver.Id,"Master ID remains authoritative after a name change");
 Check(OperationalMasterIdentity.Resolve(catalog,"conductores",truck.Id,driver.Name)==null,"ID from another category cannot fall back to matching name");
@@ -127,7 +127,33 @@ foreach(var entry in new[]{("leslieantonioespinoza@trawzacons.com","SupervisorHS
   new AccessProfileAuthorizationFilter().OnAuthorization(ctx);Check(ctx.Result is ForbidResult,"HS cannot modify operational masters");
  }
 }
-Console.WriteLine("PASS: master-document integration, real database stores (isolated InMemory), defaults, persistence, stable IDs, duplicate prevention, legacy records and H&S permissions.");
+var stateMethod=typeof(OperacionesController).GetMethod("BuildControlDocumentoCapacitacionEstado",BindingFlags.NonPublic|BindingFlags.Static)!;
+ControlDocumentosCapacitacionEstadoViewModel Training(string header,string date)=>(ControlDocumentosCapacitacionEstadoViewModel)stateMethod.Invoke(null,new object[]{header,date})!;
+foreach(var header in new[]{"Inducción General de Sitio","Inducción General","Primeros Auxilios Teórico","Primeros Auxilios Práctico"})
+ Check(Training(header,"01/03/2023").FechaVencimiento=="01/03/2026","Three calendar years across leap year: "+header);
+Check(Training("Primeros Auxilios Práctico","29/02/2024").FechaVencimiento=="28/02/2027","Leap-day training expires on the third anniversary");
+foreach(var header in new[]{"NCS","Uso de Formato de Transporte","Educación Vial","Oper. Traslado Mina a  Mina","Operación de Traslado Mina a Mina","Gestión de Fatiga"})
+ Check(Training(header,"01/03/2023").FechaVencimiento=="01/03/2025","Two calendar years across leap year: "+header);
+bool Restricted(string header)=>header is "ATS" or "Manejo de Equipos Livianos" or "Manejo Defensivo (V. Liviano)" or "Manejo Defensivo Liviano";
+foreach(var header in new[]{"IPER","Manejo de Residuos Sólidos","Manejo de Hidrocarburos","Sistema de Gestión Social","Sistema 5 puntos","Respuesta ante Emergencia","Prevención de Incendios","Manejo Defensivo (V. Pesado)","Otra capacitación","ATS","Manejo de Equipos Livianos","Manejo Defensivo (V. Liviano)"})
+ Check(Training(header,"01/03/2023").FechaVencimiento=="01/03/2028","Other training lasts five calendar years: "+header);
+Check(Training("IPER","29/02/2024").FechaVencimiento=="28/02/2029","Five-year training handles leap-day anniversaries");
+foreach(var header in new[]{"Cedula","INSS","Contrato de Trabajo","Licencia","Examen medico"})
+ Check(Training(header,"01/03/2023").FechaVencimiento=="28/02/2025","Personal document retains existing validity: "+header);
+Check(!Documents().EncabezadosCapacitacion.Any(Restricted),"No restricted courses appear without a mechanic or supervisor");
+var hsPosition=Controller();hsPosition.NuevoIngresoPersonal(Form(("master_record_id",driver.Id.ToString()),("tipo","1. Solicitud Ingreso"),("asunto",driver.Name),("cargo","Mecánico"),("ats_fecha","2026-10-20")));
+Check(!hsPosition.TempData.ContainsKey("NuevoIngresoPersonalError"),"Mechanic cargo update saves: "+hsPosition.TempData["NuevoIngresoPersonalError"]);
+var scoped=Documents();var mechanic=scoped.Filas.Single(x=>x.MasterId==driver.Id);
+Check(mechanic.Datos.GetValueOrDefault("Cargo")=="Mecánico","Saved mechanic position reaches documentary profile: "+mechanic.Datos.GetValueOrDefault("Cargo"));
+Check(scoped.EncabezadosCapacitacion.Contains("ATS") && scoped.EncabezadosCapacitacion.Contains("Manejo de Equipos Livianos") && scoped.EncabezadosCapacitacion.Contains("Manejo Defensivo (V. Liviano)"),"Restricted courses appear for a recorded mechanic");
+Check(mechanic.Capacitaciones.Where(x=>Restricted(x.NombreCapacitacion)).All(x=>x.Aplica),"Mechanic must satisfy restricted courses");
+Check(scoped.Filas.Where(x=>x.MasterId!=driver.Id).All(x=>x.Capacitaciones.Where(c=>Restricted(c.NombreCapacitacion)).All(c=>!c.Aplica && c.EstadoFiltro=="noaplica")),"Drivers with no qualifying position are not marked missing for restricted courses");
+Check(scoped.CumplimientoCapacitaciones.Where(x=>Restricted(x.Capacitacion)).All(x=>x.TotalConductores==1),"Restricted course compliance counts only eligible staff");
+foreach(var position in new[]{"Supervisor","Conductor"}){
+ Controller().NuevoIngresoPersonal(Form(("master_record_id",driver.Id.ToString()),("tipo","1. Solicitud Ingreso"),("asunto",driver.Name),("cargo",position)));
+ Check(Documents().EncabezadosCapacitacion.Any(Restricted)==(position=="Supervisor"),"Visibility follows recorded position: "+position);
+}
+Console.WriteLine("PASS: master-document integration and H&S training validity and applicability.");
 sealed class TestTempDataProvider : ITempDataProvider { public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){} }
 sealed class TestEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment {
  public string ContentRootPath {get;set;}="";public string WebRootPath {get;set;}="";public string EnvironmentName{get;set;}="Testing";public string ApplicationName{get;set;}="Check";

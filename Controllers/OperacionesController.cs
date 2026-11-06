@@ -57,15 +57,12 @@ namespace ITServiceDeskApp.Controllers
         };
         private static readonly Dictionary<string, int> ControlDocumentosValidezDiasByHeader = new(StringComparer.Ordinal)
         {
-            [NormalizeHeader("Inducción General de Sitio")] = 365,
             [NormalizeHeader("IPER")] = 730,
             [NormalizeHeader("Manejo de Residuos Sólidos")] = 730,
             [NormalizeHeader("Inducción Sistema de Gestión Social")] = 730,
             [NormalizeHeader("Gestión de Fatiga")] = 730,
             [NormalizeHeader("Sistema 5 puntos")] = 730,
             [NormalizeHeader("Respuesta ante emergencias")] = 730,
-            [NormalizeHeader("Primeros Auxilios Teórico")] = 365,
-            [NormalizeHeader("Primeros Auxilios Práctico")] = 365,
             [NormalizeHeader("Prevención de Incendios")] = 730,
             [NormalizeHeader("Operación de Traslado Mina a Mina")] = 730,
             [NormalizeHeader("Uso de Formatos de Transporte")] = 730,
@@ -823,6 +820,7 @@ namespace ITServiceDeskApp.Controllers
                 for (var i = 0; i < input.Encabezados.Count; i++)
                 {
                     var encabezado = input.Encabezados[i]?.Trim() ?? string.Empty;
+                    if (!ControlDocumentoTrainingAppliesTo(input.Conductor, encabezado)) continue;
                     if (string.IsNullOrWhiteSpace(encabezado))
                     {
                         continue;
@@ -965,6 +963,7 @@ namespace ITServiceDeskApp.Controllers
 
                 foreach (var conductor in conductores)
                 {
+                    if (!ControlDocumentoTrainingAppliesTo(conductor, encabezado)) continue;
                     var conductorKey = NormalizeControlDocumentoKey(conductor);
                     if (string.IsNullOrWhiteSpace(conductorKey))
                     {
@@ -2529,6 +2528,7 @@ namespace ITServiceDeskApp.Controllers
             }
 
             var rows = fila.Capacitaciones
+                .Where(cap => cap.Aplica)
                 .Select(cap => new ControlDocumentosPdfCapacitacionRow(
                     string.IsNullOrWhiteSpace(cap.NombreCapacitacion) ? "-" : cap.NombreCapacitacion,
                     string.IsNullOrWhiteSpace(cap.Fecha) ? "-" : cap.Fecha,
@@ -6468,6 +6468,7 @@ namespace ITServiceDeskApp.Controllers
                 .Select(DeserializeEquipoGondolaPayload).SelectMany(payload => HsTrainingDocumentFields.Where(field => !string.IsNullOrWhiteSpace(FirstPayloadValue(payload, field.Value))).Select(field => field.Key));
             model.EncabezadosCapacitacion = GetDefaultControlDocumentosPersonaHeaders().Concat(model.EncabezadosCapacitacion).Concat(capturedTrainingHeaders).DistinctBy(NormalizeHeader).ToList();
             model.Filas = BuildControlDocumentosPersonaRows(model.EncabezadosCapacitacion);
+            HideUnusedControlDocumentoTrainings(model);
             model.CumplimientoCapacitaciones = BuildControlDocumentosCumplimientoPorCapacitacion(model.EncabezadosCapacitacion, model.Filas);
             model.HistorialCambios = LoadControlDocumentosHistory().OrderByDescending(x => x.FechaCambio).Take(300).ToList();
             model.TendenciaSemanal = BuildControlDocumentosTrendByDay(model.HistorialCambios, 7);
@@ -6665,7 +6666,7 @@ namespace ITServiceDeskApp.Controllers
                 "Sistema 5 puntos", "Respuesta ante Emergencia", "Primeros Auxilios Teórico",
                 "Primeros Auxilios Práctico", "Prevención de Incendios", "ATS",
                 "Oper. Traslado Mina a  Mina", "Uso de Formato de Transporte", "Educación Vial",
-                "Manejo Defensivo (V. Pesado)", "Manejo Defensivo (V. Liviano)"
+                "Manejo Defensivo (V. Pesado)", "Manejo de Equipos Livianos", "Manejo Defensivo (V. Liviano)"
             };
         }
 
@@ -6717,7 +6718,9 @@ namespace ITServiceDeskApp.Controllers
                         var fecha = persona.Fechas is not null && persona.Fechas.TryGetValue(encabezado, out var fechaGuardada)
                             ? fechaGuardada
                             : string.Empty;
-                        var estado = BuildControlDocumentoCapacitacionEstado(encabezado, fecha);
+                        var estado = IsMechanicSupervisorTraining(encabezado) && !HasMechanicSupervisorPosition(persona.Datos)
+                            ? NonApplicableTraining(encabezado)
+                            : BuildControlDocumentoCapacitacionEstado(encabezado, fecha);
                         capacitaciones.Add(estado);
                         fechasCapacitacion.Add(estado.Fecha);
                         fechasCapacitacionIso.Add(estado.FechaIso);
@@ -6802,6 +6805,7 @@ namespace ITServiceDeskApp.Controllers
                 Nombre = nombre.Trim(),
                 RequestId = solicitud.Id,
                 MasterId = TryReadPositiveInt(FirstPayloadValue(payload, "master_record_id")),
+                Datos = string.IsNullOrWhiteSpace(FirstPayloadValue(payload, "cargo")) ? new() : new() { ["Cargo"] = FirstPayloadValue(payload, "cargo") },
                 Fechas = fechas,
                 CreatedAt = solicitud.CreatedAt,
                 UpdatedAt = solicitud.UpdatedAt
@@ -6893,7 +6897,7 @@ namespace ITServiceDeskApp.Controllers
                 RegistroUrl = registroUrl,
                 QrPdfUrl = qrPdfUrl,
                 FechaGeneracion = DateTime.Now,
-                Capacitaciones = fila.Capacitaciones,
+                Capacitaciones = fila.Capacitaciones.Where(cap => cap.Aplica).ToList(),
                 DatosProfesionales = fila.Datos
                     .Where(x => new[] { "Empresa", "Cargo", "Ubicación de Trabajo", "Nombre Supervisor", "Categorías de Licencia", "Fecha Vencimiento Licencia.", "Estado de solicitud" }.Contains(x.Key))
                     .ToDictionary(x => x.Key, x => x.Value),
@@ -7719,9 +7723,9 @@ namespace ITServiceDeskApp.Controllers
                 return resumen;
             }
 
-            var totalConductores = filas.Count;
             for (var capIndex = 0; capIndex < encabezadosCapacitacion.Count; capIndex++)
             {
+                var totalConductores = filas.Count(fila => capIndex < fila.Capacitaciones.Count && fila.Capacitaciones[capIndex].Aplica);
                 var vigente = 0;
                 var porVencer = 0;
                 var vencida = 0;
@@ -7729,6 +7733,7 @@ namespace ITServiceDeskApp.Controllers
 
                 foreach (var fila in filas)
                 {
+                    if (capIndex < fila.Capacitaciones.Count && !fila.Capacitaciones[capIndex].Aplica) continue;
                     var estado = capIndex < fila.Capacitaciones.Count
                         ? (fila.Capacitaciones[capIndex].EstadoFiltro ?? string.Empty).Trim().ToLowerInvariant()
                         : "sinfecha";
@@ -7802,7 +7807,9 @@ namespace ITServiceDeskApp.Controllers
                 return estado;
             }
 
-            var fechaVencimiento = fechaCapacitacion.Date.AddDays(diasValidez);
+            var years = ControlDocumentoValidityYears(encabezado);
+            var fechaVencimiento = years.HasValue ? fechaCapacitacion.Date.AddYears(years.Value) : fechaCapacitacion.Date.AddDays(diasValidez);
+            estado.ValidezDias = (fechaVencimiento - fechaCapacitacion.Date).Days;
             var diasRestantes = (fechaVencimiento - DateTime.Today).Days;
 
             estado.Fecha = fechaCapacitacion.ToString("dd/MM/yyyy", EsCulture);
@@ -7839,6 +7846,7 @@ namespace ITServiceDeskApp.Controllers
 
         private static int ResolveControlDocumentoValidezDias(string encabezado)
         {
+            if (ControlDocumentoValidityYears(encabezado) is int years) return years * 365;
             var key = NormalizeHeader(encabezado);
             return ControlDocumentosValidezDiasByHeader.TryGetValue(key, out var dias) ? dias : 730;
         }

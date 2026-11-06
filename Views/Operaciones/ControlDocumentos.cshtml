@@ -53,8 +53,12 @@
             Conductor = filaDrawer.Conductor,
             Datos = filaDrawer.Datos,
             Capacitaciones = Model.EncabezadosCapacitacion
-                .Select((encabezadoDrawer, capIndex) =>
+                .Select((header, index) => new { Header = header, Index = index })
+                .Where(item => item.Index >= filaDrawer.Capacitaciones.Count || filaDrawer.Capacitaciones[item.Index].Aplica)
+                .Select(item =>
                 {
+                    var encabezadoDrawer = item.Header;
+                    var capIndex = item.Index;
                     var capDrawer = capIndex < filaDrawer.Capacitaciones.Count
                         ? filaDrawer.Capacitaciones[capIndex]
                         : null;
@@ -1965,6 +1969,7 @@
                                 var capData = capIndex < fila.Capacitaciones.Count
                                     ? fila.Capacitaciones[capIndex]
                                     : null;
+                                if (capData?.Aplica == false) { <td class="text-muted">—</td> continue; }
                                 var fecha = capData?.Fecha
                                     ?? (capIndex < fila.FechasCapacitacion.Count ? fila.FechasCapacitacion[capIndex] : "-");
                                 var estado = capData?.EstadoSemaforo ?? "rojo";
@@ -2021,6 +2026,7 @@
                                                     var capData = capIndex < fila.Capacitaciones.Count
                                                         ? fila.Capacitaciones[capIndex]
                                                         : null;
+                                                    if (capData?.Aplica == false) { continue; }
                                                     var fechaCap = capData?.Fecha
                                                         ?? (capIndex < fila.FechasCapacitacion.Count ? fila.FechasCapacitacion[capIndex] : "-");
                                                     var emptyCap = string.IsNullOrWhiteSpace(fechaCap) || fechaCap == "-";
@@ -2066,6 +2072,7 @@
                                                                 var capData = capIndex < fila.Capacitaciones.Count
                                                                     ? fila.Capacitaciones[capIndex]
                                                                     : null;
+                                                                if (capData?.Aplica == false) { continue; }
                                                                 var fechaIso = capData?.FechaIso
                                                                     ?? (capIndex < fila.FechasCapacitacionIso.Count ? fila.FechasCapacitacionIso[capIndex] : string.Empty);
                                                                 var estado = capData?.EstadoSemaforo ?? "rojo";
@@ -2075,6 +2082,8 @@
                                                                     <div class="doc-cap-name">@tituloCap</div>
                                                                     <div>
                                                                         <input type="hidden" name="Encabezados[@capIndex]" value="@tituloCap" />
+                                                                        <input type="hidden" name="Encabezados.Index" value="@capIndex" />
+                                                                        <input type="hidden" name="Fechas.Index" value="@capIndex" />
                                                                         <input type="date"
                                                                                class="form-control form-control-sm doc-edit-input"
                                                                                name="Fechas[@capIndex]"
