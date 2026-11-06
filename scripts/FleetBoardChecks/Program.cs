@@ -48,6 +48,17 @@ OperacionesController Controller(string email="monitoreo@trawzacons.com",string?
  return new OperacionesController(null!,store,null!,null!,null!,null!,db,null!,null!,NullLogger<OperacionesController>.Instance,null!,null!){ControllerContext=new ControllerContext{HttpContext=http},TempData=new TempDataDictionary(http,new TempData())};
 }
 var key="master:"+truck1.Id;
+foreach(var email in new[]{"leslieantonioespinoza@trawzacons.com","Espinozaleslieantonioespinoza@trawzacons.com"}){
+ Check(!OperationalFleetBoard.CanManage(Person(email)),"Leslie retains existing unrelated fleet permissions");
+ foreach(var state in new[]{"taller-psb","taller-pct","finalizado"}){
+  Check(await Controller(email).ActualizarEstadoEquipo(key,state,null,Board().LoadVersion,default) is RedirectToActionResult,"Leslie can move equipment: "+state);
+  Check(Board().Equipment.Single(x=>x.Key==key).Status==state,"Leslie's equipment state persists: "+state);
+ }
+ var http=new DefaultHttpContext{User=Person(email)};http.Request.Method="POST";var route=new RouteData();route.Values["controller"]="Operaciones";
+ var auth=new AuthorizationFilterContext(new ActionContext(http,route,new ActionDescriptor{RouteValues=new Dictionary<string,string?>{{"action","ActualizarEstadoEquipo"}}}),[]);
+ new AccessProfileAuthorizationFilter().OnAuthorization(auth);Check(auth.Result==null,"Global filter permits Leslie's equipment status changes");
+}
+Check(!OperationalFleetBoard.CanChangeStatus(new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"leslieantonioespinoza@trawzacons.com")}))),"Unauthenticated Leslie identity cannot change states");
 foreach(var reason in OperationalFleetBoard.Reasons){
  Check(await Controller().ActualizarEstadoEquipo(key,"fuera-ruta",reason,Board().LoadVersion,default) is RedirectToActionResult,"Save reason: "+reason);
  Check(Board().Equipment.Single(x=>x.Key==key).Reason==reason && Board().Equipment.Single(x=>x.Key==key).Status=="fuera-ruta","Saved reason reloads from database");

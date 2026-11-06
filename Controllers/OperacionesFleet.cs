@@ -19,7 +19,7 @@ public partial class OperacionesController
             _context.OperationalBreakdowns.AsNoTracking().ToList());
         board.CanManage = OperationalFleetBoard.CanManage(User);
         var drivers = catalog.Where(x => x.Kind == "conductores" && x.IsActive).OrderBy(x => x.Name).ToList();
-        foreach(var equipment in board.Equipment) { equipment.CanManage = board.CanManage; if(board.CanManage) equipment.AvailableDrivers = drivers; }
+        foreach(var equipment in board.Equipment) { equipment.CanManage = board.CanManage; equipment.CanChangeStatus = OperationalFleetBoard.CanChangeStatus(User); if(board.CanManage) equipment.AvailableDrivers = drivers; }
         return board;
     }
     [HttpPost, ValidateAntiForgeryToken]
@@ -50,7 +50,7 @@ public partial class OperacionesController
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ActualizarEstadoEquipo(string key, string status, string? reason, string loadVersion, CancellationToken cancellationToken)
     {
-        if (!OperationalFleetBoard.CanManage(User)) return Forbid();
+        if (!OperationalFleetBoard.CanChangeStatus(User)) return Forbid();
         var source = _operacionesSeguimientoStore.Get() ?? new SeguimientoToneladasViewModel();
         var board = BuildFleet(source);
         if (board.LoadVersion != loadVersion)

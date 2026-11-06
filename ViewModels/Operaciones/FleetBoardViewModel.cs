@@ -38,6 +38,7 @@ public sealed class FleetEquipmentViewModel
     public string LoadVersion { get; set; } = "none";
     public bool CanManage { get; set; }
     public bool ShowsBreakdownDetails => Status is "carretera" or "taller-pct" or "taller-psb" or "taller-poz";
+    public bool CanChangeStatus { get; set; }
     public List<FleetBreakdownViewModel> Breakdowns { get; set; } = [];
 }
 public sealed class FleetBreakdownViewModel

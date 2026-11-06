@@ -9,6 +9,9 @@ public static class OperationalFleetBoard
     public static readonly string[] Reasons = ["Plantel Contratista", "Otros", "Viajes Externos", "Conductor de Pase"];
     public static readonly string[] ManualStatuses = ["auto", "finalizado", "fuera-ruta", "carretera", "taller-pct", "taller-psb", "taller-poz", "imc-roja", "imc-amarilla"];
     public static bool CanManage(ClaimsPrincipal user) => UserAccessProfiles.CanMaintainDrivers(user) || UserAccessProfiles.CanMaintainOperationalMasters(user);
+    public static bool CanChangeStatus(ClaimsPrincipal user) => CanManage(user) ||
+        (user.Identity?.IsAuthenticated == true && new[] { "leslieantonioespinoza@trawzacons.com", "Espinozaleslieantonioespinoza@trawzacons.com" }
+            .Contains(user.FindFirst(ClaimTypes.Email)?.Value?.Trim(), StringComparer.OrdinalIgnoreCase));
     public static string Version(DateTime? uploadedAt) => uploadedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "none";
     public static string StatusLabel(string status) => status switch {
         "finalizado" => "Equipos descargados", "ruta" => "Equipos en ruta", "standby" => "Equipos en Standby",
