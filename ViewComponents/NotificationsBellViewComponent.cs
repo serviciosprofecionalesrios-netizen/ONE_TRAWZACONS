@@ -92,7 +92,7 @@ namespace ITServiceDeskApp.ViewComponents
                 model.Items = alerts.Take(8).Select(x => new NotificationItemViewModel {
                     Url = x.Url, Title = x.Training, Summary = $"{x.Driver} · {x.Date:dd/MM/yyyy} · {x.Days} días · {x.StatusLabel}",
                     TicketNumber = x.Code, PriorityLabel = x.StatusLabel, PriorityCssClass = "badge text-bg-danger",
-                    CardCssClass = "notif-card", IconSymbolCssClass = "bi bi-mortarboard", TimeLabel = $"Vence {x.Date:dd/MM/yyyy}"
+                    CardCssClass = "notif-item notif-item--breached", IconCssClass = "notif-icon notif-icon--breached", IconSymbolCssClass = "bi bi-mortarboard", TimeLabel = x.UrgencyLabel
                 }).Concat(model.Items).Take(20).ToList();
             }
 

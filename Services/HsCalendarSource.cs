@@ -9,6 +9,9 @@ public sealed class HsCalendarSource(IServiceProvider services, HsAlertInbox inb
     private static readonly TimeZoneInfo Zone = TimeZoneInfo.FindSystemTimeZoneById("America/Managua");
     public static string State(int days) => days <= 0 ? "vencida" : days <= 30 ? "porvencer" : "vigente";
     public static string Tone(int days) => days <= 0 ? "danger" : days <= 15 ? "orange" : days <= 30 ? "warning" : "success";
+    // Documentary expiries have no official site. A filter for activity sites must
+    // not silently hide them or change the operational alert counters.
+    public static bool MatchesActivitySite(HsOperationalEvent item, string site) => string.IsNullOrEmpty(site) || item.Site == site || item.Days.HasValue;
     public HsOperationalCalendar Read(DateTime today)
     {
         // The controller mutates its view model; never share that instance with the bell.

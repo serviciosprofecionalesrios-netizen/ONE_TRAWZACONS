@@ -9,12 +9,14 @@ public sealed class HsOperationalCalendar
     public string Training { get; set; } = "";
     public string Status { get; set; } = "";
     public string Site { get; set; } = "";
+    public bool FullDay { get; set; }
     public int ActiveDrivers { get; set; }
     public int Valid { get; set; }
     public int Due { get; set; }
     public int Expired { get; set; }
     public List<HsOperationalEvent> Events { get; set; } = [];
     public List<HsOperationalEvent> Alerts { get; set; } = [];
+    public List<HsOperationalEvent> Expiries { get; set; } = [];
     public Dictionary<string,string> Drivers { get; set; } = [];
     public Dictionary<string,string> DriverCodes { get; set; } = [];
     public List<string> Trainings { get; set; } = [];
@@ -38,6 +40,7 @@ public sealed class HsOperationalEvent
     public int? Days { get; set; }
     public string Status { get; set; } = "Programada";
     public string StatusLabel => Status switch { "vigente" => "Vigente", "porvencer" => "Por vencer", "vencida" => "Vencida / hoy", _ => Status };
+    public string UrgencyLabel => Days switch { null => StatusLabel, < 0 => $"Vencida hace {Math.Abs(Days.Value)} días", 0 => "Vence hoy", 1 => "Vence mañana", _ => $"Vence en {Days} días" };
     public string Tone { get; set; } = "primary";
     public string Url { get; set; } = "";
     public bool RedIndicator => Days <= 30;

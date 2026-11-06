@@ -33,20 +33,37 @@ builder.Services.AddControllersWithViews().AddApplicationPart(typeof(ITServiceDe
 builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 await using var app=builder.Build();using var scope=app.Services.CreateScope();
 var razor=scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Mvc.Razor.IRazorViewEngine>();
-async Task<string> Render(string calendarView,int days){
+async Task<string> Render(string calendarView,int days,bool fullDay=false){
  var http=new Microsoft.AspNetCore.Http.DefaultHttpContext{RequestServices=scope.ServiceProvider};
  var route=new RouteData();route.Routers.Add(new RouteCollection());route.Values["controller"]="Hs";route.Values["action"]="Calendar";
  var action=new ActionContext(http,route,new ActionDescriptor());
  var view=razor.GetView(null,"/Views/Hs/Calendar.cshtml",false);Check(view.Success,"Razor resuelve calendario "+calendarView);
- var vm=HsCalendarSource.Project(documents,today);vm.Start=new DateTime(2026,11,2);vm.End=vm.Start.AddDays(days);vm.Anchor=today;vm.View=calendarView;
+ var vm=new ITServiceDeskApp.ViewModels.Hs.HsOperationalCalendar { ActiveDrivers=model.ActiveDrivers,Valid=model.Valid,Due=model.Due,Expired=model.Expired, Events=model.Events.ToList(),Alerts=model.Alerts.ToList(),Expiries=model.Events.Where(x=>x.IsTraining).ToList(),Drivers=model.Drivers,Trainings=model.Trainings };
+ vm.Start=new DateTime(2026,11,16);vm.End=vm.Start.AddDays(days);vm.Anchor=today;vm.View=calendarView;vm.FullDay=fullDay;
+ for(var i=0;i<6;i++)vm.Events.Add(new(){Key="render-test:"+i,Date=vm.Start.AddDays(2),AllDay=true,Title="Capacitación de prueba "+i,Driver="Conductor de prueba",Days=3,Status="porvencer",Tone="orange"});
+ vm.Events.Add(new(){Key="night",Date=vm.Start.AddDays(1).AddHours(23),Title="Actividad nocturna de prueba",Group="Capacitaciones programadas",Tone="primary"});
  using var writer=new StringWriter();var data=new ViewDataDictionary<ITServiceDeskApp.ViewModels.Hs.HsOperationalCalendar>(new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),new Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary()){Model=vm};
  await view.View!.RenderAsync(new Microsoft.AspNetCore.Mvc.Rendering.ViewContext(action,view.View,data,new TempDataDictionary(http,new MemoryTempData()),writer,new HtmlHelperOptions()));return writer.ToString();
 }
-var week=await Render("week",7);var month=await Render("month",35);
-Check(System.Text.RegularExpressions.Regex.Matches(week,"class=\"hs-day\"").Count==7,"Vista semanal renderiza siete días");
-Check(System.Text.RegularExpressions.Regex.Matches(week,"class=\"hs-hour\"").Count==168,"Semana renderiza 24 horas por día");
-Check(System.Text.RegularExpressions.Regex.Matches(month,"class=\"hs-day\"").Count==35&&!month.Contains("class=\"hs-hour\""),"Mes compacto renderiza todas las fechas");
-Check(week.Contains("hsDayDrawer")&&week.Contains("hsEvents"),"Drawer y datos de eventos presentes en Razor");
+var week=await Render("week",7);var month=await Render("month",35);var full=await Render("week",7,true);
+Check(System.Text.RegularExpressions.Regex.Matches(week,"class=\"hs-day-heading").Count==7,"Semana renderiza siete encabezados de fecha");
+Check(System.Text.RegularExpressions.Regex.Matches(week,"class=\"hs-hour-row\"").Count==0,"No se repiten horarios dentro de cada columna");
+Check(System.Text.RegularExpressions.Regex.Matches(week,"hs-week-row hs-hour-row").Count==12,"Semana predeterminada compacta de 06 a 18 h");
+Check(System.Text.RegularExpressions.Regex.Matches(full,"hs-week-row hs-hour-row").Count==24,"Opción de 24 horas conserva todos los horarios");
+Check(week.Contains("fuera del horario visible"),"Actividad nocturna sigue accesible en horario compacto");
+Check(System.Text.RegularExpressions.Regex.Matches(month,"<section class=\"hs-day ").Count==35&&!month.Contains("hs-hour-row"),"Mes compacto renderiza todas las fechas");
+var decodedMonth=System.Net.WebUtility.HtmlDecode(month);
+Check(decodedMonth.Contains("Ver todos · 6") && System.Text.RegularExpressions.Regex.Matches(decodedMonth,"class=\"hs-event hs-tone-orange\"[^>]*><span[^>]*>●</span><strong>Capacitación de prueba").Count==3,"Mes limita a tres tarjetas y ofrece acceso al resto");
+Check(week.IndexOf("Alertas de capacitación")<week.IndexOf("hs-calendar-card")&&!week.Contains("<details"),"Alertas abiertas antes del calendario");
+Check(week.Contains("data-alert-group=\"expired\"")&&week.Contains("data-alert-group=\"urgent\"")&&week.Contains("data-alert-group=\"soon\""),"Panel separa vencidas, 1–15 y 16–30 días");
+Check(week.Contains("data-kpi=\"due\"")&&week.Contains("hsExpiries")&&week.Contains("hsDayDrawer"),"KPI y drawer reciben registros de vencimiento");
+Check(HsCalendarSource.MatchesActivitySite(model.Alerts[0],"Mina El Limon"),"Filtro de sede no oculta vencimientos documentales");
+Check(!HsCalendarSource.MatchesActivitySite(new(){Site="Otra sede"},"Mina El Limon"),"Filtro de sede sigue restringiendo actividades");
+Check(model.Events.Single(x=>x.Title=="hoy").UrgencyLabel=="Vence hoy"&&model.Events.Single(x=>x.Title=="anterior").UrgencyLabel=="Vencida hace 400 días","Textos de urgencia claros y sin días negativos");
+var preview=Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(),"../_codex_build/hs-calendar-preview"));Directory.CreateDirectory(preview);
+string Wrap(string html)=>"<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\"><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css\"><style>body{background:#f4f6f9;font-family:system-ui}nav{padding:15px 30px;background:#153d75;color:white}</style></head><body><nav>ONE TRAWZACONS · Vista de prueba</nav>"+html+"<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js\"></script></body></html>";
+File.WriteAllText(Path.Combine(preview,"week.html"),Wrap(week));File.WriteAllText(Path.Combine(preview,"month.html"),Wrap(month));
+Console.WriteLine("Preview: "+preview);
 sealed class MemoryTempData:ITempDataProvider{
  public IDictionary<string,object> LoadTempData(Microsoft.AspNetCore.Http.HttpContext context)=>new Dictionary<string,object>();
  public void SaveTempData(Microsoft.AspNetCore.Http.HttpContext context,IDictionary<string,object> values){}

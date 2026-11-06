@@ -6,7 +6,7 @@ namespace ITServiceDeskApp.Controllers;
 public partial class HsController
 {
     [HttpGet]
-    public async Task<IActionResult> Calendar([FromServices] HsCalendarSource source, DateTime? date, string view = "week", string driver = "", string training = "", string status = "", string site = "")
+    public async Task<IActionResult> Calendar([FromServices] HsCalendarSource source, DateTime? date, string view = "week", string driver = "", string training = "", string status = "", string site = "", bool fullDay = false)
     {
         driver = driver?.Trim() ?? ""; training = training?.Trim() ?? "";
         status = status?.Trim() ?? ""; site = site?.Trim() ?? "";
@@ -15,7 +15,7 @@ public partial class HsController
         if (anchor.Year < 2000 || anchor.Year > 2100) return BadRequest("Fecha fuera del rango permitido.");
         var model = source.Read(today);
         model.Anchor = anchor; model.View = view == "month" ? "month" : "week";
-        model.Driver = driver; model.Training = training; model.Status = status; model.Site = site;
+        model.Driver = driver; model.Training = training; model.Status = status; model.Site = site; model.FullDay = fullDay;
         var first = model.View == "month" ? new DateTime(anchor.Year, anchor.Month, 1) : anchor;
         model.Start = first.AddDays(-((int)first.DayOfWeek + 6) % 7);
         model.End = model.View == "month" ? new DateTime(anchor.Year, anchor.Month, 1).AddMonths(1) : model.Start.AddDays(7);
@@ -42,9 +42,10 @@ public partial class HsController
         foreach (var x in docs) model.Events.Add(new() { Key = $"document:{x.Id}", Date = HsCalendarSource.Local(x.ReviewDateUtc!.Value), Title = $"{x.Code} · {x.Title}", Status = x.Status, Tone = "secondary", Url = "/Hs/Documents" });
         model.Sites = model.Events.Select(x => x.Site).Where(x => x.Length > 0).Distinct().Order().ToList();
         model.Trainings = model.Trainings.Concat(model.Events.Select(x => x.Training).Where(x => x.Length > 0)).Distinct().Order().ToList();
-        bool Matches(HsOperationalEvent x) => (driver == "" || x.DriverId == driver) && (training == "" || x.Training == training) && (status == "" || x.Status == status) && (site == "" || x.Site == site);
+        bool Matches(HsOperationalEvent x) => (driver == "" || x.DriverId == driver) && (training == "" || x.Training == training) && (status == "" || x.Status == status) && HsCalendarSource.MatchesActivitySite(x, site);
         model.Alerts = model.Alerts.Where(Matches).ToList();
         var expiry = model.Events.Where(x => x.IsTraining && x.Days.HasValue && Matches(x)).ToList();
+        model.Expiries = expiry;
         model.ActiveDrivers = driver == "" ? model.ActiveDrivers : model.Drivers.ContainsKey(driver) ? 1 : 0;
         model.Valid = expiry.Count(x => x.Days > 30); model.Due = expiry.Count(x => x.Days > 0 && x.Days <= 30); model.Expired = expiry.Count(x => x.Days <= 0);
         model.Events = model.Events.Where(x => x.Date >= model.Start && x.Date < model.End && Matches(x)).OrderBy(x => x.Date).ToList();
