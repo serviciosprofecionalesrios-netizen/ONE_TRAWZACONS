@@ -60,8 +60,18 @@
             @foreach(var state in new[]{"imc-roja","imc-amarilla","carretera","taller-pct","taller-psb","taller-poz"}){
                 <li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="@state"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit">@OperationalFleetBoard.StatusLabel(state)</button></form></li>
             }
-            @if(Model.Status=="standby" || Model.ManualStateKey!=null){
-                <li><hr class="dropdown-divider"/></li><li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="finalizado"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit"><i class="bi bi-play-circle me-2"></i>Activar equipo</button></form><div class="small text-muted px-3 pb-1">Activo y descargado mientras TiHouse no registre un viaje.</div></li>
+            @if (Model.CanMarkImcGreen)
+            {
+                <li><form asp-action="ActualizarEstadoEquipo" method="post">
+                    <input type="hidden" name="key" value="@Model.Key"/>
+                    <input type="hidden" name="status" value="imc-verde"/>
+                    <input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
+                    <input type="hidden" name="imcMonth" value="@Model.ImcMonth"/>
+                    <button class="dropdown-item text-success" type="submit"><i class="bi bi-check-circle me-2"></i>Pasar IMC a verde</button>
+                </form></li>
+            }
+            @if(Model.Status=="standby" || Model.ManualStateKey!=null || Model.ImcColor=="verde"){
+                <li><hr class="dropdown-divider"/></li><li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="finalizado"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><input type="hidden" name="imcMonth" value="@Model.ImcMonth"/><button class="dropdown-item" type="submit"><i class="bi bi-play-circle me-2"></i>Activar equipo</button></form><div class="small text-muted px-3 pb-1">Se muestra según la carga de TiHouse.</div></li>
             }
         }
         <li><a class="dropdown-item text-danger" asp-action="NuevaInfraccion" asp-route-vehicle="@Model.Code" asp-route-driver="@Model.Driver"><i class="bi bi-exclamation-octagon me-2"></i>Nueva infracción</a></li>

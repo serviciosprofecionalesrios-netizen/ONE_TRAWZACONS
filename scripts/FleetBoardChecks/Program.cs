@@ -243,6 +243,25 @@ var november=ImcHistory.ForMonth(null);
 Check(november.SelectedMonth=="2026-11" && november.Months.Count==11 && november.Months.Last().Value=="2026-01",
  "IMC defaults to the latest month and retains January through November");
 Check(november.Cards.Select(card=>card.Units.Count).SequenceEqual([2,1,3]),"November matches the three color counts in the workbook");
+Check(await Controller().ActualizarEstadoEquipo(key,"imc-verde",null,Board().LoadVersion,default,"2026-11") is RedirectToActionResult,
+ "Operator can mark a red IMC inspection green");
+Check(await Controller().ActualizarEstadoEquipo(key,"imc-verde",null,Board().LoadVersion,default,"2026-11") is RedirectToActionResult &&
+ db.OperationalImcClearances.Count()==1,"Repeating clearance does not duplicate the record");
+var corrected=ImcHistory.ForMonth("2026-11",db.OperationalImcClearances.AsNoTracking().ToList());
+Check(corrected.Cards.Select(card=>card.Units.Count).SequenceEqual([1,1,4]) &&
+ corrected.Cards.Single(card=>card.ColorClass=="verde").Units.Contains(truck1.Name),"Clearance moves the unit from red to green in the monthly count");
+Check(ImcHistory.ForMonth("2026-04",db.OperationalImcClearances.AsNoTracking().ToList()).Cards
+ .Select(card=>card.Units.Count).SequenceEqual([3,0,11]),"A November clearance preserves the April history");
+Check(await Controller().ActualizarEstadoEquipo(key,"finalizado",null,Board().LoadVersion,default,"2026-11") is RedirectToActionResult,
+ "Operator can activate a cleared unit");
+var clearedUnit=Board().Equipment.Single(x=>x.Key==key);
+clearedUnit.ImcColor="verde";
+Check(clearedUnit.ChipCssClass=="equipo-chip--ruta","Activated cleared unit displays the ordinary loaded color");
+Check(new FleetEquipmentViewModel {Status="finalizado",ImcColor="verde"}.ChipCssClass=="equipo-chip--descargado",
+ "Cleared discharged unit displays the ordinary blue color");
+Check(pg.GetService<IMigrator>().GenerateScript("20261107010000_BreakdownMultipleDetailsPostgres","20261107020000_OperationalImcClearancesPostgres").Contains("OperationalImcClearances") &&
+ sql.GetService<IMigrator>().GenerateScript("20261107010000_BreakdownMultipleDetails","20261107020000_OperationalImcClearances").Contains("OperationalImcClearances"),
+ "IMC clearance migration generates for both production and local database providers");
 var novemberHtml=await RenderView(new FleetBoardViewModel {Imc=november},"/Views/Operaciones/_FleetBoard.cshtml");
 Check(novemberHtml.Contains("equipo-chip--imc-roja\">W-0001") &&
  novemberHtml.Contains("equipo-chip--imc-amarilla\">H-05"),"November renders each listed unit in its own inspection color");

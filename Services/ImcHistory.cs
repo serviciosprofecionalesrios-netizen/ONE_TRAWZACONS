@@ -1,4 +1,5 @@
 using System.Globalization;
+using ITServiceDeskApp.Models;
 using ITServiceDeskApp.ViewModels.Operaciones;
 
 namespace ITServiceDeskApp.Services;
@@ -9,7 +10,7 @@ public static class ImcHistory
     private static readonly Lazy<List<Inspection>> Inspections = new(ReadInspections);
     private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-NI");
 
-    public static ImcMonthViewModel ForMonth(string? requestedMonth)
+    public static ImcMonthViewModel ForMonth(string? requestedMonth, IEnumerable<OperationalImcClearance>? clearances = null)
     {
         var periods = Inspections.Value.ToLookup(row => row.PresentedAt.ToString("yyyy-MM", CultureInfo.InvariantCulture));
         var months = periods.Select(period => period.Key).OrderDescending(StringComparer.Ordinal).ToArray();
@@ -17,7 +18,12 @@ public static class ImcHistory
         var units = periods[selected ?? ""]
             .GroupBy(row => HolcimMasterCatalog.Identifier(row.Unit))
             .Select(group => group.OrderByDescending(row => row.PresentedAt).First())
-            .ToArray();
+            .ToDictionary(row => HolcimMasterCatalog.Identifier(row.Unit));
+        foreach (var clearance in clearances ?? [])
+        {
+            if (clearance.Month == selected)
+                units[clearance.UnitKey] = new Inspection(clearance.UnitCode, default, "Verde");
+        }
         return new ImcMonthViewModel
         {
             SelectedMonth = selected,
@@ -25,7 +31,7 @@ public static class ImcHistory
                 DateTime.ParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture).ToString("MMMM yyyy", Spanish))).ToArray(),
             Cards = new (string Source, string Label, string Css)[] { ("Rojo", "Roja", "roja"), ("Amarillo", "Amarilla", "amarilla"), ("Verde", "Verde", "verde") }
                 .Select(color => new ImcColorCard(color.Label, color.Css,
-                    units.Where(row => row.Color == color.Source).Select(row => row.Unit).Order(StringComparer.Ordinal).ToArray()))
+                    units.Values.Where(row => row.Color == color.Source).Select(row => row.Unit).Order(StringComparer.Ordinal).ToArray()))
                 .ToArray()
         };
     }

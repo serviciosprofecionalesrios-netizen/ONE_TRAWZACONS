@@ -10,13 +10,24 @@ public partial class OperacionesController
     {
         var fleetSource = model.IsFromUpload ? model : _operacionesSeguimientoStore.Get() ?? model;
         model.Fleet = BuildFleet(fleetSource);
-        model.Fleet.Imc = ImcHistory.ForMonth(imcMonth);
-        var imcColors = model.Fleet.Imc.Cards
+        ApplyImcMonth(model.Fleet, imcMonth);
+        return View("SeguimientoToneladas",model);
+    }
+
+    private void ApplyImcMonth(FleetBoardViewModel board, string? imcMonth)
+    {
+        var selectedMonth = ImcHistory.ForMonth(imcMonth).SelectedMonth;
+        var clearances = _context.OperationalImcClearances.AsNoTracking()
+            .Where(row => row.Month == selectedMonth).ToList();
+        board.Imc = ImcHistory.ForMonth(selectedMonth, clearances);
+        var imcColors = board.Imc.Cards
             .SelectMany(card => card.Units.Select(unit => (Unit: HolcimMasterCatalog.Identifier(unit), card.ColorClass)))
             .ToDictionary(entry => entry.Unit, entry => entry.ColorClass);
-        foreach (var equipment in model.Fleet.Equipment)
+        foreach (var equipment in board.Equipment)
+        {
+            equipment.ImcMonth = selectedMonth;
             equipment.ImcColor = imcColors.GetValueOrDefault(HolcimMasterCatalog.Identifier(equipment.Code));
-        return View("SeguimientoToneladas",model);
+        }
     }
     private FleetBoardViewModel BuildFleet(SeguimientoToneladasViewModel source)
     {
@@ -54,7 +65,8 @@ public partial class OperacionesController
         return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
     }
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> ActualizarEstadoEquipo(string key, string status, string? reason, string loadVersion, CancellationToken cancellationToken)
+    public async Task<IActionResult> ActualizarEstadoEquipo(string key, string status, string? reason, string loadVersion,
+        CancellationToken cancellationToken, string? imcMonth = null)
     {
         if (!OperationalFleetBoard.CanChangeStatus(User)) return Forbid();
         var source = _operacionesSeguimientoStore.Get() ?? new SeguimientoToneladasViewModel();
@@ -65,7 +77,33 @@ public partial class OperacionesController
             return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
         }
         var equipment = board.Equipment.SingleOrDefault(x => x.Key == key);
-        if (equipment == null || !OperationalFleetBoard.ManualStatuses.Contains(status) ||
+        if (equipment == null) return BadRequest();
+        if (status == "imc-verde")
+        {
+            ApplyImcMonth(board, imcMonth);
+            if (string.IsNullOrEmpty(imcMonth) || imcMonth != equipment.ImcMonth ||
+                (!equipment.CanMarkImcGreen && equipment.ImcColor != "verde")) return BadRequest();
+            if (equipment.ImcColor != "verde")
+            {
+                var unitKey = HolcimMasterCatalog.Identifier(equipment.Code);
+                var clearance = new OperationalImcClearance { Month = imcMonth, UnitKey = unitKey, UnitCode = equipment.Code };
+                _context.OperationalImcClearances.Add(clearance);
+                try
+                {
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException)
+                {
+                    // Another request may already have marked this unit green.
+                    _context.Entry(clearance).State = EntityState.Detached;
+                    if (!await _context.OperationalImcClearances.AnyAsync(
+                        row => row.Month == imcMonth && row.UnitKey == unitKey, cancellationToken)) throw;
+                }
+            }
+            TempData["FleetOk"] = $"IMC de {equipment.Code} marcado en verde.";
+            return RedirectToAction(nameof(SeguimientoToneladas), null, new { imcMonth }, "fleet-board");
+        }
+        if (!OperationalFleetBoard.ManualStatuses.Contains(status) ||
             (status == "fuera-ruta" && !OperationalFleetBoard.Reasons.Contains(reason))) return BadRequest();
         var row = await _context.OperationalFleetStates.FindAsync([equipment.ManualStateKey ?? key],cancellationToken);
         if (status == "auto")
@@ -85,6 +123,6 @@ public partial class OperacionesController
         }
         await _context.SaveChangesAsync(cancellationToken);
         TempData["FleetOk"] = "Estado del equipo guardado.";
-        return RedirectToAction(nameof(SeguimientoToneladas),null,null,"fleet-board");
+        return RedirectToAction(nameof(SeguimientoToneladas),null,new { imcMonth },"fleet-board");
     }
 }

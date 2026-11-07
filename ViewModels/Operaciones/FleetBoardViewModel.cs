@@ -40,6 +40,9 @@ public sealed class FleetEquipmentViewModel
         ? LoadStatus is "ruta" or "finalizado" ? LoadStatus : "standby"
         : CardStatus;
     public string? ImcColor { get; set; }
+    public string? ImcMonth { get; set; }
+    public bool CanMarkImcGreen => ImcMonth is not null && (ImcColor is "roja" or "amarilla" ||
+        (ImcColor is null && Status is ("imc-roja" or "imc-amarilla")));
     public string ChipCssClass => ImcColor == "roja" ? "equipo-chip--imc-roja"
         : ImcColor == "amarilla" ? "equipo-chip--imc-amarilla"
         : ImcColor is null && Status is ("imc-roja" or "imc-amarilla") ? $"equipo-chip--{Status}"

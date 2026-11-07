@@ -50,6 +50,7 @@ namespace ITServiceDeskApp.Data
         public DbSet<DriverScoreCase> DriverScoreCases => Set<DriverScoreCase>();
         public DbSet<OperationalMasterRecord> OperationalMasterRecords => Set<OperationalMasterRecord>();
         public DbSet<OperationalFleetState> OperationalFleetStates => Set<OperationalFleetState>();
+        public DbSet<OperationalImcClearance> OperationalImcClearances => Set<OperationalImcClearance>();
         public DbSet<OperationalFleetDriver> OperationalFleetDrivers => Set<OperationalFleetDriver>();
         public DbSet<OperationalBreakdown> OperationalBreakdowns => Set<OperationalBreakdown>();
 
