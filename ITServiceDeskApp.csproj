@@ -25,6 +25,7 @@
     <EmbeddedResource Include="Resources/OperationalMastersSeed.json" />
     <EmbeddedResource Include="Resources/HolcimMastersSeed.json" />
     <EmbeddedResource Include="Resources/AveriasSeed.json" />
+    <EmbeddedResource Include="Resources/ImcHistory.tsv" />
   </ItemGroup>
 
 </Project>

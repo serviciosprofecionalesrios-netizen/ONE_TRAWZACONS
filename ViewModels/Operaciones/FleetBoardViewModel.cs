@@ -5,6 +5,15 @@ public sealed class FleetBoardViewModel
     public bool HasUpload { get; set; }
     public bool CanManage { get; set; }
     public List<FleetEquipmentViewModel> Equipment { get; set; } = [];
+    public ImcMonthViewModel Imc { get; set; } = new();
+}
+public sealed record ImcMonthOption(string Value, string Label);
+public sealed record ImcColorCard(string Label, string ColorClass, IReadOnlyList<string> Units);
+public sealed class ImcMonthViewModel
+{
+    public string? SelectedMonth { get; init; }
+    public IReadOnlyList<ImcMonthOption> Months { get; init; } = [];
+    public IReadOnlyList<ImcColorCard> Cards { get; init; } = [];
 }
 public sealed class FleetEquipmentViewModel
 {
@@ -27,6 +36,9 @@ public sealed class FleetEquipmentViewModel
     // Active cards follow the same load state as the chip. Manual locations stay put.
     public string CardStatus => Status is "standby" or "finalizado" or "ruta"
         && LoadStatus is "ruta" or "finalizado" ? LoadStatus : Status;
+    public string DistributionStatus => CardStatus is "imc-roja" or "imc-amarilla"
+        ? LoadStatus is "ruta" or "finalizado" ? LoadStatus : "standby"
+        : CardStatus;
     public string ChipCssClass => Status == "imc-roja" ? "equipo-chip--imc-roja"
         : Status == "imc-amarilla" ? "equipo-chip--imc-amarilla"
         : LoadStatus == "ruta" ? "equipo-chip--ruta"

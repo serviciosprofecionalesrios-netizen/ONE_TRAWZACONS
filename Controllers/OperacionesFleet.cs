@@ -6,10 +6,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ITServiceDeskApp.Controllers;
 public partial class OperacionesController
 {
-    private ViewResult SeguimientoFleetView(SeguimientoToneladasViewModel model)
+    private ViewResult SeguimientoFleetView(SeguimientoToneladasViewModel model, string? imcMonth = null)
     {
         var fleetSource = model.IsFromUpload ? model : _operacionesSeguimientoStore.Get() ?? model;
         model.Fleet = BuildFleet(fleetSource);
+        model.Fleet.Imc = ImcHistory.ForMonth(imcMonth);
         return View("SeguimientoToneladas",model);
     }
     private FleetBoardViewModel BuildFleet(SeguimientoToneladasViewModel source)

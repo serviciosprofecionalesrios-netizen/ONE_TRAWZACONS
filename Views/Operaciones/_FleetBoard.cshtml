@@ -1,6 +1,7 @@
 @model ITServiceDeskApp.ViewModels.Operaciones.FleetBoardViewModel
 @using ITServiceDeskApp.Services
-@{ var displayedEquipment = Model.Equipment.Where(x => x.CardStatus != "standby" || x.Company is "EQUINOX" or "HOLCIM/EQUINOX").ToList(); }
+@{ var displayedEquipment = Model.Equipment.Where(x => x.DistributionStatus != "standby" ||
+    x.Company is "EQUINOX" or "HOLCIM/EQUINOX" || x.CardStatus is "imc-roja" or "imc-amarilla").ToList(); }
 <section id="fleet-board" class="fleet-board mb-4" aria-label="Estado de todos los equipos">
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2"><strong>Distribución de equipos</strong><span class="small text-muted">@displayedEquipment.Count equipos visibles · @displayedEquipment.Count(x=>x.InLatestUpload) en la última carga de TiHouse</span></div>
     <p class="small text-muted mb-2"><span class="equipo-chip equipo-chip--ruta">Cargado · En ruta</span> <span class="equipo-chip equipo-chip--descargado">Descargado · Finalizado</span> El color conserva el estado de TiHouse aunque el equipo esté en taller, carretera o fuera de ruta, sin limitarlo a la fecha del día.</p>
@@ -9,10 +10,10 @@
     <p class="small text-muted">Standby muestra equipos EQUINOX o HOLCIM/EQUINOX sin un estado de carga reconocido. Los estados conocidos se conservan aunque el equipo no aparezca en la última carga. Activar equipo los coloca como activos y descargados. Fuera de Ruta, Varado y Taller se conservan hasta la activación manual. No se desactivan registros del maestro.</p>
     @if(!Model.HasUpload){<div class="alert alert-info">Sin una carga de TiHouse registrada: los equipos EQUINOX del maestro se muestran en Standby, salvo clasificaciones manuales. Los datos de ejemplo no activan equipos.</div>}
     <div class="row g-3">
-    @foreach(var status in new[]{"finalizado","ruta","standby","imc-roja","imc-amarilla","fuera-ruta","carretera","taller"}){
-        var units=displayedEquipment.Where(x=>status=="taller" ? x.CardStatus.StartsWith("taller-") : x.CardStatus==status).ToList();
+    @foreach(var status in new[]{"finalizado","ruta","standby","fuera-ruta","carretera","taller"}){
+        var units=displayedEquipment.Where(x=>status=="taller" ? x.DistributionStatus.StartsWith("taller-") : x.DistributionStatus==status).ToList();
         <div class="@(status is "standby" or "fuera-ruta" or "otros" ? "col-12" : "col-lg-6")">
-            <div class="varado-panel @(status=="carretera" ? "varado-panel--carretera" : status.StartsWith("taller") ? "varado-panel--taller" : status.StartsWith("imc-") ? "varado-panel--"+status : "")" style="@(status=="standby" ? "border-top:4px solid #64748b;background:#f1f5f9" : "")">
+            <div class="varado-panel @(status=="carretera" ? "varado-panel--carretera" : status=="taller" ? "varado-panel--taller" : "")" style="@(status=="standby" ? "border-top:4px solid #64748b;background:#f1f5f9" : "")">
                 <div class="varado-panel__title"><i class="bi @(status=="standby" ? "bi-pause-circle" : status=="fuera-ruta" ? "bi-sign-turn-right" : "bi-truck-front") me-2"></i>@OperationalFleetBoard.StatusLabel(status) (@units.Count)</div>
                 @if(status=="fuera-ruta"){
                     <div class="row g-3">@foreach(var reason in OperationalFleetBoard.Reasons.Append("Sin motivo registrado")){
@@ -32,4 +33,43 @@
         </div>
     }
     </div>
+    @if (Model.Imc.Months.Count > 0)
+    {
+        <section id="imc-history" class="mt-4" aria-labelledby="imc-title">
+            <div class="d-flex flex-wrap gap-2 align-items-end justify-content-between mb-2">
+                <div>
+                    <h3 id="imc-title" class="h6 mb-1">Historial de inspecciones IMC</h3>
+                    <p class="small text-muted mb-0">Cada unidad cuenta una vez, según su última inspección del mes.</p>
+                </div>
+                <form method="get" asp-action="SeguimientoToneladas" asp-fragment="imc-history" class="d-flex gap-2 align-items-center">
+                    <label for="imc-month" class="small">Mes</label>
+                    <select id="imc-month" name="imcMonth" class="form-select form-select-sm">
+                        @foreach (var month in Model.Imc.Months)
+                        {
+                            <option value="@month.Value" selected="@(month.Value == Model.Imc.SelectedMonth)">@month.Label</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Consultar</button>
+                </form>
+            </div>
+            <div class="row g-3">
+                @foreach (var card in Model.Imc.Cards)
+                {
+                    <div class="col-md-4">
+                        <details class="varado-panel varado-panel--imc-@card.ColorClass">
+                            <summary class="varado-panel__title">IMC (@card.Label) (@card.Units.Count)</summary>
+                            @if (card.Units.Count > 0)
+                            {
+                                <p class="small mb-0 mt-2">@string.Join(" · ", card.Units)</p>
+                            }
+                            else
+                            {
+                                <p class="small text-muted mb-0 mt-2">Sin unidades de este color en el mes.</p>
+                            }
+                        </details>
+                    </div>
+                }
+            </div>
+        </section>
+    }
 </section>

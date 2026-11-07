@@ -232,13 +232,23 @@ Check(cardsHtml.IndexOf(">W-0114</button>",StringComparison.Ordinal)>routeSectio
 foreach(var imc in new[]{"imc-roja","imc-amarilla"}) {
  Check(await Controller().ActualizarEstadoEquipo(key,imc,null,Board().LoadVersion,default) is RedirectToActionResult,"Save IMC classification: "+imc);
  var marked=Board().Equipment.Single(x=>x.Key==key);
- Check(marked.Status==imc && marked.CardStatus==imc && marked.ChipCssClass=="equipo-chip--"+imc,"IMC has its own card and takes color precedence over load: "+imc);
+ Check(marked.Status==imc && marked.DistributionStatus!="imc-roja" && marked.DistributionStatus!="imc-amarilla","Existing IMC classification keeps the unit visible in the operational distribution: "+imc);
  var imcHtml=await RenderView(new FleetBoardViewModel {Equipment=[marked]},"/Views/Operaciones/_FleetBoard.cshtml");
- Check(imcHtml.Contains(OperationalFleetBoard.StatusLabel(imc)+" (1)") && imcHtml.Contains("equipo-chip equipo-chip--"+imc+" dropdown-toggle"),"IMC card and colored chip render: "+imc);
+ Check(imcHtml.Contains("equipo-chip equipo-chip--"+imc+" dropdown-toggle"),"Existing manually colored chip still renders: "+imc);
  store.Save(Upload(Row(truck1.Name,"EN RUTA",10)));
  Check(Board().Equipment.Single(x=>x.Key==key).Status==imc,"IMC remains after a new TiHouse upload: "+imc);
 }
 Check(await Controller("supervisor@example.com",UserAccessProfiles.SupervisorOperations).ActualizarEstadoEquipo(key,"imc-roja",null,Board().LoadVersion,default) is ForbidResult,"Read-only supervisor cannot assign IMC");
+var november=ImcHistory.ForMonth(null);
+Check(november.SelectedMonth=="2026-11" && november.Months.Count==11 && november.Months.Last().Value=="2026-01",
+ "IMC defaults to the latest month and retains January through November");
+Check(november.Cards.Select(card=>card.Units.Count).SequenceEqual([2,1,3]),"November matches the three color counts in the workbook");
+var april=ImcHistory.ForMonth("2026-04");
+Check(april.Cards.Select(card=>card.Units.Count).SequenceEqual([3,0,11]) && april.Cards.Last().Units.Contains("W-0105"),
+ "April uses each unit's latest inspection, including a unit that went from yellow to green");
+var aprilHtml=await RenderView(new FleetBoardViewModel {Imc=april},"/Views/Operaciones/_FleetBoard.cshtml");
+Check(aprilHtml.Contains("IMC (Roja) (3)") && aprilHtml.Contains("IMC (Amarilla) (0)") && aprilHtml.Contains("IMC (Verde) (11)") &&
+ aprilHtml.Contains("W-0105"),"Historical selection renders the counts and the unit codes");
 var damageNow=new DateTime(2026,10,31,18,30,0,DateTimeKind.Utc);
 var damageMaster=new OperationalMasterRecord {Id=9001,Kind="equipos",Name="DAMAGE",Plate="M-123456",IsActive=true};
 var damageRecords=new[]{

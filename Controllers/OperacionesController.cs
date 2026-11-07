@@ -330,18 +330,18 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult SeguimientoToneladas()
+        public IActionResult SeguimientoToneladas(string? imcMonth = null)
         {
             var storedSeguimiento = _operacionesSeguimientoStore.Get();
             if (storedSeguimiento is not null)
             {
                 ApplyMetasProduccionMensual(storedSeguimiento);
-                return SeguimientoFleetView(storedSeguimiento);
+                return SeguimientoFleetView(storedSeguimiento, imcMonth);
             }
 
             var sampleModel = CreateSampleToneladasModel();
             ApplyMetasProduccionMensual(sampleModel);
-            return SeguimientoFleetView(sampleModel);
+            return SeguimientoFleetView(sampleModel, imcMonth);
         }
 
         [HttpPost]
