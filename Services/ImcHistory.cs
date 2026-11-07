@@ -22,7 +22,7 @@ public static class ImcHistory
         foreach (var clearance in clearances ?? [])
         {
             if (clearance.Month == selected)
-                units[clearance.UnitKey] = new Inspection(clearance.UnitCode, default, "Verde");
+                units[clearance.UnitKey] = new Inspection(clearance.UnitCode, default, clearance.Color);
         }
         return new ImcMonthViewModel
         {

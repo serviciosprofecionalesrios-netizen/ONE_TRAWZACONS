@@ -78,29 +78,35 @@ public partial class OperacionesController
         }
         var equipment = board.Equipment.SingleOrDefault(x => x.Key == key);
         if (equipment == null) return BadRequest();
-        if (status == "imc-verde")
+        if (status == "imc-verde" || (imcMonth is not null && status is ("imc-roja" or "imc-amarilla")))
         {
-            ApplyImcMonth(board, imcMonth);
-            if (string.IsNullOrEmpty(imcMonth) || imcMonth != equipment.ImcMonth ||
-                (!equipment.CanMarkImcGreen && equipment.ImcColor != "verde")) return BadRequest();
-            if (equipment.ImcColor != "verde")
+            if (string.IsNullOrEmpty(imcMonth) || imcMonth != ImcHistory.ForMonth(imcMonth).SelectedMonth)
+                return BadRequest();
+            var color = status switch { "imc-roja" => "Rojo", "imc-amarilla" => "Amarillo", _ => "Verde" };
+            var unitKey = HolcimMasterCatalog.Identifier(equipment.Code);
+            var adjustments = _context.OperationalImcClearances;
+            var adjustment = await adjustments.FindAsync([imcMonth, unitKey], cancellationToken);
+            var isNew = adjustment is null;
+            if (adjustment is null)
             {
-                var unitKey = HolcimMasterCatalog.Identifier(equipment.Code);
-                var clearance = new OperationalImcClearance { Month = imcMonth, UnitKey = unitKey, UnitCode = equipment.Code };
-                _context.OperationalImcClearances.Add(clearance);
-                try
-                {
-                    await _context.SaveChangesAsync(cancellationToken);
-                }
-                catch (DbUpdateException)
-                {
-                    // Another request may already have marked this unit green.
-                    _context.Entry(clearance).State = EntityState.Detached;
-                    if (!await _context.OperationalImcClearances.AnyAsync(
-                        row => row.Month == imcMonth && row.UnitKey == unitKey, cancellationToken)) throw;
-                }
+                adjustment = new OperationalImcClearance { Month = imcMonth, UnitKey = unitKey, UnitCode = equipment.Code };
+                adjustments.Add(adjustment);
             }
-            TempData["FleetOk"] = $"IMC de {equipment.Code} marcado en verde.";
+            adjustment.Color = color;
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException) when (isNew)
+            {
+                // A concurrent request may have created the adjustment first.
+                _context.Entry(adjustment).State = EntityState.Detached;
+                var existing = await adjustments.FindAsync([imcMonth, unitKey], cancellationToken);
+                if (existing is null) throw;
+                existing.Color = color;
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            TempData["FleetOk"] = $"IMC de {equipment.Code} marcado en {color.ToLowerInvariant()}.";
             return RedirectToAction(nameof(SeguimientoToneladas), null, new { imcMonth }, "fleet-board");
         }
         if (!OperationalFleetBoard.ManualStatuses.Contains(status) ||

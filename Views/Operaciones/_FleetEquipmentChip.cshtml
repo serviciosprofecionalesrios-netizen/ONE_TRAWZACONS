@@ -57,18 +57,21 @@
                     @foreach(var reason in OperationalFleetBoard.Reasons){<button class="dropdown-item ps-4" name="reason" value="@reason" type="submit">@reason</button>}
                 </form>
             </details></li>
-            @foreach(var state in new[]{"imc-roja","imc-amarilla","carretera","taller-pct","taller-psb","taller-poz"}){
+            @foreach(var state in new[]{"carretera","taller-pct","taller-psb","taller-poz"}){
                 <li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="@state"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit">@OperationalFleetBoard.StatusLabel(state)</button></form></li>
             }
-            @if (Model.CanMarkImcGreen)
+            @if (Model.ImcMonth is not null)
             {
+                @foreach (var (status, label) in new[] { ("imc-roja", "rojo"), ("imc-amarilla", "amarillo"), ("imc-verde", "verde") })
+                {
                 <li><form asp-action="ActualizarEstadoEquipo" method="post">
                     <input type="hidden" name="key" value="@Model.Key"/>
-                    <input type="hidden" name="status" value="imc-verde"/>
+                    <input type="hidden" name="status" value="@status"/>
                     <input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
                     <input type="hidden" name="imcMonth" value="@Model.ImcMonth"/>
-                    <button class="dropdown-item text-success" type="submit"><i class="bi bi-check-circle me-2"></i>Pasar IMC a verde</button>
+                    <button class="dropdown-item" type="submit">Pasar IMC a @label</button>
                 </form></li>
+                }
             }
             @if(Model.Status=="standby" || Model.ManualStateKey!=null || Model.ImcColor=="verde"){
                 <li><hr class="dropdown-divider"/></li><li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="finalizado"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><input type="hidden" name="imcMonth" value="@Model.ImcMonth"/><button class="dropdown-item" type="submit"><i class="bi bi-play-circle me-2"></i>Activar equipo</button></form><div class="small text-muted px-3 pb-1">Se muestra según la carga de TiHouse.</div></li>

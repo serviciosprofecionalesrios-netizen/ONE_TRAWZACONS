@@ -257,6 +257,15 @@ Check(await Controller().ActualizarEstadoEquipo(key,"finalizado",null,Board().Lo
 var clearedUnit=Board().Equipment.Single(x=>x.Key==key);
 clearedUnit.ImcColor="verde";
 Check(clearedUnit.ChipCssClass=="equipo-chip--ruta","Activated cleared unit displays the ordinary loaded color");
+foreach (var (status, color) in new[] { ("imc-amarilla", "amarilla"), ("imc-roja", "roja"), ("imc-verde", "verde") })
+{
+ Check(await Controller().ActualizarEstadoEquipo(key,status,null,Board().LoadVersion,default,"2026-11") is RedirectToActionResult,
+  $"A previously cleared unit can switch to {color}");
+ var updated=ImcHistory.ForMonth("2026-11",db.OperationalImcClearances.AsNoTracking().ToList());
+ Check(updated.Cards.Single(card=>card.Units.Contains(truck1.Name)).ColorClass==color &&
+  db.OperationalImcClearances.Count()==1 && Board().Equipment.Single(x=>x.Key==key).DistributionStatus=="ruta",
+  $"Changing IMC to {color} replaces the monthly color and preserves the load state");
+}
 Check(new FleetEquipmentViewModel {Status="finalizado",ImcColor="verde"}.ChipCssClass=="equipo-chip--descargado",
  "Cleared discharged unit displays the ordinary blue color");
 Check(pg.GetService<IMigrator>().GenerateScript("20261107010000_BreakdownMultipleDetailsPostgres","20261107020000_OperationalImcClearancesPostgres").Contains("OperationalImcClearances") &&
