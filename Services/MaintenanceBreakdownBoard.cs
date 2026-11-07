@@ -35,6 +35,7 @@ public static class MaintenanceBreakdownBoard
     {
         public string Technician {get;init;}="Sin asignar";
         public bool IsUnassigned {get;init;}=true;
+        public string RepairSummary { get; init; } = "—";
         public DateTime? SlaDeadline {get;init;}
         public double? RemainingHours {get;init;}
         public string SemaphoreLabel {get;init;}="Sin plazo";
@@ -57,9 +58,15 @@ public static class MaintenanceBreakdownBoard
                 var deadline=Deadline(x);
                 double? remaining=deadline.HasValue?(deadline.Value-DateTime.SpecifyKind(nowUtc,DateTimeKind.Unspecified).AddHours(-6)).TotalHours:null;
                 var semaphore=remaining.HasValue?MaintenanceSemaphore.Evaluate(remaining.Value,TicketStatus.Open,null):("Sin plazo","secondary",3);
-                return new Row(x.Id,x.EventAt,x.Equipment,x.Driver,site,x.Category,x.Element,x.DamageTarget,x.Observation,elapsed){
-                    Technician=x.AssignedTechnicianId.HasValue?technicianNames.GetValueOrDefault(x.AssignedTechnicianId.Value,$"Técnico #{x.AssignedTechnicianId}"):"Sin asignar",
-                    IsUnassigned=!x.AssignedTechnicianId.HasValue,SlaDeadline=deadline,RemainingHours=remaining,
+                var damages = x.GetDamages().ToArray();
+                var techniciansAssigned = x.GetTechnicianIds();
+                return new Row(x.Id,x.EventAt,x.Equipment,x.Driver,site,
+                    string.Join(", ", damages.Select(d => d.Category).Distinct()),
+                    string.Join(", ", damages.Select(d => d.Element).Distinct()),
+                    string.Join(", ", damages.Select(d => d.Target).Distinct()),x.Observation,elapsed){
+                    Technician=techniciansAssigned.Length == 0 ? "Sin asignar" :
+                        string.Join(", ", techniciansAssigned.Select(id => technicianNames.GetValueOrDefault(id, $"Técnico #{id}"))),
+                    IsUnassigned=techniciansAssigned.Length == 0,RepairSummary=x.RepairSummary,SlaDeadline=deadline,RemainingHours=remaining,
                     SemaphoreLabel=semaphore.Item1,SemaphoreTone=semaphore.Item2,SemaphoreRank=semaphore.Item3};
             }).OrderBy(x=>x.SemaphoreRank).ThenBy(x=>x.RemainingHours).ThenBy(x=>x.EventAt).ThenBy(x=>x.Id).ToList();
     }

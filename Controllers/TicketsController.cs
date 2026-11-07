@@ -1534,7 +1534,7 @@ namespace ITServiceDeskApp.Controllers
                 .ToList();
 
             var openBreakdowns = MaintenanceBreakdownBoard.Build(
-                await _context.OperationalBreakdowns.AsNoTracking().Where(x=>x.EndAt==null).ToListAsync(),
+                await _context.OperationalBreakdowns.AsNoTracking().Include(x=>x.Damages).Where(x=>x.EndAt==null).ToListAsync(),
                 await _context.OperationalFleetStates.AsNoTracking().ToListAsync(),nowUtc,
                 await _context.MaintenanceTechnicians.AsNoTracking().ToListAsync());
             var siteOptions = MaintenanceSites.Concat(openBreakdowns.Select(x=>x.Site)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();

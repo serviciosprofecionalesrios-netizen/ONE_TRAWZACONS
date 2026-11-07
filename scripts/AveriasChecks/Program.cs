@@ -25,7 +25,8 @@ foreach(var row in data)foreach(var property in typeof(OperationalBreakdown).Get
  var max=(System.ComponentModel.DataAnnotations.MaxLengthAttribute?)Attribute.GetCustomAttribute(property,typeof(System.ComponentModel.DataAnnotations.MaxLengthAttribute));
  if(max!=null && property.GetValue(row) is string text && text.Length>max.Length)throw new Exception("Length overflow: "+property.Name+" "+row.SourceKey);
 }
-using var db=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+var memoryOptions=new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+using var db=new ApplicationDbContext(memoryOptions);
 OperationalBreakdownCatalog.Seed(db);OperationalBreakdownCatalog.Seed(db);
 Check(db.OperationalBreakdowns.Count()==1607,"Startup import is idempotent in isolated database");
 var truck=new OperationalMasterRecord{Kind="equipos",Name="W-0001",RecordKey="test-truck"};
@@ -37,13 +38,28 @@ OperacionesController Controller(string? profile=null){
  var http=new DefaultHttpContext{User=new ClaimsPrincipal(new ClaimsIdentity(claims,"test"))};
  return new OperacionesController(null!,store,null!,null!,null!,null!,db,null!,null!,NullLogger<OperacionesController>.Instance,null!,null!){ControllerContext=new ControllerContext{HttpContext=http},TempData=new TempDataDictionary(http,new TempData())};
 }
-var form=(BreakdownCreateViewModel)((ViewResult)Controller().NuevaAveria("master:"+truck.Id)).Model!;
+var form=(BreakdownCreateViewModel)((ViewResult)await Controller().NuevaAveria("master:"+truck.Id,default)).Model!;
 Check(form.Equipment==truck.Name && form.Circuit=="Limón","Truck menu preselects equipment and defaults circuit to Limón");
 var category=OperationalBreakdownCatalog.Elements.First();
-BreakdownCreateViewModel Valid()=>new(){Equipment=truck.Name,EquipmentStatus="Vacio",Category=category.Key,Element=category.Value.First(),DamageTarget="EQUIPO"};
+var otherCategory=OperationalBreakdownCatalog.Elements.First(x=>x.Key!=category.Key && x.Value.Except(category.Value).Any());
+var otherElement=otherCategory.Value.Except(category.Value).First();
+var createTechnicians=new[]{new MaintenanceTechnician{FullName="Ana",IsActive=true},new MaintenanceTechnician{FullName="Luis",IsActive=true}};
+db.AddRange(createTechnicians);db.SaveChanges();
+BreakdownCreateViewModel Valid()=>new(){Equipment=truck.Name,EquipmentStatus="Vacio",
+ Damages=[new(){Category=category.Key,Element=category.Value.First(),Target="EQUIPO"},
+          new(){Category=otherCategory.Key,Element=otherElement,Target="GONDOLA"}],
+ TechnicianIds=createTechnicians.Select(x=>x.Id).ToList(),EquipmentUnderRepair=true,GondolaUnderRepair=true};
 Check(await Controller().NuevaAveria(Valid(),default) is RedirectToActionResult,"Authorized user can register new breakdown");
 Check(db.OperationalBreakdowns.Count()==1608 && db.OperationalBreakdowns.OrderBy(x=>x.Id).Last().Status=="Abierta","Manual record is saved as open and historical count preserved");
-var invalid=Valid();invalid.Element="INVALID";
+var saved=db.OperationalBreakdowns.AsNoTracking().Include(x=>x.Damages).OrderBy(x=>x.Id).Last();
+Check(saved.GetTechnicianIds().SequenceEqual(createTechnicians.Select(x=>x.Id)) && saved.EquipmentUnderRepair &&
+ saved.GondolaUnderRepair && saved.GetDamages().Select(x=>(x.Category,x.Element,x.Target)).SequenceEqual(
+ [(category.Key,category.Value.First(),"EQUIPO"),(otherCategory.Key,otherElement,"GONDOLA")]),
+ "Two technicians and two category/element/target combinations persist with both repairs active");
+var searchResults=(BreakdownListViewModel)((ViewResult)await Controller().Averias(otherElement)).Model!;
+Check(searchResults.Records.Any(x=>x.Id==saved.Id),"Search finds the incident by its secondary damaged element");
+Check(data.All(x=>x.GetDamages().Single().Element==x.Element),"Imported records retain their historical damage details");
+var invalid=Valid();invalid.Damages[1].Category=category.Key;
 Check(await Controller().NuevaAveria(invalid,default) is ViewResult && db.OperationalBreakdowns.Count()==1608,"Unrelated damage element rejected without saving");
 Check(await Controller(UserAccessProfiles.SupervisorOperations).NuevaAveria(Valid(),default) is ForbidResult,"Read-only supervisor cannot create breakdowns");
 Check(((BreakdownListViewModel)((ViewResult)await Controller().Averias(null,1)).Model!).Records.Count==50,"Historical table paginates at 50 rows");
@@ -68,7 +84,7 @@ Check(MaintenanceBreakdownBoard.Build(new[]{Open(10,"{\"Fecha Fin Evento\":\"29/
 Check(MaintenanceBreakdownBoard.Build(data,[],boardTime).Count==94,"Only the 94 valid open historical records reach the maintenance board");
 var closeTruck=new OperationalMasterRecord{Kind="equipos",Name="W-CLOSE",Plate="M-CLOSE",RecordKey="close-truck"};
 db.Add(closeTruck);db.SaveChanges();
-var first=Open(0);first.Equipment=closeTruck.Name;
+var first=Open(0);first.Equipment=closeTruck.Name;first.EquipmentUnderRepair=true;first.GondolaUnderRepair=true;
 var second=Open(0);second.Equipment=closeTruck.Plate!;
 db.AddRange(first,second);db.SaveChanges();
 var result=await OperationalBreakdownClosure.CloseAsync(db,new(),first.Id,new DateTime(2026,10,29,9,0,0),"admin@trawzacons.com",boardTime);
@@ -78,6 +94,7 @@ Check(result.Error!=null && first.EndAt==null,"Future closing date is rejected i
 result=await OperationalBreakdownClosure.CloseAsync(db,new(),first.Id,new DateTime(2026,10,29,11,0,0),"admin@trawzacons.com",boardTime);
 Check(result.Error==null && !result.Activated && first.Status=="Cerrada" && first.EndAt!=null,"Closing one incident cannot activate equipment with another open incident, including plate aliases");
 Check(!MaintenanceBreakdownBoard.IsOperationallyOpen(first) && first.SourceJson!.Contains("admin@trawzacons.com"),"Closure leaves maintenance board and records closing actor");
+Check(!first.EquipmentUnderRepair && !first.GondolaUnderRepair,"Closing the incident clears both active repair indicators");
 var priorUpload=new SeguimientoToneladasViewModel{IsFromUpload=true,LatestUploadAt=boardTime.AddMinutes(-10),LatestUploadEquipment=[closeTruck.Name],Rows=[new(){Equipo=closeTruck.Name,Estado="EN RUTA",FechaEvento=boardTime}]};
 result=await OperationalBreakdownClosure.CloseAsync(db,priorUpload,second.Id,new DateTime(2026,10,29,11,30,0),"admin@trawzacons.com",boardTime);
 Check(result.Error==null && result.Activated,"Closing the last incident activates equipment");
@@ -99,10 +116,24 @@ MaintenanceBreakdownsController MaintenanceController(){
  controller.ControllerContext=new ControllerContext{HttpContext=http};controller.TempData=new TempDataDictionary(http,new TempData());return controller;
 }
 Check(await MaintenanceController().Close(managed.Id) is ViewResult,"Closure controller resolves using the actual interface registration and opens its form");
-var edit=new MaintenanceBreakdownsController.CloseForm{Id=managed.Id,TechnicianId=technician.Id,SlaDeadline=DateTime.UtcNow.AddHours(-2),ClosedAt=null};
-Check(await MaintenanceController().Close(edit,default,"assign") is RedirectToActionResult && managed.AssignedTechnicianId==technician.Id && managed.Status=="Abierta","Assign active technician and deadline without requiring closure date or closing incident");
-var invalidAssignment=new MaintenanceBreakdownsController.CloseForm{Id=managed.Id,TechnicianId=inactiveTechnician.Id};
-Check(await MaintenanceController().Close(invalidAssignment,default,"assign") is ViewResult && managed.AssignedTechnicianId==technician.Id,"Inactive technician cannot be newly assigned");
+var edit=new MaintenanceBreakdownsController.CloseForm{Id=managed.Id,TechnicianIds=[technician.Id,createTechnicians[0].Id],SlaDeadline=DateTime.UtcNow.AddHours(-2),EquipmentUnderRepair=true,GondolaUnderRepair=true};
+Check(await MaintenanceController().Close(edit,default,"assign") is RedirectToActionResult &&
+ managed.GetTechnicianIds().SequenceEqual(edit.TechnicianIds) && managed.Status=="Abierta","Assign multiple active technicians and deadline without closing incident");
+var managedRow=MaintenanceBreakdownBoard.Build([managed],[],boardTime,[technician,createTechnicians[0]]).Single();
+Check(managedRow.Technician==$"{technician.FullName}, {createTechnicians[0].FullName}" && managedRow.RepairSummary=="Equipo y góndola",
+ "Maintenance board shows all assigned technicians and both active repairs");
+edit.EquipmentUnderRepair=false;
+using var staleDb=new ApplicationDbContext(memoryOptions);
+var staleRepair=await staleDb.OperationalBreakdowns.SingleAsync(x=>x.Id==managed.Id);
+Check(await MaintenanceController().Close(edit,default,"assign") is RedirectToActionResult && !managed.EquipmentUnderRepair && managed.GondolaUnderRepair,
+ "Equipment repair can end while the gondola remains under repair");
+staleRepair.EndAt=DateTime.UtcNow;
+var conflictDetected=false;
+try { await staleDb.SaveChangesAsync(); }
+catch (DbUpdateConcurrencyException) { conflictDetected=true; }
+Check(conflictDetected,"A concurrent repair update prevents a stale closure from being saved");
+var invalidAssignment=new MaintenanceBreakdownsController.CloseForm{Id=managed.Id,TechnicianIds=[inactiveTechnician.Id]};
+Check(await MaintenanceController().Close(invalidAssignment,default,"assign") is ViewResult && managed.GetTechnicianIds().SequenceEqual(edit.TechnicianIds),"Inactive technician cannot be newly assigned");
 Check(await MaintenanceController().Close(new(){Id=managed.Id},default,"close") is ViewResult && managed.EndAt==null,"Closing still requires a closing date");
 Check(MaintenanceSemaphore.Evaluate(-0.01,TicketStatus.Open,null).Tone=="danger" && MaintenanceSemaphore.Evaluate(0,TicketStatus.Open,null).Tone=="warning" && MaintenanceSemaphore.Evaluate(4,TicketStatus.Open,null).Tone=="warning","Shared overdue and near-due thresholds match work orders, including exact 4h boundary");
 Check(MaintenanceSemaphore.Evaluate(4.01,TicketStatus.Open,null).Tone=="info" && MaintenanceSemaphore.Evaluate(12,TicketStatus.Open,null).Tone=="info" && MaintenanceSemaphore.Evaluate(12.01,TicketStatus.Open,null).Tone=="success","Shared monitoring and on-time thresholds match work orders");
@@ -112,6 +143,13 @@ Check(timedRow.Technician==technician.FullName && !timedRow.IsUnassigned && time
 Check(MaintenanceBreakdownBoard.Build(new[]{Open(501)},[],boardTime).Single() is {IsUnassigned:true,SemaphoreLabel:"Sin plazo"},"No invented SLA when the source has no deadline or estimate");
 Check(pg.GetService<IMigrator>().GenerateScript("20261029010000_OperationalBreakdownsPostgres","20261029020000_BreakdownTechnicianSlaPostgres").Contains("AssignedTechnicianId"),"PostgreSQL technician/deadline migration generates offline");
 Check(sql.GetService<IMigrator>().GenerateScript("20261029010000_OperationalBreakdowns","20261029020000_BreakdownTechnicianSla").Contains("SlaDeadline"),"SQL Server technician/deadline migration generates offline");
+foreach (var (context, suffix) in new (ApplicationDbContext, string)[]{(pg,"Postgres"),(sql,"")})
+{
+ var table=context.Model.FindEntityType(typeof(OperationalBreakdownDamage))!.GetTableName();
+ var script=context.GetService<IMigrator>().GenerateScript("20261029020000_BreakdownTechnicianSla"+suffix,"20261107010000_BreakdownMultipleDetails"+suffix);
+ Check(table=="OperationalBreakdownDamage" && script.Contains(table) && script.Contains("GondolaUnderRepair"),
+  $"{context.Database.ProviderName} migration matches the damage model and generates offline");
+}
 Console.WriteLine("PASS: Averias, closure controller activation, technician assignment and shared semaphores complete");
 sealed class TempData:ITempDataProvider{public IDictionary<string,object> LoadTempData(HttpContext c)=>new Dictionary<string,object>();public void SaveTempData(HttpContext c,IDictionary<string,object> v){}}
 

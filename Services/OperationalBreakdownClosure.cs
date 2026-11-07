@@ -46,6 +46,8 @@ public static class OperationalBreakdownClosure
         metadata["Fecha cierre en sistema"]=closedAt.ToString("yyyy-MM-dd HH:mm:ss");
         record.SourceJson=JsonSerializer.Serialize(metadata);
         record.Status="Cerrada";record.EndAt=closedAt;
+        record.EquipmentUnderRepair = false;
+        record.GondolaUnderRepair = false;
         await db.SaveChangesAsync(cancellationToken);
         return new(null,!hasOtherOpen);
     }

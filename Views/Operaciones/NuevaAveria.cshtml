@@ -10,9 +10,53 @@
 <div class="col-md-6"><label asp-for="Equipment" class="form-label">Equipo *</label><input asp-for="Equipment" list="averias-equipos" class="form-control" required maxlength="160"/><datalist id="averias-equipos">@foreach(var item in Model.EquipmentOptions){<option value="@item"></option>}</datalist></div>
 <div class="col-md-6"><label asp-for="Driver" class="form-label">Conductor</label><input asp-for="Driver" list="averias-conductores" class="form-control" maxlength="160"/><datalist id="averias-conductores">@foreach(var item in Model.DriverOptions){<option value="@item"></option>}</datalist></div>
 <div class="col-md-6"><label asp-for="EquipmentStatus" class="form-label">Estatus del equipo *</label><select asp-for="EquipmentStatus" class="form-select" required><option value="">Selecciona el estatus</option>@foreach(var item in OperationalBreakdownCatalog.Options("Estatus Equipo")){<option value="@item">@item</option>}</select></div>
-<div class="col-md-6"><label asp-for="DamageTarget" class="form-label">Daño en equipo *</label><select asp-for="DamageTarget" class="form-select" required><option value="">Selecciona equipo o góndola</option>@foreach(var item in OperationalBreakdownCatalog.Options("DAÑO EN EQUIPO")){<option value="@item">@item</option>}</select></div>
-<div class="col-md-6"><label asp-for="Category" class="form-label">Categoría de daño *</label><select asp-for="Category" class="form-select" required><option value="">Selecciona la categoría</option>@foreach(var item in OperationalBreakdownCatalog.Elements.Keys.OrderBy(x=>x)){<option value="@item">@item</option>}</select></div>
-<div class="col-md-6"><label asp-for="Element" class="form-label">Elemento de daño *</label><select asp-for="Element" class="form-select" required data-selected="@Model.Element"><option value="">Selecciona primero una categoría</option>@if(OperationalBreakdownCatalog.Elements.TryGetValue(Model.Category,out var elements)){foreach(var item in elements){<option value="@item">@item</option>}}</select></div>
+<fieldset class="col-12">
+    <legend class="fs-6 fw-bold">Daños registrados *</legend>
+    <div id="averias-damages">
+        @for (var i = 0; i < Model.Damages.Count; i++)
+        {
+            var damage = Model.Damages[i];
+            <div class="row g-2 align-items-end mb-2" data-damage>
+                <label class="col-md-3">Daño en
+                    <select name="Damages[@i].Target" data-field="Target" class="form-select" required>
+                        <option value="">Selecciona</option>
+                        <option value="EQUIPO" selected="@(damage.Target == "EQUIPO")">Equipo</option>
+                        <option value="GONDOLA" selected="@(damage.Target == "GONDOLA")">Góndola</option>
+                    </select>
+                </label>
+                <label class="col-md-4">Categoría de daño
+                    <select name="Damages[@i].Category" data-field="Category" class="form-select" required>
+                        <option value="">Selecciona la categoría</option>
+                        @foreach (var category in OperationalBreakdownCatalog.Elements.Keys.OrderBy(x => x))
+                        {
+                            <option value="@category" selected="@(damage.Category == category)">@category</option>
+                        }
+                    </select>
+                </label>
+                <label class="col-md">Elemento dañado
+                    <select name="Damages[@i].Element" data-field="Element" data-selected="@damage.Element" class="form-select" required>
+                        <option value="">Selecciona primero una categoría</option>
+                    </select>
+                </label>
+                <div class="col-md-auto"><button type="button" class="btn btn-outline-danger" data-remove-damage>Quitar</button></div>
+            </div>
+        }
+    </div>
+    <button type="button" id="averias-add-damage" class="btn btn-outline-primary btn-sm">Agregar daño</button>
+</fieldset>
+<fieldset class="col-md-6">
+    <legend class="fs-6 fw-bold">Técnicos asignados</legend>
+    @foreach (var technician in Model.Technicians)
+    {
+        <label class="d-block"><input class="form-check-input me-1" type="checkbox" name="TechnicianIds" value="@technician.Id" checked="@Model.TechnicianIds.Contains(technician.Id)" /> @technician.FullName</label>
+    }
+    @if (Model.Technicians.Count == 0) { <p class="text-muted mb-0">No hay técnicos activos en el catálogo.</p> }
+</fieldset>
+<fieldset class="col-md-6">
+    <legend class="fs-6 fw-bold">En reparación</legend>
+    <div class="form-check"><input asp-for="EquipmentUnderRepair" class="form-check-input"/><label asp-for="EquipmentUnderRepair" class="form-check-label">Equipo</label></div>
+    <div class="form-check"><input asp-for="GondolaUnderRepair" class="form-check-input"/><label asp-for="GondolaUnderRepair" class="form-check-label">Góndola</label></div>
+</fieldset>
 <div class="col-12"><label asp-for="Observation" class="form-label">Observación del daño</label><textarea asp-for="Observation" class="form-control" rows="4" maxlength="4000"></textarea></div>
 </div><p class="small text-muted mt-3 mb-0">* Campos obligatorios. La nueva avería se registra como Abierta. Este registro no cambia automáticamente el estado del camión.</p></div><div class="card-footer d-flex justify-content-end gap-2 p-3"><a class="btn btn-outline-secondary" asp-action="Averias">Cancelar</a><button type="submit" class="btn btn-primary">Registrar avería</button></div></form></div>
 <script id="averias-elements" type="application/json">@Html.Raw(JsonSerializer.Serialize(OperationalBreakdownCatalog.Elements))</script>
