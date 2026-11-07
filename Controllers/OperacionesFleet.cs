@@ -11,6 +11,11 @@ public partial class OperacionesController
         var fleetSource = model.IsFromUpload ? model : _operacionesSeguimientoStore.Get() ?? model;
         model.Fleet = BuildFleet(fleetSource);
         model.Fleet.Imc = ImcHistory.ForMonth(imcMonth);
+        var imcColors = model.Fleet.Imc.Cards
+            .SelectMany(card => card.Units.Select(unit => (Unit: HolcimMasterCatalog.Identifier(unit), card.ColorClass)))
+            .ToDictionary(entry => entry.Unit, entry => entry.ColorClass);
+        foreach (var equipment in model.Fleet.Equipment)
+            equipment.ImcColor = imcColors.GetValueOrDefault(HolcimMasterCatalog.Identifier(equipment.Code));
         return View("SeguimientoToneladas",model);
     }
     private FleetBoardViewModel BuildFleet(SeguimientoToneladasViewModel source)

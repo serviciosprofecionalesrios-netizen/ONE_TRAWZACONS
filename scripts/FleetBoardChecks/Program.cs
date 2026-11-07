@@ -243,6 +243,12 @@ var november=ImcHistory.ForMonth(null);
 Check(november.SelectedMonth=="2026-11" && november.Months.Count==11 && november.Months.Last().Value=="2026-01",
  "IMC defaults to the latest month and retains January through November");
 Check(november.Cards.Select(card=>card.Units.Count).SequenceEqual([2,1,3]),"November matches the three color counts in the workbook");
+var novemberHtml=await RenderView(new FleetBoardViewModel {Imc=november},"/Views/Operaciones/_FleetBoard.cshtml");
+Check(novemberHtml.Contains("equipo-chip--imc-roja\">W-0001") &&
+ novemberHtml.Contains("equipo-chip--imc-amarilla\">H-05"),"November renders each listed unit in its own inspection color");
+var loadedWithImc=new FleetEquipmentViewModel {Code="H-05",Status="ruta",BaseStatus="ruta",ImcColor="amarilla"};
+Check(loadedWithImc.DistributionStatus=="ruta" && loadedWithImc.ChipCssClass=="equipo-chip--imc-amarilla",
+ "A loaded yellow IMC unit stays in the route card and uses the distinct inspection color");
 var april=ImcHistory.ForMonth("2026-04");
 Check(april.Cards.Select(card=>card.Units.Count).SequenceEqual([3,0,11]) && april.Cards.Last().Units.Contains("W-0105"),
  "April uses each unit's latest inspection, including a unit that went from yellow to green");
