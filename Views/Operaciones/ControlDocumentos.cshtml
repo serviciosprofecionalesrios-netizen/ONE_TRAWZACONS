@@ -1767,6 +1767,10 @@
 
         <div class="doc-table-controls doc-panel-personas">
             <div class="doc-table-controls__box doc-table-controls__box--filters">
+                <div class="doc-operation-filters" role="group" aria-label="Filtrar conductores por empresa">
+                    <button type="button" class="btn btn-sm btn-outline-primary js-doc-company-filter" data-company-filter="EQUINOX" aria-pressed="false">EQUINOX</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary js-doc-company-filter" data-company-filter="HOLCIM" aria-pressed="false">HOLCIM</button>
+                </div>
                 <div class="doc-semaforo-legend doc-semaforo-legend--inbox">
                     <span class="doc-semaforo-legend-item">
                         <span class="doc-semaforo-dot doc-semaforo-dot--verde"></span>
@@ -1993,6 +1997,7 @@
                             data-filtros="@filtrosFila"
                             data-operacion="@filaOperacionFiltro"
                             data-conductor="@fila.Conductor"
+                            data-company="@fila.EmpresaOperacion"
                             data-vigentes="@filaVigentes"
                             data-porvencer="@filaPorVencer"
                             data-vencidas="@filaVencidas"
@@ -2207,6 +2212,12 @@
                             </td>
                         </tr>
                     }
+                    else
+                    {
+                        <tr class="doc-is-hidden js-doc-filter-empty">
+                            <td colspan="@(Model.TotalCapacitaciones + 1)" class="text-muted">No hay conductores que coincidan con los filtros.</td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -2282,6 +2293,9 @@
             var execToggleButton = document.querySelector(".js-doc-exec-toggle");
             var filterButtons = Array.from(document.querySelectorAll(".js-doc-filter"));
             var operationFilterButtons = Array.from(document.querySelectorAll(".js-doc-oper-filter"));
+            var companyFilterButtons = Array.from(document.querySelectorAll(".js-doc-company-filter"));
+            var companyFilterEmpty = document.querySelector(".js-doc-filter-empty");
+            var activeCompanyFilter = "";
             var activeFilter = "";
             var activeOperationFilter = "";
             var activeSearchTerm = "";
@@ -2517,6 +2531,7 @@
                 var hasFilter = activeFilter.length > 0;
                 var hasOperationFilter = activeOperationFilter.length > 0;
                 var hasSearch = activeSearchTerm.length > 0;
+                var anyVisible = false;
 
                 document.querySelectorAll(".js-doc-row").forEach(function (mainRow) {
                     var rowIndex = mainRow.getAttribute("data-row-index") || "";
@@ -2537,7 +2552,10 @@
                     }
                     var rowMatchesOperation = !hasOperationFilter || operacion === activeOperationFilter;
                     var rowMatchesSearch = !hasSearch || conductor.includes(activeSearchTerm);
-                    var rowVisible = rowMatchesStatus && rowMatchesOperation && rowMatchesSearch;
+                    var companies = (mainRow.getAttribute("data-company") || "").split("/");
+                    var rowMatchesCompany = !activeCompanyFilter || companies.includes(activeCompanyFilter);
+                    var rowVisible = rowMatchesStatus && rowMatchesOperation && rowMatchesSearch && rowMatchesCompany;
+                    anyVisible = anyVisible || rowVisible;
                     mainRow.classList.toggle("doc-is-hidden", !rowVisible);
 
                     var detailRow = document.querySelector('.js-doc-detail-row[data-row-index="' + rowIndex + '"]');
@@ -2567,6 +2585,12 @@
 
                 syncFilterButtons();
                 syncOperationFilterButtons();
+                companyFilterButtons.forEach(function (button) {
+                    var selected = button.getAttribute("data-company-filter") === activeCompanyFilter;
+                    button.classList.toggle("active", selected);
+                    button.setAttribute("aria-pressed", String(selected));
+                });
+                if (companyFilterEmpty) companyFilterEmpty.classList.toggle("doc-is-hidden", anyVisible);
                 renderBulkConductorPicker();
             }
 
@@ -2666,6 +2690,15 @@
                 btn.addEventListener("click", function () {
                     var selectedFilter = (btn.getAttribute("data-oper-filter") || "").toLowerCase();
                     activeOperationFilter = activeOperationFilter === selectedFilter ? "" : selectedFilter;
+                    applyFilters();
+                });
+            });
+
+            companyFilterButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var company = button.getAttribute("data-company-filter");
+                    activeCompanyFilter = activeCompanyFilter === company ? "" : company;
+                    closeDrawer();
                     applyFilters();
                 });
             });
