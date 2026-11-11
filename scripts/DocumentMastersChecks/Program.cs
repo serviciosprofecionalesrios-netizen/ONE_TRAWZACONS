@@ -233,7 +233,20 @@ Check(activatedDocuments.Filas.Single(x=>x.MasterId==activationModel.Id).Capacit
 Check(ActivationActor().MaestroNuevo("conductores",activationName) is NotFoundResult,"Registro ya vinculado no ofrece otra alta duplicada");
 var deniedActivation=Controller();deniedActivation.HttpContext.User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,"hs@example.com"),new Claim(ClaimTypes.Role,"GestorHS")},"test"));
 Check(deniedActivation.MaestroNuevo("conductores",activationName) is ForbidResult,"Activación con alta respeta los permisos existentes del maestro");
-Console.WriteLine("PASS: document groups and contextual driver activation.");
+var iperBefore = Documents().CumplimientoCapacitaciones.Single(x => x.Capacitacion == "IPER");
+var holcim = new OperationalMasterRecord { Kind = "conductores", Name = "Conductor exclusivo Holcim", RecordKey = "test-holcim", CompanyClassification = "HOLCIM" };
+var shared = new OperationalMasterRecord { Kind = "conductores", Name = "Conductor compartido", RecordKey = "test-shared", CompanyClassification = "HOLCIM/EQUINOX" };
+db.AddRange(holcim, shared);
+db.SaveChanges();
+var byCompany = Documents();
+var holcimRow = byCompany.Filas.Single(x => x.MasterId == holcim.Id);
+var sharedRow = byCompany.Filas.Single(x => x.MasterId == shared.Id);
+Check(holcimRow.EmpresaOperacion == "HOLCIM" && sharedRow.EmpresaOperacion == "HOLCIM/EQUINOX" && byCompany.Filas.Single(x => x.MasterId == driver.Id).EmpresaOperacion == "EQUINOX", "Document rows carry the company from the linked master");
+Check(holcimRow.Capacitaciones.Single(x => x.NombreCapacitacion == "IPER") is { Aplica: false, EstadoFiltro: "noaplica" } && sharedRow.Capacitaciones.Single(x => x.NombreCapacitacion == "IPER").EstadoFiltro == "sinfecha", "Training is exempt only for Holcim-exclusive drivers");
+Check(holcimRow.Capacitaciones.Single(x => x.NombreCapacitacion == "Licencia").EstadoFiltro == "sinfecha", "Personal documents still apply to Holcim drivers");
+var iperAfter = byCompany.CumplimientoCapacitaciones.Single(x => x.Capacitacion == "IPER");
+Check(iperAfter.TotalConductores == iperBefore.TotalConductores + 1 && iperAfter.SinFecha == iperBefore.SinFecha + 1, "Only the shared driver contributes to training compliance and missing-date counts");
+Console.WriteLine("PASS: document groups, contextual activation and company-based training applicability.");
 sealed class TestTempDataProvider : ITempDataProvider { public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){} }
 sealed class TestEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment {
  public string ContentRootPath {get;set;}="";public string WebRootPath {get;set;}="";public string EnvironmentName{get;set;}="Testing";public string ApplicationName{get;set;}="Check";

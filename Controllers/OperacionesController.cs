@@ -6711,6 +6711,7 @@ namespace ITServiceDeskApp.Controllers
                 }
                 persona.Nombre = master.Name; persona.MasterId = master.Id; persona.MasterCode = master.DisplayId;
                 persona.Tenure = master.Tenure; persona.Owner = master.Owner; persona.SourceKey = master.SourceKey;
+                persona.EmpresaOperacion = master.CompanyClassification;
             }
             var overrides = LoadControlDocumentosOverrides();
             foreach (var persona in groups.Values)
@@ -6733,9 +6734,19 @@ namespace ITServiceDeskApp.Controllers
                         var fecha = persona.Fechas is not null && persona.Fechas.TryGetValue(encabezado, out var fechaGuardada)
                             ? fechaGuardada
                             : string.Empty;
-                        var estado = IsMechanicSupervisorTraining(encabezado) && !HasMechanicSupervisorPosition(persona.Datos)
-                            ? NonApplicableTraining(encabezado)
-                            : BuildControlDocumentoCapacitacionEstado(encabezado, fecha);
+                        ControlDocumentosCapacitacionEstadoViewModel estado;
+                        if (persona.EmpresaOperacion == "HOLCIM" && ControlDocumentoValidityYears(encabezado).HasValue)
+                        {
+                            estado = NonApplicableTraining(encabezado, "Capacitación no requerida para Holcim.");
+                        }
+                        else if (IsMechanicSupervisorTraining(encabezado) && !HasMechanicSupervisorPosition(persona.Datos))
+                        {
+                            estado = NonApplicableTraining(encabezado);
+                        }
+                        else
+                        {
+                            estado = BuildControlDocumentoCapacitacionEstado(encabezado, fecha);
+                        }
                         capacitaciones.Add(estado);
                         fechasCapacitacion.Add(estado.Fecha);
                         fechasCapacitacionIso.Add(estado.FechaIso);
@@ -6744,6 +6755,7 @@ namespace ITServiceDeskApp.Controllers
                     return new ControlDocumentosRowViewModel
                     {
                         Conductor = persona.Nombre,
+                        EmpresaOperacion = persona.EmpresaOperacion,
                         IsActive = masters.FirstOrDefault(master => master.Id == persona.MasterId)?.IsActive,
                         // Imported CSV history carries its original request reference. Runtime admissions
                         // without that provenance stay in the main view, even before master registration.
@@ -6848,6 +6860,7 @@ namespace ITServiceDeskApp.Controllers
 
         private sealed class ControlDocumentosPersonaRecord
         {
+            public string EmpresaOperacion { get; set; } = "";
             public List<string> NombresOrigen { get; set; } = new();
             public string? SourceKey { get; set; }
             public int? MasterId { get; set; }
@@ -6917,6 +6930,7 @@ namespace ITServiceDeskApp.Controllers
                 RegistroUrl = registroUrl,
                 QrPdfUrl = qrPdfUrl,
                 FechaGeneracion = DateTime.Now,
+                EmpresaOperacion = fila.EmpresaOperacion,
                 Capacitaciones = fila.Capacitaciones.Where(cap => cap.Aplica).ToList(),
                 DatosProfesionales = fila.Datos
                     .Where(x => new[] { "Empresa", "Cargo", "Ubicación de Trabajo", "Nombre Supervisor", "Categorías de Licencia", "Fecha Vencimiento Licencia.", "Estado de solicitud" }.Contains(x.Key))

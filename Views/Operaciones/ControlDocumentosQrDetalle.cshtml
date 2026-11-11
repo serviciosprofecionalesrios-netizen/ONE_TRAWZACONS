@@ -15,7 +15,9 @@
     var hayCapacitacionPorVencer = totalPorVencer > 0;
     var estadoOperacionClase = "verde";
     var estadoOperacionTitulo = "Puede Operar";
-    var estadoOperacionDetalle = "Todas las capacitaciones estan vigentes.";
+    var estadoOperacionDetalle = Model.EmpresaOperacion == "HOLCIM"
+        ? "Los documentos aplicables están vigentes."
+        : "Todas las capacitaciones estan vigentes.";
     var estadoOperacionSemaforo = "OK";
     var estadoOperacionEtiqueta = "ESTADO NORMAL";
 
@@ -301,6 +303,10 @@
     <div class="qr-detail-head">
         <div>
             <h3 class="module-banner page-title-ribbon"><i class="bi bi-truck-front" aria-hidden="true"></i><span>Registro de capacitaciones - @Model.Conductor</span></h3>
+            @if (!string.IsNullOrEmpty(Model.EmpresaOperacion))
+            {
+                <span class="badge bg-primary">@Model.EmpresaOperacion</span>
+            }
             <p>Consulta viva via QR | Codigo: @Model.ConductorKey | @Model.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</p>
             @if (Model.DatosProfesionales.Any())
             {

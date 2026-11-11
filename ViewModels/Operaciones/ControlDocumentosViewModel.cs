@@ -26,6 +26,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosRowViewModel
     {
+        public string EmpresaOperacion { get; set; } = "";
         public bool? IsActive { get; set; }
         public bool IsNewAdmission { get; set; }
         public bool IsInDeactivatedView => IsActive == false ||
@@ -148,6 +149,7 @@ namespace ITServiceDeskApp.ViewModels.Operaciones
 
     public sealed class ControlDocumentosQrViewModel
     {
+        public string EmpresaOperacion { get; set; } = "";
         public IReadOnlyDictionary<string, string> DatosProfesionales { get; set; } = new Dictionary<string, string>();
         public string Conductor { get; set; } = string.Empty;
         public string ConductorKey { get; set; } = string.Empty;

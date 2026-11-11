@@ -137,6 +137,10 @@
     <div class="qr-card-head">
         <h3 class="module-banner page-title-ribbon"><i class="bi bi-truck-front" aria-hidden="true"></i><span>QR unico de conductor</span></h3>
         <p>@Model.Conductor</p>
+        @if (!string.IsNullOrEmpty(Model.EmpresaOperacion))
+        {
+            <span class="badge bg-primary">@Model.EmpresaOperacion</span>
+        }
     </div>
     <div class="qr-card-body">
         <div class="qr-card-qr">

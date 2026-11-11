@@ -51,6 +51,7 @@
         {
             RowIndex = rowIndex,
             Conductor = filaDrawer.Conductor,
+            Empresa = filaDrawer.EmpresaOperacion,
             Datos = filaDrawer.Datos,
             Capacitaciones = Model.EncabezadosCapacitacion
                 .Select((header, index) => new { Header = header, Index = index })
@@ -1705,7 +1706,7 @@
                                         </div>
                                     </td>
                                     <td class="doc-chart-col-sf">@item.SinFecha</td>
-                                    <td class="doc-chart-col-pct">@item.CumplimientoPorcentaje.ToString("0.#", CultureInfo.CurrentCulture)%</td>
+                                    <td class="doc-chart-col-pct">@(total == 0 ? "No aplica" : item.CumplimientoPorcentaje.ToString("0.#", CultureInfo.CurrentCulture) + "%")</td>
                                 </tr>
                             }
                         </tbody>
@@ -2008,6 +2009,10 @@
                                         <span class="doc-conductor-name">@fila.Conductor</span>
                                         <i class="bi bi-chevron-down doc-chevron" aria-hidden="true"></i>
                                         <span class="doc-conductor-meta">
+                                            @if (!string.IsNullOrEmpty(fila.EmpresaOperacion))
+                                            {
+                                                <span class="badge @(fila.EmpresaOperacion == "HOLCIM" ? "bg-info text-dark" : "bg-primary")">@fila.EmpresaOperacion</span>
+                                            }
                                             @if(fila.MasterId.HasValue){<small class="text-muted">@fila.MasterCode</small>}
                                             else if (!fila.IsNewAdmission) { <small class="text-warning">Pendiente de vincular con el maestro</small> }
                                             @if (fila.IsNewAdmission && !fila.IsInDeactivatedView) { <span class="badge bg-info text-dark">Nuevo ingreso</span> }
@@ -2035,7 +2040,7 @@
                                 var capData = capIndex < fila.Capacitaciones.Count
                                     ? fila.Capacitaciones[capIndex]
                                     : null;
-                                if (capData?.Aplica == false) { <td class="text-muted">—</td> continue; }
+                                if (capData?.Aplica == false) { <td class="text-muted">No aplica</td> continue; }
                                 var fecha = capData?.Fecha
                                     ?? (capIndex < fila.FechasCapacitacion.Count ? fila.FechasCapacitacion[capIndex] : "-");
                                 var estado = capData?.EstadoSemaforo ?? "rojo";
@@ -2596,7 +2601,7 @@
                 var item = drawerMap.get(String(rowIndex));
                 if (!item) return;
 
-                drawerTitle.textContent = "Detalle: " + (item.Conductor || "");
+                drawerTitle.textContent = "Detalle: " + (item.Conductor || "") + (item.Empresa ? " · " + item.Empresa : "");
                 var caps = Array.isArray(item.Capacitaciones) ? item.Capacitaciones : [];
                 var htmlRows = caps.map(renderDrawerRow).join("");
                 var pdfUrl = exportConductorPdfUrlBase + "?conductor=" + encodeURIComponent(item.Conductor || "") + "&inline=true";

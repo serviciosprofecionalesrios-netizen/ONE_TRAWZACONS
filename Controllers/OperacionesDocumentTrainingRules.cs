@@ -33,10 +33,11 @@ public partial class OperacionesController
             NormalizeControlDocumentoKey(row.Conductor) == NormalizeControlDocumentoKey(person) &&
             HasMechanicSupervisorPosition(row.Datos));
 
-    private static ControlDocumentosCapacitacionEstadoViewModel NonApplicableTraining(string header) => new()
+    private static ControlDocumentosCapacitacionEstadoViewModel NonApplicableTraining(
+        string header, string message = "Exclusivo para mecánicos y supervisores.") => new()
     {
         NombreCapacitacion = header, Aplica = false, EstadoFiltro = "noaplica", EstadoSemaforo = "neutro",
-        EtiquetaSemaforo = "No aplica", MensajeAlerta = "Exclusivo para mecánicos y supervisores."
+        EtiquetaSemaforo = "No aplica", MensajeAlerta = message
     };
 
     private static void HideUnusedControlDocumentoTrainings(ControlDocumentosViewModel model)
