@@ -11,6 +11,10 @@
  var firstHour = Model.FullDay ? 0 : 6;
  var lastHour = Model.FullDay ? 24 : 18;
  var today = ITServiceDeskApp.Services.HsCalendarSource.Local(DateTime.UtcNow).Date;
+ var currentMonth = new DateTime(today.Year, today.Month, 1);
+ var selectedMonth = new DateTime(Model.Anchor.Year, Model.Anchor.Month, 1);
+ var months = Enumerable.Range(0, 25).Select(i => currentMonth.AddMonths(-i))
+     .Append(selectedMonth).Distinct().OrderByDescending(month => month);
  var alertGroups = new[]{("expired","Vencidas / hoy","Requieren regularización","danger"),("urgent","Vencen en 1–15 días","Prioridad de renovación","orange"),("soon","Vencen en 16–30 días","Planifica con anticipación","warning")};
 }
 <link rel="stylesheet" href="~/css/hs-calendar.css" asp-append-version="true" />
@@ -56,6 +60,16 @@
  </form>
  <section class="hs-calendar-card" aria-label="Agenda operativa">
   <div class="hs-toolbar">
+   <div class="d-flex gap-2 align-items-center">
+    <label for="hsMonth">Ir al mes</label>
+    <select id="hsMonth" class="form-select form-select-sm w-auto">
+     <option value="" selected="@(Model.View != "month")" disabled>Seleccionar mes</option>
+     @foreach (var month in months)
+     {
+      <option value="@Navigate(month, "month")" selected="@(Model.View == "month" && month == selectedMonth)">@month.ToString("MMMM yyyy", es)</option>
+     }
+    </select>
+   </div>
    <div class="d-flex gap-2 align-items-center"><div class="btn-group"><a href="@Navigate(previous,Model.View)" class="btn btn-outline-secondary" aria-label="Período anterior">‹</a><a href="@Navigate(today,Model.View)" class="btn btn-outline-secondary">Hoy</a><a href="@Navigate(next,Model.View)" class="btn btn-outline-secondary" aria-label="Período siguiente">›</a></div><h2>@Model.Start.ToString("dd MMM",es) — @Model.End.AddDays(-1).ToString("dd MMM yyyy",es)</h2></div>
    <div class="d-flex gap-2 align-items-center flex-wrap">@if(Model.View=="week"){<a href="@Navigate(Model.Anchor,Model.View,!Model.FullDay)" class="btn btn-sm btn-outline-secondary">@(Model.FullDay?"Mostrar 06–18 h":"Mostrar 24 horas")</a>}<div class="hs-view-switch"><a href="@Navigate(Model.Anchor,"week")" class="@(Model.View=="week"?"is-active":"")">Semana</a><a href="@Navigate(Model.Anchor,"month")" class="@(Model.View=="month"?"is-active":"")">Mes</a></div></div>
   </div>

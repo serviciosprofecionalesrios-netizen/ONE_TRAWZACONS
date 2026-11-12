@@ -8,10 +8,10 @@
  const date = value => new Date(value.slice(0,10) + 'T12:00:00').toLocaleDateString('es-NI');
  function node(tag, text, cls) { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (cls) n.className = cls; return n; }
  function show() { bootstrap.Offcanvas.getOrCreateInstance(drawer).show(); }
- function card(x) {
+ function card(x, showDriver = true) {
   const el = node('article', undefined, 'hs-detail');
   el.append(node('div', x.Title, 'hs-detail-title'));
-  if (x.Driver) el.append(node('div', x.Driver + (x.Code ? ' · ' + x.Code : ''), 'hs-detail-person'));
+  if (showDriver && x.Driver) el.append(node('div', x.Driver + (x.Code ? ' · ' + x.Code : ''), 'hs-detail-person'));
   el.append(node('span', x.UrgencyLabel, 'hs-detail-urgency hs-tone-' + x.Tone));
   const dl = node('dl');
   [['Realización',x.Performed],['Vencimiento',x.Days !== null ? date(x.Date) : null],['Horario',x.AllDay ? 'Todo el día' : x.Date.slice(11,16)],['Estado',x.StatusLabel],['Sede',x.Site]].forEach(([label,value]) => {
@@ -24,9 +24,30 @@
  }
  function list(heading, rows) {
   title.textContent=heading; body.replaceChildren();
-  body.append(node('p',rows.length+' registros · Ordenados por fecha de vencimiento','hs-drawer-note'));
+  body.append(node('p',rows.length+' registros · Agrupados por conductor','hs-drawer-note'));
   if (!rows.length) body.append(node('p','Sin registros para los filtros seleccionados.','hs-empty-panel'));
-  rows.slice().sort((a,b)=>a.Date.localeCompare(b.Date)).forEach(x=>body.append(card(x)));
+  const byDriver = new Map();
+  const unassigned = [];
+  for (const event of rows.slice().sort((a, b) => a.Date.localeCompare(b.Date))) {
+   if (!event.Driver) {
+    unassigned.push(event);
+    continue;
+   }
+   const key = event.DriverId ? 'id:' + event.DriverId : event.Code ? 'code:' + event.Code : 'name:' + event.Driver;
+   if (!byDriver.has(key)) byDriver.set(key, []);
+   byDriver.get(key).push(event);
+  }
+  for (const items of byDriver.values()) {
+   const { Driver, Code } = items[0];
+   const group = node('details', undefined, 'hs-driver-group border rounded bg-white p-2 mb-2');
+   const summary = node('summary', Driver + (Code ? ' · ' + Code : ''), 'fw-semibold small');
+   summary.append(node('span', String(items.length), 'badge rounded-pill text-bg-primary ms-2'));
+   const records = node('div', undefined, 'mt-2');
+   for (const event of items) records.append(card(event, false));
+   group.append(summary, records);
+   body.append(group);
+  }
+  unassigned.forEach(event => body.append(card(event)));
   show();
  }
  function dayDetails(day) {
@@ -35,6 +56,9 @@
   if (!rows.length) body.append(node('p','No hay actividades ni vencimientos para esta fecha.','hs-empty-panel'));
   groups.forEach(group=>{const items=rows.filter(x=>x.Group===group);if(!items.length)return;body.append(node('h3',group+' · '+items.length));items.forEach(x=>body.append(card(x)));}); show();
  }
+ document.getElementById('hsMonth').addEventListener('change', event => {
+  if (event.target.value) window.location.assign(event.target.value);
+ });
  document.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',()=>dayDetails(b.dataset.day)));
  document.querySelectorAll('[data-alert-group]').forEach(b=>b.addEventListener('click',()=>{
   const group=b.dataset.alertGroup;
