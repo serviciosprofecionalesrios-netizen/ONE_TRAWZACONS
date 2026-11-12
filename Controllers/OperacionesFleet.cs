@@ -3,9 +3,77 @@ using ITServiceDeskApp.Services;
 using ITServiceDeskApp.ViewModels.Operaciones;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 namespace ITServiceDeskApp.Controllers;
 public partial class OperacionesController
 {
+    [HttpGet]
+    public IActionResult ExportarImcMensual(string? imcMonth)
+    {
+        var month = ImcHistory.ForMonth(imcMonth).SelectedMonth;
+        if (month is null || (imcMonth is not null && imcMonth != month)) return BadRequest();
+
+        var adjustments = _context.OperationalImcClearances.AsNoTracking()
+            .Where(row => row.Month == month).ToDictionary(row => row.UnitKey);
+        var inspections = ImcHistory.InspectionsForMonth(month).ToList();
+        var groups = inspections.ToLookup(row => HolcimMasterCatalog.Identifier(row.Unit));
+        var colors = new[] { "Rojo", "Amarillo", "Verde" };
+
+        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+        using var package = new ExcelPackage();
+        var summary = package.Workbook.Worksheets.Add("Resumen");
+        var detail = package.Workbook.Worksheets.Add("Unidad y mes");
+        var observations = package.Workbook.Worksheets.Add("Inspecciones");
+        var headers = new List<string> { "Mes", "Unidad", "Primera inspección", "Última inspección", "Último color observado",
+            "Color corregido", "Color del panel", "Inspecciones", "Días observados", "Permanencia" };
+        foreach (var color in colors)
+            headers.AddRange([$"Primera fecha {color}", $"Última fecha {color}", $"Días con {color}"]);
+        detail.Cells[1, 1].LoadFromArrays([headers.ToArray()]);
+        var effectiveCounts = colors.ToDictionary(color => color, _ => 0);
+        var rowIndex = 2;
+        foreach (var key in groups.Select(group => group.Key).Union(adjustments.Keys).Order(StringComparer.Ordinal))
+        {
+            var rows = groups[key].OrderByDescending(row => row.PresentedAt).ToList();
+            var latest = rows.FirstOrDefault();
+            var adjustment = adjustments.GetValueOrDefault(key);
+            var effectiveColor = adjustment?.Color ?? latest!.Color;
+            effectiveCounts[effectiveColor]++;
+            var values = new List<object?> { month, adjustment?.UnitCode ?? latest!.Unit, rows.LastOrDefault()?.PresentedAt,
+                latest?.PresentedAt, latest?.Color, adjustment?.Color, effectiveColor, rows.Count,
+                rows.Select(row => row.PresentedAt.Date).Distinct().Count(), "No determinable" };
+            foreach (var color in colors)
+            {
+                var dates = rows.Where(row => row.Color == color).Select(row => row.PresentedAt.Date).Distinct().ToList();
+                values.AddRange([dates.Count == 0 ? null : dates[^1], dates.Count == 0 ? null : dates[0], dates.Count]);
+            }
+            detail.Cells[rowIndex++, 1].LoadFromArrays([values.ToArray()]);
+        }
+        detail.Cells[2, 3, rowIndex - 1, 4].Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss";
+        for (var column = 11; column <= 17; column += 3)
+            detail.Cells[2, column, rowIndex - 1, column + 1].Style.Numberformat.Format = "dd/mm/yyyy";
+        observations.Cells[1, 1].LoadFromArrays(new[] { new object[] { "Unidad", "Presentada", "Semáforo" } }
+            .Concat(inspections.Select(row => new object[] { row.Unit, row.PresentedAt, row.Color })));
+        observations.Cells[2, 2, inspections.Count + 1, 2].Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss";
+        summary.Cells[1, 1].LoadFromArrays([
+            ["Indicador", "Valor"], ["Mes", month], ["Unidades", rowIndex - 2], ["Inspecciones", inspections.Count],
+            ["Unidades rojas", effectiveCounts["Rojo"]], ["Unidades amarillas", effectiveCounts["Amarillo"]],
+            ["Unidades verdes", effectiveCounts["Verde"]],
+            ["Días por color", "Fechas distintas con inspección del color. Un día puede tener varios colores."],
+            ["Permanencia", "No determinable entre inspecciones."],
+            ["Color corregido", "Ajuste manual del panel. El registro de ajustes no incluye fecha."],
+            ["Fuente", "Historial IMC cargado en el panel."]
+        ]);
+        foreach (var sheet in package.Workbook.Worksheets)
+        {
+            sheet.Cells[1, 1, 1, sheet.Dimension.End.Column].Style.Font.Bold = true;
+            sheet.View.FreezePanes(2, 1);
+            sheet.Cells[sheet.Dimension.Address].AutoFitColumns();
+        }
+        detail.Cells[detail.Dimension.Address].AutoFilter = true;
+        observations.Cells[observations.Dimension.Address].AutoFilter = true;
+        return File(package.GetAsByteArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"IMC-{month}.xlsx");
+    }
+
     private ViewResult SeguimientoFleetView(SeguimientoToneladasViewModel model, string? imcMonth = null)
     {
         var fleetSource = model.IsFromUpload ? model : _operacionesSeguimientoStore.Get() ?? model;

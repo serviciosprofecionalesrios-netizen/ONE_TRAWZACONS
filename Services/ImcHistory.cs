@@ -6,9 +6,12 @@ namespace ITServiceDeskApp.Services;
 
 public static class ImcHistory
 {
-    private sealed record Inspection(string Unit, DateTime PresentedAt, string Color);
+    internal sealed record Inspection(string Unit, DateTime PresentedAt, string Color);
     private static readonly Lazy<List<Inspection>> Inspections = new(ReadInspections);
     private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-NI");
+
+    internal static IEnumerable<Inspection> InspectionsForMonth(string month) =>
+        Inspections.Value.Where(row => row.PresentedAt.ToString("yyyy-MM", CultureInfo.InvariantCulture) == month);
 
     public static ImcMonthViewModel ForMonth(string? requestedMonth, IEnumerable<OperationalImcClearance>? clearances = null)
     {
