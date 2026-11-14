@@ -1,6 +1,9 @@
 namespace ITServiceDeskApp.ViewModels.Hs;
 public sealed class HsOperationalCalendar
 {
+    public const int MinYear = 2000;
+    public const int MaxYear = 2100;
+
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
     public string View { get; set; } = "week";

@@ -6,13 +6,21 @@ namespace ITServiceDeskApp.Controllers;
 public partial class HsController
 {
     [HttpGet]
-    public async Task<IActionResult> Calendar([FromServices] HsCalendarSource source, DateTime? date, string view = "week", string driver = "", string training = "", string status = "", string site = "", bool fullDay = false)
+    public async Task<IActionResult> Calendar([FromServices] HsCalendarSource source, DateTime? date, string view = "week", string driver = "", string training = "", string status = "", string site = "", bool fullDay = false, int? year = null, int? month = null)
     {
         driver = driver?.Trim() ?? ""; training = training?.Trim() ?? "";
         status = status?.Trim() ?? ""; site = site?.Trim() ?? "";
         var today = HsCalendarSource.Local(DateTime.UtcNow).Date;
         var anchor = date?.Date ?? today;
-        if (anchor.Year < 2000 || anchor.Year > 2100) return BadRequest("Fecha fuera del rango permitido.");
+        if (year.HasValue || month.HasValue)
+        {
+            if (year is not (>= HsOperationalCalendar.MinYear and <= HsOperationalCalendar.MaxYear) || month is not (>= 1 and <= 12))
+                return BadRequest("Selecciona un mes y un año válidos.");
+
+            anchor = new DateTime(year.Value, month.Value, 1);
+            view = "month";
+        }
+        if (anchor.Year < HsOperationalCalendar.MinYear || anchor.Year > HsOperationalCalendar.MaxYear) return BadRequest("Fecha fuera del rango permitido.");
         var model = source.Read(today);
         model.Anchor = anchor; model.View = view == "month" ? "month" : "week";
         model.Driver = driver; model.Training = training; model.Status = status; model.Site = site; model.FullDay = fullDay;

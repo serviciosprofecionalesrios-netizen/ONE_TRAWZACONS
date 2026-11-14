@@ -1,4 +1,5 @@
 @model ITServiceDeskApp.ViewModels.Hs.HsOperationalCalendar
+@using ITServiceDeskApp.ViewModels.Hs
 @using System.Globalization
 @using System.Text.Json
 @{
@@ -60,6 +61,32 @@
  </form>
  <section class="hs-calendar-card" aria-label="Agenda operativa">
   <div class="hs-toolbar">
+   <form asp-action="Calendar" method="get" class="hs-period-filter d-flex gap-2 align-items-end flex-wrap" aria-label="Filtrar por mes y año">
+    <input type="hidden" name="driver" value="@Model.Driver" />
+    <input type="hidden" name="training" value="@Model.Training" />
+    <input type="hidden" name="status" value="@Model.Status" />
+    <input type="hidden" name="site" value="@Model.Site" />
+    <input type="hidden" name="fullDay" value="@Model.FullDay.ToString().ToLowerInvariant()" />
+    <div>
+     <label for="hsPeriodMonth" class="form-label small mb-1">Mes</label>
+     <select id="hsPeriodMonth" name="month" class="form-select form-select-sm">
+      @for (var month = 1; month <= 12; month++)
+      {
+       <option value="@month" selected="@(month == Model.Anchor.Month)">@es.DateTimeFormat.GetMonthName(month)</option>
+      }
+     </select>
+    </div>
+    <div>
+     <label for="hsPeriodYear" class="form-label small mb-1">Año</label>
+     <select id="hsPeriodYear" name="year" class="form-select form-select-sm">
+      @for (var year = HsOperationalCalendar.MaxYear; year >= HsOperationalCalendar.MinYear; year--)
+      {
+       <option value="@year" selected="@(year == Model.Anchor.Year)">@year</option>
+      }
+     </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-primary">Ir al mes</button>
+   </form>
    <div class="d-flex gap-2 align-items-center">
     <label for="hsMonth">Ir al mes</label>
     <select id="hsMonth" class="form-select form-select-sm w-auto">
