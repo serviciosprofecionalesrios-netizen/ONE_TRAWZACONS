@@ -4,7 +4,7 @@
  const events = read('hsEvents'), alerts = read('hsAlerts'), expiries = read('hsExpiries');
  const drawer = document.getElementById('hsDayDrawer'), body = document.getElementById('hsDayBody');
  const title = document.getElementById('hsDayTitle');
- const groups = ['Capacitaciones programadas','Capacitaciones próximas a vencer','Capacitaciones vencidas','Inspecciones y auditorías','Otras actividades H&S','Vencimientos vigentes'];
+ const groups = ['Capacitaciones registradas','Capacitaciones próximas a vencer','Capacitaciones vencidas','Inspecciones y auditorías','Otras actividades H&S','Vencimientos vigentes'];
  const date = value => new Date(value.slice(0,10) + 'T12:00:00').toLocaleDateString('es-NI');
  function node(tag, text, cls) { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (cls) n.className = cls; return n; }
  function show() { bootstrap.Offcanvas.getOrCreateInstance(drawer).show(); }
@@ -14,7 +14,7 @@
   if (showDriver && x.Driver) el.append(node('div', x.Driver + (x.Code ? ' · ' + x.Code : ''), 'hs-detail-person'));
   el.append(node('span', x.UrgencyLabel, 'hs-detail-urgency hs-tone-' + x.Tone));
   const dl = node('dl');
-  [['Realización',x.Performed],['Vencimiento',x.Days !== null ? date(x.Date) : null],['Horario',x.AllDay ? 'Todo el día' : x.Date.slice(11,16)],['Estado',x.StatusLabel],['Sede',x.Site]].forEach(([label,value]) => {
+  [['Realización',x.Performed],['Vencimiento',x.Days !== null ? date(x.Date) : x.Expiration],['Horario',x.AllDay ? 'Todo el día' : x.Date.slice(11,16)],['Estado',x.StatusLabel],['Sede',x.Site],['Instructor',x.Trainer],['Participantes',x.AttendeeCount]].forEach(([label,value]) => {
    if (value !== null && value !== undefined && value !== '') dl.append(node('dt',label),node('dd',String(value)));
   });
   el.append(dl); const actions = node('div',undefined,'hs-detail-actions');

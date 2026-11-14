@@ -24,15 +24,42 @@ public partial class HsController
         var endUtc = DateTime.SpecifyKind(model.End.AddHours(6), DateTimeKind.Utc);
         var inspections = await _context.HsInspections.AsNoTracking().Where(x => x.InspectionDateUtc >= startUtc && x.InspectionDateUtc < endUtc).ToListAsync();
         foreach (var x in inspections) model.Events.Add(new() { Key = $"inspection:{x.Id}", Date = HsCalendarSource.Local(x.InspectionDateUtc), Title = $"{x.Category} · {x.Site}", Group = "Inspecciones y auditorías", Site = x.Site, Status = x.Status, Tone = "info", Url = "/Hs/Inspections" });
-        var trainings = await _context.HsTrainingRecords.AsNoTracking().Where(x => x.TrainingDateUtc >= startUtc && x.TrainingDateUtc < endUtc).ToListAsync();
+        // The training form stores civil dates at midnight UTC without a time of day.
+        var trainingStart = DateTime.SpecifyKind(model.Start, DateTimeKind.Utc);
+        var trainingEnd = DateTime.SpecifyKind(model.End, DateTimeKind.Utc);
+        var trainings = await _context.HsTrainingRecords.AsNoTracking()
+            .Where(x => x.TrainingDateUtc >= trainingStart && x.TrainingDateUtc < trainingEnd)
+            .ToListAsync();
         foreach (var x in trainings)
         {
-            // Individual records must resolve to an active official driver. Collective activities have no individual identity.
-            var matches = !string.IsNullOrWhiteSpace(x.EmployeeCode)
-                ? model.DriverCodes.Where(d => string.Equals(d.Value, x.EmployeeCode.Trim(), StringComparison.OrdinalIgnoreCase)).Select(d => new KeyValuePair<string,string>(d.Key, model.Drivers[d.Key])).ToList()
-                : model.Drivers.Where(d => string.Equals(d.Value, x.EmployeeName?.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
-            if ((!string.IsNullOrWhiteSpace(x.EmployeeName) || !string.IsNullOrWhiteSpace(x.EmployeeCode)) && matches.Count != 1) continue;
-            model.Events.Add(new() { Key = $"training:{x.Id}", Date = HsCalendarSource.Local(x.TrainingDateUtc), Title = x.Topic, Training = x.Topic, Driver = matches.Count == 1 ? matches[0].Value : x.Audience, Performed = HsCalendarSource.Local(x.TrainingDateUtc).ToString("dd/MM/yyyy"), DriverId = matches.FirstOrDefault().Key ?? "", Code = x.EmployeeCode ?? "", Site = x.Site, Group = "Capacitaciones programadas", Status = x.Result, Tone = "primary", Url = $"/Hs/Trainings#training-{x.Id}" });
+            var employeeCode = x.EmployeeCode?.Trim();
+            var employeeName = x.EmployeeName?.Trim();
+            var matches = !string.IsNullOrEmpty(employeeCode)
+                ? model.DriverCodes.Where(d => string.Equals(d.Value, employeeCode, StringComparison.OrdinalIgnoreCase)).Select(d => d.Key).ToList()
+                : model.Drivers.Where(d => string.Equals(d.Value, employeeName, StringComparison.OrdinalIgnoreCase)).Select(d => d.Key).ToList();
+            var driverId = matches.Count == 1 ? matches[0] : "";
+            var trainingDate = x.TrainingDateUtc.Date;
+            model.Events.Add(new()
+            {
+                Key = $"training:{x.Id}",
+                Date = trainingDate,
+                AllDay = true,
+                IsTraining = true,
+                Title = x.Topic,
+                Training = x.Topic,
+                Driver = driverId != "" ? model.Drivers[driverId] : !string.IsNullOrEmpty(employeeName) ? employeeName : x.Audience,
+                DriverId = driverId,
+                Code = employeeCode ?? "",
+                Site = x.Site,
+                Trainer = x.Trainer,
+                AttendeeCount = x.AttendeeCount,
+                Performed = trainingDate.ToString("dd/MM/yyyy"),
+                Expiration = x.ExpirationDateUtc?.ToString("dd/MM/yyyy"),
+                Group = "Capacitaciones registradas",
+                Status = x.Result,
+                Tone = "primary",
+                Url = Url.Action(nameof(Trainings), new { recordId = x.Id }) ?? ""
+            });
         }
         var actions = await _context.HsCorrectiveActions.AsNoTracking().Where(x => x.DueDateUtc >= startUtc && x.DueDateUtc < endUtc && x.Status != "Cerrada").ToListAsync();
         foreach (var x in actions) model.Events.Add(new() { Key = $"action:{x.Id}", Date = HsCalendarSource.Local(x.DueDateUtc), Title = x.Title, Status = x.Status, Tone = "warning", Url = $"/Hs/ActionEdit/{x.Id}" });

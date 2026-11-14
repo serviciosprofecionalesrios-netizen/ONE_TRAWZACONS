@@ -77,7 +77,7 @@
   @if(Model.View=="week"){
    <div class="hs-week">
     <div class="hs-week-row hs-week-header"><div class="hs-time-cell">GMT−6</div>@foreach(var day in days){<button type="button" class="hs-day-heading @(day==today?"is-today":"")" data-day="@day.ToString("yyyy-MM-dd")"><span>@day.ToString("ddd",es)</span><strong>@day.Day</strong>@if(day==today){<small>HOY</small>}</button>}</div>
-    <div class="hs-week-row hs-all-day-row"><div class="hs-time-cell">Vencimientos<br/>del día</div>@foreach(var day in days){
+    <div class="hs-week-row hs-all-day-row"><div class="hs-time-cell">Todo el día</div>@foreach(var day in days){
      var all=Model.Events.Where(x=>x.Date.Date==day&&x.AllDay).ToList();
      var outside=Model.Events.Count(x=>x.Date.Date==day&&!x.AllDay&&(x.Date.Hour<firstHour||x.Date.Hour>=lastHour));
      <div class="hs-all-day-cell">@foreach(var x in all.Take(2)){<button type="button" class="hs-event hs-tone-@x.Tone" data-day="@day.ToString("yyyy-MM-dd")">@if(x.RedIndicator){<span class="hs-red" aria-label="Alerta de vencimiento">●</span>}<strong>@x.Title</strong><small>@x.Driver</small><small>@x.UrgencyLabel</small></button>}

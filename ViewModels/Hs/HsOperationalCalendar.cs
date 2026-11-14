@@ -37,6 +37,9 @@ public sealed class HsOperationalEvent
     public string Site { get; set; } = "";
     public string Training { get; set; } = "";
     public string Performed { get; set; } = "";
+    public string? Expiration { get; set; }
+    public string? Trainer { get; set; }
+    public int? AttendeeCount { get; set; }
     public int? Days { get; set; }
     public string Status { get; set; } = "Programada";
     public string StatusLabel => Status switch { "vigente" => "Vigente", "porvencer" => "Por vencer", "vencida" => "Vencida / hoy", _ => Status };

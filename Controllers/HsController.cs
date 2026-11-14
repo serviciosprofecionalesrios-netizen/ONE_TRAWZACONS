@@ -595,9 +595,13 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Trainings()
+        public async Task<IActionResult> Trainings(int? recordId)
         {
-            return View(await _context.HsTrainingRecords.AsNoTracking().OrderByDescending(x => x.TrainingDateUtc).Take(250).ToListAsync());
+            var records = _context.HsTrainingRecords.AsNoTracking();
+            if (recordId.HasValue)
+                return View(await records.Where(x => x.Id == recordId.Value).ToListAsync());
+
+            return View(await records.OrderByDescending(x => x.TrainingDateUtc).Take(250).ToListAsync());
         }
 
         [HttpGet]
