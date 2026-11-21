@@ -24,6 +24,11 @@ namespace ITServiceDeskApp.ViewModels.Tickets
         public IReadOnlySet<int> BreakdownOrderIds { get; set; } = new HashSet<int>();
         public IReadOnlyDictionary<string, int> MaintenanceOrderCounts { get; set; } = new Dictionary<string, int>();
         public int MaintenanceHistoryPage { get; set; } = 1;
+        public IReadOnlyList<OperationalBreakdown> HistoricalBreakdowns { get; set; } = Array.Empty<OperationalBreakdown>();
+        public int HistoricalBreakdownCount { get; set; }
+        public int HistoricalBreakdownPage { get; set; } = 1;
+        public int HistoricalBreakdownPages { get; set; } = 1;
+        public bool ShowHistoricalBreakdowns { get; set; }
         public int FinanceOpenCount { get; set; }
         public int FinanceInProgressCount { get; set; }
         public int FinanceResolvedCount { get; set; }

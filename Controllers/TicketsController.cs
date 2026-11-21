@@ -258,7 +258,8 @@ namespace ITServiceDeskApp.Controllers
             string? maintenanceView,
             bool mine = false,
             int page = 1,
-            int pageSize = 25)
+            int pageSize = 25,
+            int breakdownPage = 1)
         {
             var nowUtc = DateTime.UtcNow;
             var nearThresholdUtc = nowUtc.AddHours(4);
@@ -1179,6 +1180,30 @@ namespace ITServiceDeskApp.Controllers
 
             var breakdownOrderIds = new HashSet<int>();
             var maintenanceOrderCounts = new Dictionary<string, int>();
+            IReadOnlyList<OperationalBreakdown> historicalBreakdowns = Array.Empty<OperationalBreakdown>();
+            var historicalBreakdownCount = 0;
+            var historicalBreakdownPages = 1;
+            var showHistoricalBreakdowns = isMaintenanceView && normalizedMaintenanceView == "detail" &&
+                OperationalBreakdownClosure.CanClose(User);
+            if (showHistoricalBreakdowns)
+            {
+                const int breakdownPageSize = 25;
+                var historyQuery = _context.OperationalBreakdowns.AsNoTracking().Where(b => b.MaintenanceTicketId == null);
+                if (normalizedSearch != null)
+                {
+                    historyQuery = historyQuery.Where(b => b.Equipment.Contains(normalizedSearch) ||
+                        b.Category.Contains(normalizedSearch) || b.Element.Contains(normalizedSearch) ||
+                        b.Damages.Any(d => d.Category.Contains(normalizedSearch) || d.Element.Contains(normalizedSearch)));
+                }
+
+                historicalBreakdownCount = await historyQuery.CountAsync(HttpContext.RequestAborted);
+                historicalBreakdownPages = Math.Max(1, (historicalBreakdownCount + breakdownPageSize - 1) / breakdownPageSize);
+                breakdownPage = Math.Clamp(breakdownPage, 1, historicalBreakdownPages);
+                historicalBreakdowns = await historyQuery.Include(b => b.Damages)
+                    .OrderByDescending(b => b.EventAt).ThenByDescending(b => b.Id)
+                    .Skip((breakdownPage - 1) * breakdownPageSize).Take(breakdownPageSize)
+                    .ToListAsync(HttpContext.RequestAborted);
+            }
             if (isMaintenanceView && normalizedMaintenanceView == "detail")
             {
                 var orderIds = tickets.Select(t => t.Id).ToArray();
@@ -1317,6 +1342,11 @@ namespace ITServiceDeskApp.Controllers
                 BreakdownOrderIds = breakdownOrderIds,
                 MaintenanceOrderCounts = maintenanceOrderCounts,
                 MaintenanceHistoryPage = page,
+                HistoricalBreakdowns = historicalBreakdowns,
+                HistoricalBreakdownCount = historicalBreakdownCount,
+                HistoricalBreakdownPage = breakdownPage,
+                HistoricalBreakdownPages = historicalBreakdownPages,
+                ShowHistoricalBreakdowns = showHistoricalBreakdowns,
                 FinanceOpenCount = financeOpenCount,
                 FinanceInProgressCount = financeInProgressCount,
                 FinanceResolvedCount = financeResolvedCount,

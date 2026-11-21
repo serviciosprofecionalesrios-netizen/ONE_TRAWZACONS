@@ -24,14 +24,14 @@
         null or "" => "Sin etapa",
         _ => stage
     };
-    string? PageUrl(int page) => Url.Action("Index", new
+    string? PageUrl(int page, int? breakdownPage = null) => Url.Action("Index", new
     {
         department = "Mantenimiento", maintenanceView = "detail", page, pageSize = Model.PageSize,
         search = Model.Search, maintenanceStage = Model.SelectedMaintenanceStage,
         technician = Model.SelectedAssignedTechnician, quick = Model.QuickFilter,
         status = Model.Status, priority = Model.Priority, site = Model.SelectedSite,
         tenencia = Model.SelectedTenencia, incidentType = Model.SelectedIncidentType,
-        overdueBand = Model.SelectedOverdueBand
+        overdueBand = Model.SelectedOverdueBand, breakdownPage = breakdownPage ?? Model.HistoricalBreakdownPage
     });
 }
 
@@ -99,7 +99,14 @@
     {
         <div class="card-body">
             <p class="mb-2">@(filtered ? "No hay órdenes que coincidan con los filtros." : "Todavía no hay órdenes de mantenimiento registradas.")</p>
-            <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="history">Ver histórico de reparaciones</a>
+            @if (Model.ShowHistoricalBreakdowns)
+            {
+                <a href="#historico-averias">Ver averías anteriores</a>
+            }
+            else
+            {
+                <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="history">Ver histórico de reparaciones</a>
+            }
         </div>
     }
     else
@@ -154,3 +161,63 @@
         }
     }
 </section>
+
+@if (Model.ShowHistoricalBreakdowns)
+{
+    <section class="card shadow-sm mb-4" id="historico-averias">
+        <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h2 class="h6 fw-bold mb-0">Histórico de averías sin orden vinculada</h2>
+            <small class="text-muted">@Model.HistoricalBreakdownCount.ToString("N0") averías · Más recientes primero</small>
+        </div>
+        @if (Model.HistoricalBreakdowns.Count == 0)
+        {
+            <p class="card-body mb-0">No hay averías anteriores para mostrar.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th scope="col">Fecha del evento</th><th scope="col">Equipo</th><th scope="col">Circuito</th><th scope="col">Estado</th><th scope="col">Daños registrados</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var breakdown in Model.HistoricalBreakdowns)
+                        {
+                            var status = !ITServiceDeskApp.Services.MaintenanceBreakdownBoard.IsValidRecord(breakdown) ? "Anulada" :
+                                ITServiceDeskApp.Services.MaintenanceBreakdownBoard.ClosingDate(breakdown).HasValue ? "Cerrada" :
+                                string.IsNullOrWhiteSpace(breakdown.Status) ? "Sin estado" : breakdown.Status;
+                            <tr>
+                                <td class="text-nowrap">@breakdown.EventAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td><strong>@breakdown.Equipment</strong></td>
+                                <td>@breakdown.Circuit</td>
+                                <td><span class="badge text-bg-light border">@status</span></td>
+                                <td>
+                                    <ul class="mb-0 ps-3">
+                                        @foreach (var damage in breakdown.GetDamages())
+                                        {
+                                            <li>@damage.Target · @damage.Category · @damage.Element</li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.HistoricalBreakdownPages > 1)
+            {
+                <nav class="card-footer bg-white d-flex align-items-center flex-wrap gap-3" aria-label="Páginas de averías anteriores">
+                    @if (Model.HistoricalBreakdownPage > 1)
+                    {
+                        <a href="@(PageUrl(Model.Page, Model.HistoricalBreakdownPage - 1))#historico-averias">Anterior</a>
+                    }
+                    <span>Página @Model.HistoricalBreakdownPage de @Model.HistoricalBreakdownPages</span>
+                    @if (Model.HistoricalBreakdownPage < Model.HistoricalBreakdownPages)
+                    {
+                        <a href="@(PageUrl(Model.Page, Model.HistoricalBreakdownPage + 1))#historico-averias">Siguiente</a>
+                    }
+                </nav>
+            }
+        }
+    </section>
+}
