@@ -4,6 +4,7 @@ using ITServiceDeskApp.ViewModels.Operaciones;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
+using System.Text.Json;
 namespace ITServiceDeskApp.Controllers;
 public partial class OperacionesController
 {
@@ -113,23 +114,51 @@ public partial class OperacionesController
 
         var months = rows.Select(row => row.Month).Distinct().ToArray();
         var bundledKeys = months.SelectMany(month => ImcHistory.InspectionsForMonth(month))
-            .Select(row => (HolcimMasterCatalog.Identifier(row.Unit), row.PresentedAt, row.Color)).ToArray();
+            .Select(row => (HolcimMasterCatalog.Identifier(row.Unit), row.PresentedAt, row.Color)).ToHashSet();
+        var grouped = rows.GroupBy(row => (row.UnitKey, row.PresentedAt, row.Color)).ToArray();
         for (var attempt = 1; ; attempt++)
         {
-            var saved = await _context.OperationalImcInspections.AsNoTracking().Where(row => months.Contains(row.Month))
-                .Select(row => new { row.UnitKey, row.PresentedAt, row.Color }).ToListAsync(cancellationToken);
-            var keys = saved.Select(row => (row.UnitKey, row.PresentedAt, row.Color)).Concat(bundledKeys).ToHashSet();
-            var pending = rows.Where(row => keys.Add((row.UnitKey, row.PresentedAt, row.Color))).ToList();
+            var saved = await _context.OperationalImcInspections.Where(row => months.Contains(row.Month))
+                .ToDictionaryAsync(row => (row.UnitKey, row.PresentedAt, row.Color), cancellationToken);
+            var pending = new List<OperationalImcInspection>();
+            var addedInspections = 0;
+            var addedFindings = 0;
+            foreach (var group in grouped)
+            {
+                saved.TryGetValue(group.Key, out var existing);
+                var findings = ImcInspectionWorkbook.Findings(existing?.FindingsJson).ToHashSet();
+                var previousCount = findings.Count;
+                findings.UnionWith(group.SelectMany(row => ImcInspectionWorkbook.Findings(row.FindingsJson)));
+                addedFindings += findings.Count - previousCount;
+
+                if (existing is not null)
+                {
+                    if (findings.Count > previousCount) existing.FindingsJson = JsonSerializer.Serialize(findings);
+                    continue;
+                }
+                var isBundled = bundledKeys.Contains(group.Key);
+                if (isBundled && findings.Count == 0) continue;
+
+                var first = group.First();
+                pending.Add(new OperationalImcInspection
+                {
+                    Month = first.Month, UnitKey = first.UnitKey, UnitCode = first.UnitCode,
+                    PresentedAt = first.PresentedAt, Color = first.Color,
+                    FindingsJson = findings.Count == 0 ? null : JsonSerializer.Serialize(findings)
+                });
+                if (!isBundled) addedInspections++;
+            }
             try
             {
                 _context.OperationalImcInspections.AddRange(pending);
                 await _context.SaveChangesAsync(cancellationToken);
-                TempData["ImcImportOk"] = $"{pending.Count:N0} inspecciones importadas · {rows.Count - pending.Count:N0} duplicadas omitidas.";
+                TempData["ImcImportOk"] = $"{addedInspections:N0} inspecciones nuevas · {addedFindings:N0} hallazgos nuevos.";
                 return Back(months.Max(StringComparer.Ordinal));
             }
-            catch (DbUpdateException ex) when (attempt < 3 && IsImcInspectionKeyConflict(ex))
+            catch (DbUpdateException ex) when (attempt < 3 &&
+                (ex is DbUpdateConcurrencyException || IsImcInspectionKeyConflict(ex)))
             {
-                foreach (var row in pending) _context.Entry(row).State = EntityState.Detached;
+                _context.ChangeTracker.Clear();
             }
             catch (DbUpdateException ex)
             {

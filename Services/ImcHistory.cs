@@ -13,7 +13,8 @@ public static class ImcHistory
     internal static IEnumerable<Inspection> InspectionsForMonth(string month, IEnumerable<OperationalImcInspection>? uploaded = null) =>
         Inspections.Value.Where(row => Period(row) == month)
             .Concat((uploaded ?? []).Where(row => row.Month == month)
-                .Select(row => new Inspection(row.UnitCode, row.PresentedAt, row.Color)));
+                .Select(row => new Inspection(row.UnitCode, row.PresentedAt, row.Color)))
+            .DistinctBy(row => (HolcimMasterCatalog.Identifier(row.Unit), row.PresentedAt, row.Color));
 
     private static string Period(Inspection row) => row.PresentedAt.ToString("yyyy-MM", CultureInfo.InvariantCulture);
 
@@ -37,6 +38,11 @@ public static class ImcHistory
         return new ImcMonthViewModel
         {
             SelectedMonth = selected,
+            Findings = (uploaded ?? []).Where(row => row.Month == selected)
+                .OrderByDescending(row => row.PresentedAt).ThenBy(row => row.UnitCode, StringComparer.Ordinal)
+                .SelectMany(row => ImcInspectionWorkbook.Findings(row.FindingsJson)
+                    .Select(finding => new ImcFindingRow(row.UnitCode, row.PresentedAt, finding.Item, finding.Status)))
+                .ToArray(),
             Months = months.Select(month => new ImcMonthOption(month,
                 DateTime.ParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture).ToString("MMMM yyyy", Spanish))).ToArray(),
             Cards = new (string Source, string Label, string Css)[] { ("Rojo", "Roja", "roja"), ("Amarillo", "Amarilla", "amarilla"), ("Verde", "Verde", "verde") }

@@ -9,11 +9,13 @@ public sealed class FleetBoardViewModel
 }
 public sealed record ImcMonthOption(string Value, string Label);
 public sealed record ImcColorCard(string Label, string ColorClass, IReadOnlyList<string> Units);
+public sealed record ImcFindingRow(string Unit, DateTime PresentedAt, string Item, string Status);
 public sealed class ImcMonthViewModel
 {
     public string? SelectedMonth { get; init; }
     public IReadOnlyList<ImcMonthOption> Months { get; init; } = [];
     public IReadOnlyList<ImcColorCard> Cards { get; init; } = [];
+    public IReadOnlyList<ImcFindingRow> Findings { get; init; } = [];
 }
 public sealed class FleetEquipmentViewModel
 {

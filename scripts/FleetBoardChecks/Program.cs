@@ -386,4 +386,43 @@ Check((await RenderView(new FleetBoardViewModel { Imc = november, CanManage = tr
 Check(pg.GetService<IMigrator>().GenerateScript("20261121010000_BreakdownMaintenanceOrdersPostgres", "20261121020000_OperationalImcInspectionsPostgres").Contains("OperationalImcInspections") &&
  sql.GetService<IMigrator>().GenerateScript("20261121010000_BreakdownMaintenanceOrders", "20261121020000_OperationalImcInspections").Contains("OperationalImcInspections"),
  "Inspection migration generates for PostgreSQL and SQL Server");
+
+using var detailedWorkbook = new OfficeOpenXml.ExcelPackage();
+var detailedSheet = detailedWorkbook.Workbook.Worksheets.Add("Sheet1");
+detailedSheet.Cells["A1:F2"].LoadFromArrays([
+ ["Planta", "Unidad", "Fecha", "Frenos", "Luces", "Llantas"],
+ ["Limón", "IMC-TEST", "2027-02-02 09:00:00", " No Cumple ", "Aprobado con Restriccion", "Cumple"]
+]);
+detailedSheet.Cells[1, 159].Value = "Semáforo";
+detailedSheet.Cells[2, 159].Value = "Verde";
+detailedSheet.Cells[1, 158].Value = "Diagnóstico del Inspector";
+detailedSheet.Cells[2, 158].Value = "No Aprobado";
+detailedSheet.Cells[1, 161].Value = "Unidad";
+detailedSheet.Cells[1, 162].Value = "Fecha";
+detailedSheet.Cells[1, 163].Value = "Semáforo";
+var detailedBytes = detailedWorkbook.GetAsByteArray();
+using var detailedStream = new MemoryStream(detailedBytes);
+var detailedFile = new FormFile(detailedStream, 0, detailedBytes.Length, "imcFile", "exportacion-imc.xlsx");
+await Controller().ImportarInspeccionesImc(detailedFile, "2027-02", default);
+await Controller().ImportarInspeccionesImc(detailedFile, "2027-02", default);
+var detailedMonth = ImcHistory.ForMonth("2027-02", uploaded: db.OperationalImcInspections.AsNoTracking().ToList());
+Check(db.OperationalImcInspections.Count() == 2 &&
+ detailedMonth.Findings.Select(item => (item.Item, item.Status)).ToHashSet().SetEquals(
+  [("Frenos", "No cumple"), ("Luces", "Aprobado con Restricción")]),
+ "Wide inspection export enriches an existing record and shows only the two requested statuses");
+var findingsHtml = System.Net.WebUtility.HtmlDecode(await RenderView(new FleetBoardViewModel { Imc = detailedMonth },
+ "/Views/Operaciones/_FleetBoard.cshtml"));
+Check(findingsHtml.Contains("Hallazgos de la inspección (2)") && findingsHtml.Contains("Aprobado con Restricción") &&
+ findingsHtml.Contains("No cumple") && !findingsHtml.Contains("No Aprobado"), "The monthly view shows both findings with their statuses");
+using var emptyImcWorkbook = new OfficeOpenXml.ExcelPackage();
+emptyImcWorkbook.Workbook.Worksheets.Add("Sheet1");
+var emptyImcBytes = emptyImcWorkbook.GetAsByteArray();
+using var emptyImcStream = new MemoryStream(emptyImcBytes);
+var emptyImcController = Controller();
+await emptyImcController.ImportarInspeccionesImc(new FormFile(emptyImcStream, 0, emptyImcBytes.Length, "imcFile", "exportacion-vacia.xlsx"), "2027-02", default);
+Check(emptyImcController.TempData.ContainsKey("ImcImportError") && db.OperationalImcInspections.Count() == 2,
+ "An empty inspection workbook is rejected without affecting saved data");
+Check(pg.GetService<IMigrator>().GenerateScript("20261121020000_OperationalImcInspectionsPostgres", "20261121030000_OperationalImcFindingsPostgres").Contains("FindingsJson") &&
+ sql.GetService<IMigrator>().GenerateScript("20261121020000_OperationalImcInspections", "20261121030000_OperationalImcFindings").Contains("FindingsJson"),
+ "Finding storage migration generates for both database providers");
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

@@ -11,4 +11,5 @@ public sealed class OperationalImcInspection
     [MaxLength(160)] public string UnitCode { get; set; } = "";
     public DateTime PresentedAt { get; set; }
     [MaxLength(10)] public string Color { get; set; } = "";
+    [ConcurrencyCheck] public string? FindingsJson { get; set; }
 }
