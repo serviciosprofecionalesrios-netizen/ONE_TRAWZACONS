@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -295,6 +295,7 @@ namespace ITServiceDeskApp.Controllers
             {
                 query = query.Where(t =>
                     (t.TicketNumber != null && t.TicketNumber.Contains(normalizedSearch)) ||
+                    (isMaintenanceView && t.UnitCode != null && t.UnitCode.Contains(normalizedSearch)) ||
                     t.RequestingUser.Contains(normalizedSearch) ||
                     t.Description.Contains(normalizedSearch));
             }
@@ -326,7 +327,13 @@ namespace ITServiceDeskApp.Controllers
 
             if (!string.IsNullOrWhiteSpace(normalizedAssignedTechnician))
             {
-                query = query.Where(t => t.AssignedTechnician == normalizedAssignedTechnician);
+                query = isMaintenanceView
+                    ? query.Where(t => t.AssignedTechnician != null &&
+                        (t.AssignedTechnician == normalizedAssignedTechnician ||
+                         t.AssignedTechnician.StartsWith(normalizedAssignedTechnician + ", ") ||
+                         t.AssignedTechnician.Contains(", " + normalizedAssignedTechnician + ", ") ||
+                         t.AssignedTechnician.EndsWith(", " + normalizedAssignedTechnician)))
+                    : query.Where(t => t.AssignedTechnician == normalizedAssignedTechnician);
             }
 
             if (!string.IsNullOrWhiteSpace(normalizedIncidentType))
@@ -619,7 +626,6 @@ namespace ITServiceDeskApp.Controllers
             var inventoryHealthLabel = "Stock estable";
             var maintenanceSiteCostRanking = new List<MaintenanceSiteCostRankItem>();
             var maintenanceReincidenceRanking = new List<MaintenanceReincidenceItem>();
-            var maintenanceDetailRows = new List<MaintenanceOrderDetailItem>();
             var maintenanceBoardRows = new List<MaintenanceAirportBoardItem>();
             var stageKpis = MaintenanceStageOptions
                 .Select(stage => new MaintenanceStageKpiItem
@@ -1065,90 +1071,22 @@ namespace ITServiceDeskApp.Controllers
                     .Take(8)
                     .ToList();
 
-                var maintenanceRows = query
+            }
+
+            if (isMaintenanceView && normalizedMaintenanceView == "board")
+            {
+                var detailSourceRows = await query
+                    .Where(t => t.Status != TicketStatus.Closed)
+                    .OrderBy(t => t.SLADeadline)
+                    .ThenByDescending(t => t.CreatedDate)
+                    .ThenByDescending(t => t.Id)
                     .Select(t => new
                     {
-                        t.Id,
-                        t.TicketNumber,
-                        t.CreatedDate,
-                        t.SLADeadline,
-                        t.Site,
-                        t.UnitCode,
-                        t.IncidentType,
-                        t.FailureCategory,
-                        t.MaintenanceStage,
-                        t.AssignedTechnician,
-                        t.Status,
-                        t.RequiresCostApproval,
-                        t.CostApproved,
-                        ComponentCostCordoba = t.ChangedComponentCostCordoba ?? 0m,
-                        ComponentCostUsd = t.ChangedComponentCostUsd ?? 0m,
-                        LaborCostCordoba = t.LaborCostCordoba ?? 0m,
-                        LaborCostUsd = t.LaborCostUsd ?? 0m,
-                        ExternalCostCordoba = t.ExternalCostCordoba ?? 0m,
-                        ExternalCostUsd = t.ExternalCostUsd ?? 0m
-                    });
-                var detailSourceRows = await (normalizedMaintenanceView == "board"
-                        ? maintenanceRows.OrderBy(t => t.Status == TicketStatus.Closed ? 1 : 0)
-                            .ThenBy(t => t.SLADeadline).ThenByDescending(t => t.CreatedDate)
-                        : maintenanceRows.OrderByDescending(t => t.CreatedDate))
-                    .ThenByDescending(t => t.Id)
+                        t.Id, t.TicketNumber, t.CreatedDate, t.SLADeadline, t.Site, t.UnitCode,
+                        t.IncidentType, t.MaintenanceStage, t.AssignedTechnician, t.Status
+                    })
                     .Take(300)
                     .ToListAsync();
-
-                var detailTicketIds = detailSourceRows
-                    .Select(x => x.Id)
-                    .Distinct()
-                    .ToList();
-
-                var dispatchTotalsForDetail = new Dictionary<int, (decimal TotalCordoba, decimal TotalUsd)>();
-                if (detailTicketIds.Count > 0)
-                {
-                    var dispatchRows = await _context.TicketSparePartDispatches
-                        .AsNoTracking()
-                        .Where(d => detailTicketIds.Contains(d.TicketId))
-                        .GroupBy(d => d.TicketId)
-                        .Select(g => new
-                        {
-                            TicketId = g.Key,
-                            TotalCordoba = g.Sum(x => x.TotalCostCordoba ?? 0m),
-                            TotalUsd = g.Sum(x => x.TotalCostUsd ?? 0m)
-                        })
-                        .ToListAsync();
-
-                    dispatchTotalsForDetail = dispatchRows.ToDictionary(
-                        x => x.TicketId,
-                        x => (TotalCordoba: x.TotalCordoba, TotalUsd: x.TotalUsd));
-                }
-
-                maintenanceDetailRows = detailSourceRows
-                    .Select(row =>
-                    {
-                        var dispatchCost = dispatchTotalsForDetail.TryGetValue(row.Id, out var totals)
-                            ? totals
-                            : (TotalCordoba: 0m, TotalUsd: 0m);
-
-                        return new MaintenanceOrderDetailItem
-                        {
-                            TicketId = row.Id,
-                            TicketNumber = string.IsNullOrWhiteSpace(row.TicketNumber) ? $"TK-{row.Id}" : row.TicketNumber!,
-                            CreatedDateUtc = row.CreatedDate,
-                            SlaDeadlineUtc = row.SLADeadline,
-                            Site = string.IsNullOrWhiteSpace(row.Site) ? "-" : row.Site,
-                            UnitCode = string.IsNullOrWhiteSpace(row.UnitCode) ? "Sin unidad" : row.UnitCode,
-                            IncidentType = string.IsNullOrWhiteSpace(row.IncidentType) ? "-" : row.IncidentType,
-                            FailureCategory = string.IsNullOrWhiteSpace(row.FailureCategory) ? "-" : row.FailureCategory,
-                            MaintenanceStage = string.IsNullOrWhiteSpace(row.MaintenanceStage) ? "Sin etapa" : row.MaintenanceStage,
-                            AssignedTechnician = string.IsNullOrWhiteSpace(row.AssignedTechnician) ? "Sin asignar" : row.AssignedTechnician,
-                            Status = row.Status,
-                            RequiresCostApproval = row.RequiresCostApproval,
-                            CostApproved = row.CostApproved,
-                            TotalCostCordoba = dispatchCost.TotalCordoba + row.ComponentCostCordoba + row.LaborCostCordoba + row.ExternalCostCordoba,
-                            TotalCostUsd = dispatchCost.TotalUsd + row.ComponentCostUsd + row.LaborCostUsd + row.ExternalCostUsd,
-                            RemainingHoursToSla = (row.SLADeadline - nowUtc).TotalHours
-                        };
-                    })
-                    .ToList();
 
                 var boardHistoryByTicket = new Dictionary<int, IReadOnlyList<TicketHistory>>();
                 var boardTicketIds = detailSourceRows
@@ -1239,6 +1177,36 @@ namespace ITServiceDeskApp.Controllers
                 .Take(normalizedPageSize)
                 .ToListAsync();
 
+            var breakdownOrderIds = new HashSet<int>();
+            var maintenanceOrderCounts = new Dictionary<string, int>();
+            if (isMaintenanceView && normalizedMaintenanceView == "detail")
+            {
+                var orderIds = tickets.Select(t => t.Id).ToArray();
+                if (orderIds.Length > 0)
+                {
+                    breakdownOrderIds = (await _context.OperationalBreakdowns.AsNoTracking()
+                        .Where(b => b.MaintenanceTicketId.HasValue && orderIds.Contains(b.MaintenanceTicketId.Value))
+                        .Select(b => b.MaintenanceTicketId!.Value)
+                        .ToListAsync()).ToHashSet();
+                }
+
+                var counts = await _context.Tickets.AsNoTracking()
+                    .Where(t => t.Department == normalizedDepartment)
+                    .GroupBy(_ => 1)
+                    .Select(g => new
+                    {
+                        Received = g.Count(t => t.MaintenanceStage == "Recibida"),
+                        Repairing = g.Count(t => t.MaintenanceStage == "En reparacion"),
+                        Ready = g.Count(t => t.MaintenanceStage == "Lista para entrega"),
+                        Overdue = g.Count(t => t.Status != TicketStatus.Closed && t.SLADeadline < nowUtc)
+                    })
+                    .SingleOrDefaultAsync();
+                maintenanceOrderCounts["Recibida"] = counts?.Received ?? 0;
+                maintenanceOrderCounts["En reparacion"] = counts?.Repairing ?? 0;
+                maintenanceOrderCounts["Lista para entrega"] = counts?.Ready ?? 0;
+                maintenanceOrderCounts["overdue"] = counts?.Overdue ?? 0;
+            }
+
             var ticketIds = tickets
                 .Select(t => t.Id)
                 .ToList();
@@ -1295,12 +1263,12 @@ namespace ITServiceDeskApp.Controllers
             IReadOnlyDictionary<string, int> publishedRepairStates = new Dictionary<string, int>();
             IReadOnlyDictionary<string, MaintenanceExternalRepair> publishedRepairOverrides =
                 new Dictionary<string, MaintenanceExternalRepair>(StringComparer.OrdinalIgnoreCase);
-            if (isMaintenanceView)
+            if (isMaintenanceView && (normalizedMaintenanceView is "overview" or "history"))
             {
                 publishedRepairs = await _publishedInventory.GetAsync(PublishedInventoryService.Repairs, HttpContext.RequestAborted);
                 var inventorySheet = PublishedInventoryService.Sheets
                     .FirstOrDefault(sheet => sheet.Key.Equals("inventario", StringComparison.OrdinalIgnoreCase));
-                if (inventorySheet != null)
+                if (normalizedMaintenanceView == "overview" && inventorySheet != null)
                 {
                     publishedMaintenanceInventory = await _publishedInventory.GetAsync(inventorySheet, HttpContext.RequestAborted);
                 }
@@ -1346,6 +1314,9 @@ namespace ITServiceDeskApp.Controllers
                 SelectedMaintenanceStage = normalizedMaintenanceStage,
                 SelectedOverdueBand = normalizedOverdueBand,
                 MaintenanceViewMode = isMaintenanceView ? normalizedMaintenanceView : "overview",
+                BreakdownOrderIds = breakdownOrderIds,
+                MaintenanceOrderCounts = maintenanceOrderCounts,
+                MaintenanceHistoryPage = page,
                 FinanceOpenCount = financeOpenCount,
                 FinanceInProgressCount = financeInProgressCount,
                 FinanceResolvedCount = financeResolvedCount,
@@ -1407,7 +1378,6 @@ namespace ITServiceDeskApp.Controllers
                 TechnicianCapacityUtilizationRate = technicianCapacityUtilizationRate,
                 MaintenanceSiteCostRanking = maintenanceSiteCostRanking,
                 MaintenanceReincidenceRanking = maintenanceReincidenceRanking,
-                MaintenanceDetailRows = maintenanceDetailRows,
                 MaintenanceBoardRows = maintenanceBoardRows,
                 DashboardGeneratedAtUtc = nowUtc,
                 LatestAuditByTicket = latestAuditByTicket,
@@ -1741,7 +1711,7 @@ namespace ITServiceDeskApp.Controllers
         {
             if (string.IsNullOrWhiteSpace(maintenanceView))
             {
-                return "overview";
+                return "detail";
             }
 
             var normalized = maintenanceView.Trim().ToLowerInvariant();
@@ -1749,10 +1719,13 @@ namespace ITServiceDeskApp.Controllers
             {
                 "detail" => "detail",
                 "detalle" => "detail",
+                "orders" => "detail",
+                "history" => "history",
+                "overview" => "overview",
                 "board" => "board",
                 "pizarra" => "board",
                 "airport" => "board",
-                _ => "overview"
+                _ => "detail"
             };
         }
 
@@ -7768,7 +7741,7 @@ namespace ITServiceDeskApp.Controllers
             }
         }
 
-        private static DateTime ToBusinessLocalTime(DateTime utcDateTime)
+        internal static DateTime ToBusinessLocalTime(DateTime utcDateTime)
         {
             return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, SlaBusinessTimeZone);
         }

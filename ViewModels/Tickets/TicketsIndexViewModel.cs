@@ -21,6 +21,9 @@ namespace ITServiceDeskApp.ViewModels.Tickets
         public string? SelectedMaintenanceStage { get; set; }
         public string? SelectedOverdueBand { get; set; }
         public string MaintenanceViewMode { get; set; } = "overview";
+        public IReadOnlySet<int> BreakdownOrderIds { get; set; } = new HashSet<int>();
+        public IReadOnlyDictionary<string, int> MaintenanceOrderCounts { get; set; } = new Dictionary<string, int>();
+        public int MaintenanceHistoryPage { get; set; } = 1;
         public int FinanceOpenCount { get; set; }
         public int FinanceInProgressCount { get; set; }
         public int FinanceResolvedCount { get; set; }
@@ -95,8 +98,6 @@ namespace ITServiceDeskApp.ViewModels.Tickets
             = Array.Empty<MaintenanceReincidenceItem>();
         public IReadOnlyDictionary<int, TicketAuditItem> LatestAuditByTicket { get; set; }
             = new Dictionary<int, TicketAuditItem>();
-        public IReadOnlyList<MaintenanceOrderDetailItem> MaintenanceDetailRows { get; set; }
-            = Array.Empty<MaintenanceOrderDetailItem>();
         public IReadOnlyList<MaintenanceAirportBoardItem> MaintenanceBoardRows { get; set; }
             = Array.Empty<MaintenanceAirportBoardItem>();
         public DateTime DashboardGeneratedAtUtc { get; set; } = DateTime.UtcNow;
@@ -165,26 +166,6 @@ namespace ITServiceDeskApp.ViewModels.Tickets
         public int ReincidenceCount { get; set; }
         public string TopFailureCategory { get; set; } = "Sin categoria";
         public string MainSite { get; set; } = "Sin sitio";
-    }
-
-    public sealed class MaintenanceOrderDetailItem
-    {
-        public int TicketId { get; set; }
-        public string TicketNumber { get; set; } = string.Empty;
-        public DateTime CreatedDateUtc { get; set; }
-        public DateTime SlaDeadlineUtc { get; set; }
-        public string Site { get; set; } = string.Empty;
-        public string UnitCode { get; set; } = string.Empty;
-        public string IncidentType { get; set; } = string.Empty;
-        public string FailureCategory { get; set; } = string.Empty;
-        public string MaintenanceStage { get; set; } = string.Empty;
-        public string AssignedTechnician { get; set; } = string.Empty;
-        public TicketStatus Status { get; set; }
-        public bool RequiresCostApproval { get; set; }
-        public bool CostApproved { get; set; }
-        public decimal TotalCostCordoba { get; set; }
-        public decimal TotalCostUsd { get; set; }
-        public double RemainingHoursToSla { get; set; }
     }
 
     public sealed class MaintenanceAirportBoardItem

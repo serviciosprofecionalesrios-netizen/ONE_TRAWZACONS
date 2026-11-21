@@ -6,7 +6,7 @@
     var isFinanceView = Model.IsFinanceView || string.Equals(Model.Department, "Finanzas", StringComparison.OrdinalIgnoreCase);
     var isMineFinanceView = Model.IsMineFinanceView;
     var pageTitle = Model.IsMaintenanceView
-        ? "Seguimiento de Ordenes de Mantenimiento"
+        ? "Seguimiento de Órdenes de Mantenimiento"
         : isFinanceView
             ? (isMineFinanceView ? "Mis Solicitudes Financieras" : "Dashboard de Solicitudes Financieras")
             : "Gestión de Incidencias";
@@ -163,7 +163,6 @@
     var maintenanceTechnicianOptions = Model.TechnicianOptions ?? Array.Empty<string>();
     var maintenanceSiteCostRanking = Model.MaintenanceSiteCostRanking ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceSiteCostRankItem>();
     var maintenanceReincidenceRanking = Model.MaintenanceReincidenceRanking ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceReincidenceItem>();
-    var maintenanceDetailRows = Model.MaintenanceDetailRows ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceOrderDetailItem>();
     var maintenanceBoardRows = Model.MaintenanceBoardRows ?? Array.Empty<ITServiceDeskApp.ViewModels.Tickets.MaintenanceAirportBoardItem>();
     var maintenanceViewMode = string.IsNullOrWhiteSpace(Model.MaintenanceViewMode) ? "overview" : Model.MaintenanceViewMode;
 }
@@ -440,13 +439,17 @@
         font-size: 0.78rem;
     }
 
-    .maintenance-workspace-tabs .quick-tab {
-        min-width: 180px;
-        text-align: center;
+    .maintenance-summary-kpi {
+        display: grid;
+        gap: .2rem;
+        height: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: .65rem;
+        padding: .7rem .85rem;
     }
 
-    .maintenance-detail-grid {
-        min-width: 1440px;
+    .maintenance-summary-kpi strong {
+        font-size: 1.25rem;
     }
 
     .airport-board-grid {
@@ -492,7 +495,7 @@
             if (Model.IsMaintenanceView)
             {
                 <a asp-action="CreateMaintenance" class="btn btn-success shadow-sm">
-                    <i class="bi bi-plus-lg"></i> Nueva Orden de Mantenimiento
+                    <i class="bi bi-plus-lg"></i> Nueva orden
                 </a>
             }
             else
@@ -513,14 +516,7 @@
         }
     </div>
 
-    @if (Model.IsMaintenanceView)
-    {
-        <div class="alert alert-info shadow-sm">
-            Vista dedicada a <strong>Mantenimiento</strong>. Los filtros y acciones aplican solo a ese departamento.
-            <a class="ms-2 fw-semibold" href="@BuildUrl(null, null, null, null, 1, Model.PageSize, Model.Department, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, maintenanceStage: string.Empty)">Ver todo</a>
-        </div>
-    }
-    else if (isFinanceView)
+    @if (isFinanceView)
     {
         <div class="alert alert-info shadow-sm">
             Dashboard dedicado a <strong>Finanzas</strong>.
@@ -540,23 +536,27 @@
     {
         <div class="card shadow-sm mb-3 border-0">
             <div class="card-body py-2">
-                <div class="d-flex flex-wrap gap-2 maintenance-workspace-tabs">
-                    <a class="quick-tab @(maintenanceViewMode == "overview" ? "active" : "")"
-                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: Model.SelectedOverdueBand, maintenanceStage: Model.SelectedMaintenanceStage, maintenanceView: "overview")">
-                        Resumen
-                    </a>
+                <nav class="d-flex flex-wrap gap-2" aria-label="Vistas de mantenimiento">
                     <a class="quick-tab @(maintenanceViewMode == "detail" ? "active" : "")"
-                       href="@BuildUrl(Model.Search, Model.Status, Model.Priority, Model.QuickFilter, 1, Model.PageSize, site: Model.SelectedSite, tenencia: Model.SelectedTenencia, technician: Model.SelectedAssignedTechnician, incidentType: Model.SelectedIncidentType, overdueBand: Model.SelectedOverdueBand, maintenanceStage: Model.SelectedMaintenanceStage, maintenanceView: "detail")">
-                        Tabla Detalle
+                       asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="detail"
+                       aria-current="@(maintenanceViewMode == "detail" ? "page" : null)">
+                        Órdenes
+                    </a>
+                    <a class="quick-tab @(maintenanceViewMode == "history" ? "active" : "")"
+                       asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="history"
+                       aria-current="@(maintenanceViewMode == "history" ? "page" : null)">
+                        Histórico de reparaciones
                     </a>
                     <a class="quick-tab @(maintenanceViewMode == "board" ? "active" : "")"
                        href="@Url.Action("MaintenanceBoard", "Tickets", new { site = Model.SelectedSite, technician = Model.SelectedAssignedTechnician, stage = Model.SelectedMaintenanceStage })">
                         Pizarra Operativa
                     </a>
-                </div>
-                <small class="text-muted d-block mt-2">
-                    Vistas de trabajo para Mantenimiento. Ultima actualizacion: @Model.DashboardGeneratedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
-                </small>
+                    <a class="quick-tab @(maintenanceViewMode == "overview" ? "active" : "")"
+                       asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="overview"
+                       aria-current="@(maintenanceViewMode == "overview" ? "page" : null)">
+                        Resumen
+                    </a>
+                </nav>
             </div>
         </div>
     }
@@ -566,7 +566,7 @@
         <div class="alert alert-success shadow-sm">@successMessage</div>
     }
 
-    @if (Model.IsMaintenanceView && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult repairSource && repairSource.Table != null)
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview" && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult repairSource && repairSource.Table != null)
     {
         var repairStates = ViewBag.PublishedRepairStates as IReadOnlyDictionary<string, int> ?? new Dictionary<string, int>();
         var externalTotal = repairSource.Table.Rows.Count;
@@ -600,152 +600,11 @@
         </div>
     }
 
-    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview")
-    {
-        <section class="card shadow-sm mb-3">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h6 class="fw-bold mb-0">Órdenes de mantenimiento recientes</h6>
-                <a class="btn btn-sm btn-outline-primary"
-                   asp-action="Index" asp-route-department="@Model.Department" asp-route-maintenanceView="detail">
-                    Ver tabla de órdenes
-                </a>
-            </div>
-            @if (maintenanceDetailRows.Count == 0)
-            {
-                <p class="card-body text-muted mb-0">No hay órdenes de mantenimiento para mostrar.</p>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr><th>Orden</th><th>Fecha de creación</th><th>Equipo</th><th>Estado</th><th>Acciones</th></tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var order in maintenanceDetailRows.Take(12))
-                            {
-                                <tr>
-                                    <td class="fw-semibold">@order.TicketNumber</td>
-                                    <td class="text-nowrap">@order.CreatedDateUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td>@order.UnitCode</td>
-                                    <td><span class="badge @StatusClass(order.Status)">@StatusLabel(order.Status)</span></td>
-                                    <td class="text-nowrap">
-                                        <a asp-action="Details" asp-route-id="@order.TicketId" asp-route-department="@Model.Department" class="btn btn-sm btn-outline-info">Ver</a>
-                                        @if (canEditTicket)
-                                        {
-                                            <a asp-action="Edit" asp-route-id="@order.TicketId" asp-route-department="@Model.Department" class="btn btn-sm btn-outline-primary">Editar</a>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </section>
-    }
-
     @if (Model.IsMaintenanceView && maintenanceViewMode == "detail")
     {
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h6 class="mb-0 fw-bold">Tabla Detalle de Ordenes de Mantenimiento</h6>
-                <small class="text-muted">Mostrando hasta 300 ordenes del filtro actual.</small>
-            </div>
-            <div class="card-body p-0">
-                @if (!maintenanceDetailRows.Any())
-                {
-                    <div class="p-4">
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <span>No hay órdenes de mantenimiento para los filtros actuales.</span>
-                            <a asp-action="Index" asp-route-department="@Model.Department" asp-route-maintenanceView="detail">Quitar filtros</a>
-                            <a asp-controller="MaintenanceRepairs" asp-action="Index">Ver reparaciones registradas</a>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 maintenance-detail-grid">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Orden</th>
-                                    <th>Creada</th>
-                                    <th>Sitio</th>
-                                    <th>Unidad / Equipo</th>
-                                    <th>Tipo</th>
-                                    <th>Falla</th>
-                                    <th>Etapa</th>
-                                    <th>Tecnico</th>
-                                    <th>Estado</th>
-                                    <th>SLA</th>
-                                    <th class="text-end">Costo C$</th>
-                                    <th class="text-end">Costo $</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in maintenanceDetailRows)
-                                {
-                                    var slaClass = row.RemainingHoursToSla < 0
-                                        ? "bg-danger"
-                                        : row.RemainingHoursToSla <= 4
-                                            ? "bg-warning text-dark"
-                                            : "bg-success";
-                                    var statusClass = StatusClass(row.Status);
-                                    var localCreated = row.CreatedDateUtc.ToLocalTime();
-                                    var localSla = row.SlaDeadlineUtc.ToLocalTime();
-                                    <tr>
-                                        <td class="fw-semibold">@row.TicketNumber</td>
-                                        <td>
-                                            <div class="date-main">@localCreated.ToString("yyyy-MM-dd")</div>
-                                            <div class="date-sub">@localCreated.ToString("HH:mm")</div>
-                                        </td>
-                                        <td><span class="badge bg-secondary-subtle text-secondary-emphasis">@row.Site</span></td>
-                                        <td>@row.UnitCode</td>
-                                        <td>@row.IncidentType</td>
-                                        <td>@row.FailureCategory</td>
-                                        <td>@row.MaintenanceStage</td>
-                                        <td>@row.AssignedTechnician</td>
-                                        <td>
-                                            <span class="badge @statusClass">@StatusLabel(row.Status)</span>
-                                            @if (row.RequiresCostApproval && !row.CostApproved)
-                                            {
-                                                <span class="badge bg-warning text-dark ms-1">Costo pendiente</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <span class="badge @slaClass">@FormatDurationHours(row.RemainingHoursToSla)</span>
-                                            <div class="small text-muted mt-1">@localSla.ToString("yyyy-MM-dd HH:mm")</div>
-                                        </td>
-                                        <td class="text-end fw-semibold">C$ @row.TotalCostCordoba.ToString("N2")</td>
-                                        <td class="text-end">$ @row.TotalCostUsd.ToString("N2")</td>
-                                        <td>
-                                            <div class="d-flex gap-1">
-                                                <a asp-action="Details"
-                                                   asp-route-id="@row.TicketId"
-                                                   asp-route-department="@Model.Department"
-                                                   class="btn btn-sm btn-outline-info">Ver</a>
-                                                @if (canEditTicket)
-                                                {
-                                                    <a asp-action="Edit"
-                                                       asp-route-id="@row.TicketId"
-                                                       asp-route-department="@Model.Department"
-                                                       class="btn btn-sm btn-outline-primary">Editar</a>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
+        <partial name="_MaintenanceOrderQueue" model="Model" />
     }
-
-    @if (Model.IsMaintenanceView && (maintenanceViewMode is "overview" or "detail") && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult externalRepairSource && externalRepairSource.Table != null)
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "history" && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult externalRepairSource && externalRepairSource.Table != null)
     {
         var externalOverrides = ViewBag.PublishedRepairOverrides as IReadOnlyDictionary<string, MaintenanceExternalRepair>
             ?? new Dictionary<string, MaintenanceExternalRepair>();
@@ -757,19 +616,23 @@
             return index >= 0 && index < row.Cells.Length ? row.Cells[index] : string.Empty;
         };
         var repairDateCulture = System.Globalization.CultureInfo.GetCultureInfo("es-NI");
+        const int historyPageSize = 25;
+        var historyPages = Math.Max(1, (table.Rows.Count + historyPageSize - 1) / historyPageSize);
+        var historyPage = Math.Clamp(Model.MaintenanceHistoryPage, 1, historyPages);
         var externalDashboardRows = table.Rows
             .OrderByDescending(row => DateTime.TryParse(externalValue(row, "Fecha de entrada"), repairDateCulture,
                 System.Globalization.DateTimeStyles.AllowWhiteSpaces, out var entryDate) ? entryDate : DateTime.MinValue)
-            .Take(12)
+            .Skip((historyPage - 1) * historyPageSize)
+            .Take(historyPageSize)
             .ToList();
 
         <section class="card shadow-sm mb-3">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h6 class="fw-bold mb-1">Detalle de reparaciones</h6>
-                    <small class="text-muted">Hasta 12 reparaciones, de la entrada más reciente a la más antigua.</small>
+                    <h6 class="fw-bold mb-1">Histórico de reparaciones</h6>
+                    <small class="text-muted">@table.Rows.Count.ToString("N0") reparaciones · De la más reciente a la más antigua</small>
                 </div>
-                <a class="btn btn-sm btn-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Abrir listado completo</a>
+                <a class="btn btn-sm btn-outline-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Buscar reparaciones</a>
             </div>
             <div class="card-body">
                 @if (!externalDashboardRows.Any())
@@ -822,7 +685,25 @@
                     </div>
                 }
             </div>
+            @if (historyPages > 1)
+            {
+                <nav class="card-footer bg-white d-flex flex-wrap align-items-center gap-3" aria-label="Páginas del histórico">
+                    @if (historyPage > 1)
+                    {
+                        <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="history" asp-route-page="@(historyPage - 1)">Anterior</a>
+                    }
+                    <span>Página @historyPage de @historyPages</span>
+                    @if (historyPage < historyPages)
+                    {
+                        <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="history" asp-route-page="@(historyPage + 1)">Siguiente</a>
+                    }
+                </nav>
+            }
         </section>
+    }
+    else if (Model.IsMaintenanceView && maintenanceViewMode == "history")
+    {
+        <div class="alert alert-info">El histórico de reparaciones no está disponible en este momento.</div>
     }
 
     @if (TempData["TicketsError"] is string errorMessage)
@@ -830,6 +711,8 @@
         <div class="alert alert-danger shadow-sm">@errorMessage</div>
     }
 
+    @if (!Model.IsMaintenanceView || (maintenanceViewMode is "overview" or "board"))
+    {
     @if (isFinanceView)
     {
         <div class="d-flex flex-wrap gap-2 mb-3">
@@ -1728,6 +1611,8 @@
         </div>
     </div>
 
+    }
+
     @if (Model.IsMaintenanceView && maintenanceViewMode == "board")
     {
         <div class="card shadow-sm mb-4">
@@ -1799,7 +1684,7 @@
         </div>
     }
 
-    @if (!(Model.IsMaintenanceView && (maintenanceViewMode == "detail" || maintenanceViewMode == "board")))
+    @if (!Model.IsMaintenanceView)
     {
     <div class="card shadow">
         <div class="card-body p-0">

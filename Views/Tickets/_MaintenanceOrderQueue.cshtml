@@ -1,0 +1,156 @@
+@model ITServiceDeskApp.ViewModels.Tickets.TicketsIndexViewModel
+@using ITServiceDeskApp.Models
+
+@{
+    var canEdit = User.IsInRole(nameof(UserRole.Administrator)) ||
+        User.IsInRole(nameof(UserRole.CoordinadorIT)) || User.IsInRole(nameof(UserRole.Technician));
+    var cards = new[]
+    {
+        (Label: "Por atender", Stage: "Recibida", Quick: "", Tone: "primary"),
+        (Label: "En reparación", Stage: "En reparacion", Quick: "", Tone: "warning"),
+        (Label: "Listas para entrega", Stage: "Lista para entrega", Quick: "", Tone: "success"),
+        (Label: "Vencidas", Stage: "", Quick: "overdue", Tone: "danger")
+    };
+    var orders = Model.Tickets ?? Array.Empty<Ticket>();
+    var filtered = Model.Search != null || Model.SelectedMaintenanceStage != null ||
+        Model.SelectedAssignedTechnician != null || Model.QuickFilter != null || Model.Status.HasValue ||
+        Model.Priority.HasValue || Model.SelectedSite != null || Model.SelectedTenencia != null ||
+        Model.SelectedIncidentType != null || Model.SelectedOverdueBand != null;
+    string StageLabel(string? stage) => stage switch
+    {
+        "Diagnostico" => "Diagnóstico",
+        "En reparacion" => "En reparación",
+        "Prueba tecnica" => "Prueba técnica",
+        null or "" => "Sin etapa",
+        _ => stage
+    };
+    string? PageUrl(int page) => Url.Action("Index", new
+    {
+        department = "Mantenimiento", maintenanceView = "detail", page, pageSize = Model.PageSize,
+        search = Model.Search, maintenanceStage = Model.SelectedMaintenanceStage,
+        technician = Model.SelectedAssignedTechnician, quick = Model.QuickFilter,
+        status = Model.Status, priority = Model.Priority, site = Model.SelectedSite,
+        tenencia = Model.SelectedTenencia, incidentType = Model.SelectedIncidentType,
+        overdueBand = Model.SelectedOverdueBand
+    });
+}
+
+<div class="row g-2 mb-3">
+    @foreach (var card in cards)
+    {
+        var active = card.Quick.Length > 0 ? Model.QuickFilter == card.Quick : Model.SelectedMaintenanceStage == card.Stage;
+        var count = Model.MaintenanceOrderCounts.GetValueOrDefault(card.Quick.Length > 0 ? card.Quick : card.Stage);
+        <div class="col-6 col-xl-3">
+            <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="detail"
+               asp-route-maintenanceStage="@card.Stage" asp-route-quick="@card.Quick"
+               aria-current="@(active ? "true" : null)"
+               class="card h-100 shadow-sm text-decoration-none border-start border-4 border-@card.Tone @(active ? "bg-" + card.Tone + "-subtle" : "")">
+                <div class="card-body py-2 px-3">
+                    <span class="d-block text-body">@card.Label</span>
+                    <strong class="fs-4 text-@card.Tone">@count.ToString("N0")</strong>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+<section class="card shadow-sm mb-4">
+    <form asp-action="Index" method="get" class="card-body border-bottom">
+        <input type="hidden" name="department" value="Mantenimiento" />
+        <input type="hidden" name="maintenanceView" value="detail" />
+        <input type="hidden" name="quick" value="@Model.QuickFilter" />
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-lg">
+                <label for="orderSearch" class="form-label">Orden o equipo</label>
+                <input id="orderSearch" name="search" value="@Model.Search" class="form-control" placeholder="Número de orden o código de equipo" />
+            </div>
+            <div class="col-6 col-lg">
+                <label for="orderStage" class="form-label">Etapa</label>
+                <select id="orderStage" name="maintenanceStage" class="form-select">
+                    <option value="">Todas las etapas</option>
+                    @foreach (var stage in Model.MaintenanceStageOptions)
+                    {
+                        <option value="@stage" selected="@(stage == Model.SelectedMaintenanceStage)">@StageLabel(stage)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-lg">
+                <label for="orderTechnician" class="form-label">Técnico</label>
+                <select id="orderTechnician" name="technician" class="form-select">
+                    <option value="">Todos los técnicos</option>
+                    @foreach (var technician in Model.TechnicianOptions)
+                    {
+                        <option value="@technician" selected="@(technician == Model.SelectedAssignedTechnician)">@technician</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-lg-auto d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="detail"
+                   class="btn btn-outline-secondary">Limpiar filtros</a>
+            </div>
+        </div>
+    </form>
+    <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h2 class="h6 fw-bold mb-0">@(filtered ? "Órdenes filtradas" : "Todas las órdenes")</h2>
+        <small class="text-muted">@Model.TotalItems.ToString("N0") órdenes · Más recientes primero</small>
+    </div>
+    @if (orders.Count == 0)
+    {
+        <div class="card-body">
+            <p class="mb-2">@(filtered ? "No hay órdenes que coincidan con los filtros." : "Todavía no hay órdenes de mantenimiento registradas.")</p>
+            <a asp-action="Index" asp-route-department="Mantenimiento" asp-route-maintenanceView="history">Ver histórico de reparaciones</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th scope="col">Orden</th><th scope="col">Fecha de ingreso</th><th scope="col">Equipo</th><th scope="col">Etapa</th><th scope="col">Técnico</th><th scope="col">Acción</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in orders)
+                    {
+                        var fromBreakdown = Model.BreakdownOrderIds.Contains(order.Id);
+                        var complete = fromBreakdown && order.Status == TicketStatus.Open &&
+                            (string.IsNullOrWhiteSpace(order.AssignedTechnician) || string.IsNullOrWhiteSpace(order.Tenencia));
+                        var edit = canEdit && order.Status != TicketStatus.Closed;
+                        var label = complete && edit ? "Completar orden" : "Abrir orden";
+                        <tr>
+                            <td class="text-nowrap">
+                                <strong>@(order.TicketNumber ?? $"TK-{order.Id}")</strong>
+                                @if (fromBreakdown)
+                                {
+                                    <div><span class="badge text-bg-light border fw-normal">Desde Averías</span></div>
+                                }
+                            </td>
+                            <td class="text-nowrap">@ITServiceDeskApp.Controllers.TicketsController.ToBusinessLocalTime(order.CreatedDate).ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(string.IsNullOrWhiteSpace(order.UnitCode) ? "Sin equipo" : order.UnitCode)</td>
+                            <td><span class="badge text-bg-light border">@(order.Status == TicketStatus.Closed ? "Cerrada" : StageLabel(order.MaintenanceStage))</span></td>
+                            <td>@(string.IsNullOrWhiteSpace(order.AssignedTechnician) ? "Sin asignar" : order.AssignedTechnician)</td>
+                            <td class="text-nowrap">
+                                <a asp-action="@(edit ? "Edit" : "Details")" asp-route-id="@order.Id"
+                                   asp-route-department="Mantenimiento" class="btn btn-sm @(complete && edit ? "btn-primary" : "btn-outline-primary")">@label</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="card-footer bg-white d-flex align-items-center flex-wrap gap-3" aria-label="Páginas de órdenes">
+                @if (Model.HasPreviousPage)
+                {
+                    <a href="@PageUrl(Model.Page - 1)">Anterior</a>
+                }
+                <span>Página @Model.Page de @Model.TotalPages</span>
+                @if (Model.HasNextPage)
+                {
+                    <a href="@PageUrl(Model.Page + 1)">Siguiente</a>
+                }
+            </nav>
+        }
+    }
+</section>
