@@ -58,6 +58,11 @@ namespace ITServiceDeskApp.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<OperationalBreakdown>()
+                .HasOne(b => b.MaintenanceTicket)
+                .WithMany()
+                .OnDelete(DeleteBehavior.SetNull);
+
             modelBuilder.Entity<Ticket>()
                 .HasIndex(t => t.TicketNumber)
                 .IsUnique();

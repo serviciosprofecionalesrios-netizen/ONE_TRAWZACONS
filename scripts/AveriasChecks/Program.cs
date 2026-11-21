@@ -51,7 +51,14 @@ BreakdownCreateViewModel Valid()=>new(){Equipment=truck.Name,EquipmentStatus="Va
  TechnicianIds=createTechnicians.Select(x=>x.Id).ToList(),EquipmentUnderRepair=true,GondolaUnderRepair=true};
 Check(await Controller().NuevaAveria(Valid(),default) is RedirectToActionResult,"Authorized user can register new breakdown");
 Check(db.OperationalBreakdowns.Count()==1608 && db.OperationalBreakdowns.OrderBy(x=>x.Id).Last().Status=="Abierta","Manual record is saved as open and historical count preserved");
-var saved=db.OperationalBreakdowns.AsNoTracking().Include(x=>x.Damages).OrderBy(x=>x.Id).Last();
+var saved=db.OperationalBreakdowns.AsNoTracking().Include(x=>x.Damages).Include(x=>x.MaintenanceTicket).OrderBy(x=>x.Id).Last();
+var order=db.Tickets.AsNoTracking().Single();
+Check(saved.MaintenanceTicketId==order.Id && order.TicketNumber?.StartsWith("TK-")==true &&
+ order.Department=="Mantenimiento" && order.IncidentType=="Mantenimiento Correctivo" && order.Status==TicketStatus.Open &&
+ order.UnitCode==truck.Name && order.Site=="Mina El Limón" && order.RequestingUser=="monitoreo@trawzacons.com" &&
+ order.Description.Contains(otherElement) && order.Tenencia==null && order.AssignedTechnician==null &&
+ order.FailureOdometerKm==null,
+ "New breakdown creates one linked editable maintenance order with all reported damage and workshop fields pending");
 Check(saved.GetTechnicianIds().SequenceEqual(createTechnicians.Select(x=>x.Id)) && saved.EquipmentUnderRepair &&
  saved.GondolaUnderRepair && saved.GetDamages().Select(x=>(x.Category,x.Element,x.Target)).SequenceEqual(
  [(category.Key,category.Value.First(),"EQUIPO"),(otherCategory.Key,otherElement,"GONDOLA")]),
@@ -62,11 +69,16 @@ Check(data.All(x=>x.GetDamages().Single().Element==x.Element),"Imported records 
 var invalid=Valid();invalid.Damages[1].Category=category.Key;
 Check(await Controller().NuevaAveria(invalid,default) is ViewResult && db.OperationalBreakdowns.Count()==1608,"Unrelated damage element rejected without saving");
 Check(await Controller(UserAccessProfiles.SupervisorOperations).NuevaAveria(Valid(),default) is ForbidResult,"Read-only supervisor cannot create breakdowns");
+Check(db.Tickets.Count()==1 && !db.OperationalBreakdowns.Any(x=>x.SourceKey!=null && x.MaintenanceTicketId!=null),
+ "Invalid, unauthorized and historical breakdowns do not create maintenance orders");
 Check(((BreakdownListViewModel)((ViewResult)await Controller().Averias(null,1)).Model!).Records.Count==50,"Historical table paginates at 50 rows");
 using var pg=new PostgresApplicationDbContext(new DbContextOptionsBuilder<PostgresApplicationDbContext>().UseNpgsql("Host=localhost;Database=check;Username=check;Password=unused").Options);
 Check(pg.GetService<IMigrator>().GenerateScript("20261028010000_FleetDriverAssignmentsPostgres","20261029010000_OperationalBreakdownsPostgres").Contains("OperationalBreakdowns"),"PostgreSQL migration script generated without connecting");
 using var sql=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer("Server=localhost;Database=check;Integrated Security=True;TrustServerCertificate=True").Options);
 Check(sql.GetService<IMigrator>().GenerateScript("20261028010000_FleetDriverAssignments","20261029010000_OperationalBreakdowns").Contains("OperationalBreakdowns"),"SQL Server migration script generated without connecting");
+Check(pg.GetService<IMigrator>().GenerateScript("20261107030000_OperationalImcColorsPostgres","20261121010000_BreakdownMaintenanceOrdersPostgres").Contains("ON DELETE SET NULL") &&
+ sql.GetService<IMigrator>().GenerateScript("20261107030000_OperationalImcColors","20261121010000_BreakdownMaintenanceOrders").Contains("ON DELETE SET NULL"),
+ "Both relational migrations create the optional maintenance order relationship");
 var boardTime=new DateTime(2026,10,29,18,0,0,DateTimeKind.Utc);
 OperationalBreakdown Open(int id,string? source=null)=>new(){Id=id,Equipment="W-0001",EventAt=new DateTime(2026,10,29,10,0,0),Status="Abierta",SourceJson=source};
 var road=Open(1,"{\"Sitio\":\"Carretera\"}");var workshop=Open(2,"{\"Sitio\":\"Plantel Central\"}");

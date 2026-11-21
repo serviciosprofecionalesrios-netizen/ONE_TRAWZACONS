@@ -26,6 +26,8 @@ public sealed class OperationalBreakdown
     public string? SourceJson { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     [MaxLength(150)] public string RegisteredBy { get; set; } = "";
+    public int? MaintenanceTicketId { get; set; }
+    public Ticket? MaintenanceTicket { get; set; }
 
     public int[] GetTechnicianIds() => AssignedTechnicianIds is { Length: > 0 }
         ? AssignedTechnicianIds.Split(',').Select(int.Parse).ToArray()

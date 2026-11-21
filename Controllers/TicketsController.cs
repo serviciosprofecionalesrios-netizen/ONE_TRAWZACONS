@@ -30,7 +30,7 @@ namespace ITServiceDeskApp.Controllers
         {
             PropertyNameCaseInsensitive = true
         };
-        private static readonly string[] MaintenanceSites =
+        internal static readonly string[] MaintenanceSites =
         {
             "PCT",
             "PSB",
@@ -47,7 +47,7 @@ namespace ITServiceDeskApp.Controllers
             "Propio",
             "Agregado"
         };
-        private static readonly string[] MaintenanceFailureCategories =
+        internal static readonly string[] MaintenanceFailureCategories =
         {
             "Motor",
             "Transmision",
@@ -3729,6 +3729,16 @@ namespace ITServiceDeskApp.Controllers
                 Priority = PriorityLevel.Medium,
                 MaintenanceStage = "Recibida"
             };
+
+            if (User.IsInRole("Administrator") || User.IsInRole("Technician") || User.IsInRole("CoordinadorIT"))
+            {
+                ViewBag.BreakdownOrders = await _context.OperationalBreakdowns.AsNoTracking()
+                    .Where(b => b.MaintenanceTicket != null && b.MaintenanceTicket.Status != TicketStatus.Closed)
+                    .OrderByDescending(b => b.Id)
+                    .Select(b => b.MaintenanceTicket!)
+                    .Take(10)
+                    .ToListAsync(HttpContext.RequestAborted);
+            }
 
             await PopulateMaintenanceFormDataAsync(ticket, selectedMaintenanceUiMetaJson: "{}");
             return View(ticket);
@@ -7708,14 +7718,17 @@ namespace ITServiceDeskApp.Controllers
             };
         }
 
-        private async Task<string> GenerateTicketNumberAsync()
+        private Task<string> GenerateTicketNumberAsync() => GenerateTicketNumberAsync(_context);
+
+        internal static async Task<string> GenerateTicketNumberAsync(
+            ApplicationDbContext context, CancellationToken cancellationToken = default)
         {
             var year = DateTime.UtcNow.Year;
 
-            var lastTicket = await _context.Tickets
+            var lastTicket = await context.Tickets
                 .Where(t => t.CreatedDate.Year == year)
                 .OrderByDescending(t => t.Id)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             var nextNumber = 1;
 
@@ -7734,7 +7747,7 @@ namespace ITServiceDeskApp.Controllers
 
         private static readonly TimeZoneInfo SlaBusinessTimeZone = ResolveSlaBusinessTimeZone();
 
-        private static DateTime CalculateSLA(PriorityLevel priority)
+        internal static DateTime CalculateSLA(PriorityLevel priority)
         {
             var slaHours = GetSlaHours(priority);
             var nowBusiness = ToBusinessLocalTime(DateTime.UtcNow);

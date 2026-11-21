@@ -22,7 +22,7 @@ public partial class OperacionesController
     [HttpGet]
     public async Task<IActionResult> AveriaDetalle(int id, CancellationToken cancellationToken)
     {
-        var record = await _context.OperationalBreakdowns.AsNoTracking().Include(x => x.Damages)
+        var record = await _context.OperationalBreakdowns.AsNoTracking().Include(x => x.Damages).Include(x => x.MaintenanceTicket)
             .SingleOrDefaultAsync(x=>x.Id==id,cancellationToken);
         if (record == null) return NotFound();
         var ids = record.GetTechnicianIds();
@@ -88,8 +88,63 @@ public partial class OperacionesController
             Damages=damages,EquipmentUnderRepair=model.EquipmentUnderRepair,GondolaUnderRepair=model.GondolaUnderRepair,
             Observation=model.Observation?.Trim(),RegisteredBy=actor.Length>150?actor[..150]:actor };
         record.SetTechnicians(technicianIds);
-        _context.OperationalBreakdowns.Add(record);await _context.SaveChangesAsync(cancellationToken);
-        TempData["AveriasOk"]="Avería registrada correctamente.";
+        static string Limit(string value, int maxLength) => value.Length <= maxLength ? value : value[..maxLength];
+
+        var site = record.Circuit.Equals("Limón", StringComparison.OrdinalIgnoreCase) ? "Mina El Limón" : record.Circuit;
+        var requester = User.Identity?.Name;
+        var description = $"Avería reportada el {record.EventAt:dd/MM/yyyy HH:mm}\n" +
+            $"Circuito: {record.Circuit}\nConductor: {record.Driver ?? "Sin registrar"}\n" +
+            $"Estatus del equipo: {record.EquipmentStatus}\n" +
+            string.Join("\n", damages.Select(d => $"{d.Target} · {d.Category} · {d.Element}"));
+
+        record.MaintenanceTicket = new Ticket
+        {
+            Department = "Mantenimiento",
+            IncidentType = "Mantenimiento Correctivo",
+            Status = TicketStatus.Open,
+            Priority = PriorityLevel.Medium,
+            MaintenanceStage = "Recibida",
+            RequestingUser = Limit(string.IsNullOrWhiteSpace(requester) ? actor : requester, 100),
+            Site = TicketsController.MaintenanceSites.FirstOrDefault(s => s.Equals(site, StringComparison.OrdinalIgnoreCase)) ?? "",
+            UnitCode = Limit(record.Equipment, 80),
+            FailureCategory = TicketsController.MaintenanceFailureCategories.FirstOrDefault(c => c.Equals(first.Category, StringComparison.OrdinalIgnoreCase)),
+            DamagedElement = Limit(first.Element, 150),
+            Description = Limit(description, 2000),
+            Observations = record.Observation is null ? null : Limit(record.Observation, 2000),
+            SLADeadline = TicketsController.CalculateSLA(PriorityLevel.Medium)
+        };
+
+        _context.OperationalBreakdowns.Add(record);
+        for (var attempt = 1; ; attempt++)
+        {
+            record.MaintenanceTicket.TicketNumber = await TicketsController.GenerateTicketNumberAsync(_context, cancellationToken);
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                break;
+            }
+            catch (DbUpdateException ex) when (attempt < 3 && IsTicketNumberConflict(ex))
+            {
+                // Another order used this number. Both inserts have been rolled back by EF.
+            }
+            catch (DbUpdateException ex)
+            {
+                _context.ChangeTracker.Clear();
+                _logger.LogError(ex, "No se pudo guardar la avería con su orden de mantenimiento.");
+                ModelState.AddModelError(string.Empty, "No se pudo guardar la avería y su orden. Intenta de nuevo.");
+                return View(await BreakdownForm(model, cancellationToken));
+            }
+        }
+        TempData["AveriasOk"] = $"Avería registrada. Se creó la orden {record.MaintenanceTicket.TicketNumber}.";
         return RedirectToAction(nameof(AveriaDetalle),new{id=record.Id});
     }
+
+    private static bool IsTicketNumberConflict(DbUpdateException exception) => exception.InnerException switch
+    {
+        Npgsql.PostgresException pg => pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation &&
+            pg.ConstraintName == "IX_Tickets_TicketNumber",
+        Microsoft.Data.SqlClient.SqlException sql => (sql.Number is 2601 or 2627) &&
+            sql.Message.Contains("IX_Tickets_TicketNumber", StringComparison.Ordinal),
+        _ => false
+    };
 }
