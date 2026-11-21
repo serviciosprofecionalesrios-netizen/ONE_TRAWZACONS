@@ -1065,7 +1065,7 @@ namespace ITServiceDeskApp.Controllers
                     .Take(8)
                     .ToList();
 
-                var detailSourceRows = await query
+                var maintenanceRows = query
                     .Select(t => new
                     {
                         t.Id,
@@ -1087,10 +1087,12 @@ namespace ITServiceDeskApp.Controllers
                         LaborCostUsd = t.LaborCostUsd ?? 0m,
                         ExternalCostCordoba = t.ExternalCostCordoba ?? 0m,
                         ExternalCostUsd = t.ExternalCostUsd ?? 0m
-                    })
-                    .OrderBy(t => t.Status == TicketStatus.Closed ? 1 : 0)
-                    .ThenBy(t => t.SLADeadline)
-                    .ThenByDescending(t => t.CreatedDate)
+                    });
+                var detailSourceRows = await (normalizedMaintenanceView == "board"
+                        ? maintenanceRows.OrderBy(t => t.Status == TicketStatus.Closed ? 1 : 0)
+                            .ThenBy(t => t.SLADeadline).ThenByDescending(t => t.CreatedDate)
+                        : maintenanceRows.OrderByDescending(t => t.CreatedDate))
+                    .ThenByDescending(t => t.Id)
                     .Take(300)
                     .ToListAsync();
 
@@ -1225,15 +1227,11 @@ namespace ITServiceDeskApp.Controllers
                 .ThenByDescending(t => t.Priority)
                 .ThenByDescending(t => t.CreatedDate);
 
-            // In maintenance default view, prioritize newest creation to avoid hiding freshly created orders.
-            if (isMaintenanceView &&
-                string.IsNullOrWhiteSpace(normalizedQuick) &&
-                string.IsNullOrWhiteSpace(normalizedSearch))
+            if (isMaintenanceView)
             {
                 orderedTicketsQuery = query
                     .OrderByDescending(t => t.CreatedDate)
-                    .ThenByDescending(t => t.Priority)
-                    .ThenBy(t => t.SLADeadline);
+                    .ThenByDescending(t => t.Id);
             }
 
             var tickets = await orderedTicketsQuery

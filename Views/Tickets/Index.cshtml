@@ -600,7 +600,152 @@
         </div>
     }
 
-    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview" && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult externalRepairSource && externalRepairSource.Table != null)
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "overview")
+    {
+        <section class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="fw-bold mb-0">Órdenes de mantenimiento recientes</h6>
+                <a class="btn btn-sm btn-outline-primary"
+                   asp-action="Index" asp-route-department="@Model.Department" asp-route-maintenanceView="detail">
+                    Ver tabla de órdenes
+                </a>
+            </div>
+            @if (maintenanceDetailRows.Count == 0)
+            {
+                <p class="card-body text-muted mb-0">No hay órdenes de mantenimiento para mostrar.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>Orden</th><th>Fecha de creación</th><th>Equipo</th><th>Estado</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in maintenanceDetailRows.Take(12))
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@order.TicketNumber</td>
+                                    <td class="text-nowrap">@order.CreatedDateUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@order.UnitCode</td>
+                                    <td><span class="badge @StatusClass(order.Status)">@StatusLabel(order.Status)</span></td>
+                                    <td class="text-nowrap">
+                                        <a asp-action="Details" asp-route-id="@order.TicketId" asp-route-department="@Model.Department" class="btn btn-sm btn-outline-info">Ver</a>
+                                        @if (canEditTicket)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@order.TicketId" asp-route-department="@Model.Department" class="btn btn-sm btn-outline-primary">Editar</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+
+    @if (Model.IsMaintenanceView && maintenanceViewMode == "detail")
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">Tabla Detalle de Ordenes de Mantenimiento</h6>
+                <small class="text-muted">Mostrando hasta 300 ordenes del filtro actual.</small>
+            </div>
+            <div class="card-body p-0">
+                @if (!maintenanceDetailRows.Any())
+                {
+                    <div class="p-4">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span>No hay órdenes de mantenimiento para los filtros actuales.</span>
+                            <a asp-action="Index" asp-route-department="@Model.Department" asp-route-maintenanceView="detail">Quitar filtros</a>
+                            <a asp-controller="MaintenanceRepairs" asp-action="Index">Ver reparaciones registradas</a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 maintenance-detail-grid">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Orden</th>
+                                    <th>Creada</th>
+                                    <th>Sitio</th>
+                                    <th>Unidad / Equipo</th>
+                                    <th>Tipo</th>
+                                    <th>Falla</th>
+                                    <th>Etapa</th>
+                                    <th>Tecnico</th>
+                                    <th>Estado</th>
+                                    <th>SLA</th>
+                                    <th class="text-end">Costo C$</th>
+                                    <th class="text-end">Costo $</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in maintenanceDetailRows)
+                                {
+                                    var slaClass = row.RemainingHoursToSla < 0
+                                        ? "bg-danger"
+                                        : row.RemainingHoursToSla <= 4
+                                            ? "bg-warning text-dark"
+                                            : "bg-success";
+                                    var statusClass = StatusClass(row.Status);
+                                    var localCreated = row.CreatedDateUtc.ToLocalTime();
+                                    var localSla = row.SlaDeadlineUtc.ToLocalTime();
+                                    <tr>
+                                        <td class="fw-semibold">@row.TicketNumber</td>
+                                        <td>
+                                            <div class="date-main">@localCreated.ToString("yyyy-MM-dd")</div>
+                                            <div class="date-sub">@localCreated.ToString("HH:mm")</div>
+                                        </td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary-emphasis">@row.Site</span></td>
+                                        <td>@row.UnitCode</td>
+                                        <td>@row.IncidentType</td>
+                                        <td>@row.FailureCategory</td>
+                                        <td>@row.MaintenanceStage</td>
+                                        <td>@row.AssignedTechnician</td>
+                                        <td>
+                                            <span class="badge @statusClass">@StatusLabel(row.Status)</span>
+                                            @if (row.RequiresCostApproval && !row.CostApproved)
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1">Costo pendiente</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @slaClass">@FormatDurationHours(row.RemainingHoursToSla)</span>
+                                            <div class="small text-muted mt-1">@localSla.ToString("yyyy-MM-dd HH:mm")</div>
+                                        </td>
+                                        <td class="text-end fw-semibold">C$ @row.TotalCostCordoba.ToString("N2")</td>
+                                        <td class="text-end">$ @row.TotalCostUsd.ToString("N2")</td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <a asp-action="Details"
+                                                   asp-route-id="@row.TicketId"
+                                                   asp-route-department="@Model.Department"
+                                                   class="btn btn-sm btn-outline-info">Ver</a>
+                                                @if (canEditTicket)
+                                                {
+                                                    <a asp-action="Edit"
+                                                       asp-route-id="@row.TicketId"
+                                                       asp-route-department="@Model.Department"
+                                                       class="btn btn-sm btn-outline-primary">Editar</a>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.IsMaintenanceView && (maintenanceViewMode is "overview" or "detail") && ViewBag.PublishedRepairs is ITServiceDeskApp.ViewModels.Inventory.InventorySourceResult externalRepairSource && externalRepairSource.Table != null)
     {
         var externalOverrides = ViewBag.PublishedRepairOverrides as IReadOnlyDictionary<string, MaintenanceExternalRepair>
             ?? new Dictionary<string, MaintenanceExternalRepair>();
@@ -611,13 +756,18 @@
             var index = Array.FindIndex(table.Headers, item => item.Equals(header, StringComparison.OrdinalIgnoreCase));
             return index >= 0 && index < row.Cells.Length ? row.Cells[index] : string.Empty;
         };
-        var externalDashboardRows = table.Rows.Take(12).ToList();
+        var repairDateCulture = System.Globalization.CultureInfo.GetCultureInfo("es-NI");
+        var externalDashboardRows = table.Rows
+            .OrderByDescending(row => DateTime.TryParse(externalValue(row, "Fecha de entrada"), repairDateCulture,
+                System.Globalization.DateTimeStyles.AllowWhiteSpaces, out var entryDate) ? entryDate : DateTime.MinValue)
+            .Take(12)
+            .ToList();
 
         <section class="card shadow-sm mb-3">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h6 class="fw-bold mb-1">Detalle de reparaciones</h6>
-                    <small class="text-muted">Información de mantenimiento integrada. Se muestran 12 registros; el listado completo permanece disponible en Reparaciones.</small>
+                    <small class="text-muted">Hasta 12 reparaciones, de la entrada más reciente a la más antigua.</small>
                 </div>
                 <a class="btn btn-sm btn-primary" asp-controller="MaintenanceRepairs" asp-action="Index">Abrir listado completo</a>
             </div>
@@ -1577,102 +1727,6 @@
             }
         </div>
     </div>
-
-    @if (Model.IsMaintenanceView && maintenanceViewMode == "detail")
-    {
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h6 class="mb-0 fw-bold">Tabla Detalle de Ordenes de Mantenimiento</h6>
-                <small class="text-muted">Mostrando hasta 300 ordenes del filtro actual.</small>
-            </div>
-            <div class="card-body p-0">
-                @if (!maintenanceDetailRows.Any())
-                {
-                    <div class="p-4">
-                        <div class="alert alert-info mb-0">No hay ordenes en el filtro actual.</div>
-                    </div>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 maintenance-detail-grid">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Orden</th>
-                                    <th>Creada</th>
-                                    <th>Sitio</th>
-                                    <th>Unidad / Equipo</th>
-                                    <th>Tipo</th>
-                                    <th>Falla</th>
-                                    <th>Etapa</th>
-                                    <th>Tecnico</th>
-                                    <th>Estado</th>
-                                    <th>SLA</th>
-                                    <th class="text-end">Costo C$</th>
-                                    <th class="text-end">Costo $</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in maintenanceDetailRows)
-                                {
-                                    var slaClass = row.RemainingHoursToSla < 0
-                                        ? "bg-danger"
-                                        : row.RemainingHoursToSla <= 4
-                                            ? "bg-warning text-dark"
-                                            : "bg-success";
-                                    var statusClass = StatusClass(row.Status);
-                                    var localCreated = row.CreatedDateUtc.ToLocalTime();
-                                    var localSla = row.SlaDeadlineUtc.ToLocalTime();
-                                    <tr>
-                                        <td class="fw-semibold">@row.TicketNumber</td>
-                                        <td>
-                                            <div class="date-main">@localCreated.ToString("yyyy-MM-dd")</div>
-                                            <div class="date-sub">@localCreated.ToString("HH:mm")</div>
-                                        </td>
-                                        <td><span class="badge bg-secondary-subtle text-secondary-emphasis">@row.Site</span></td>
-                                        <td>@row.UnitCode</td>
-                                        <td>@row.IncidentType</td>
-                                        <td>@row.FailureCategory</td>
-                                        <td>@row.MaintenanceStage</td>
-                                        <td>@row.AssignedTechnician</td>
-                                        <td>
-                                            <span class="badge @statusClass">@StatusLabel(row.Status)</span>
-                                            @if (row.RequiresCostApproval && !row.CostApproved)
-                                            {
-                                                <span class="badge bg-warning text-dark ms-1">Costo pendiente</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <span class="badge @slaClass">@FormatDurationHours(row.RemainingHoursToSla)</span>
-                                            <div class="small text-muted mt-1">@localSla.ToString("yyyy-MM-dd HH:mm")</div>
-                                        </td>
-                                        <td class="text-end fw-semibold">C$ @row.TotalCostCordoba.ToString("N2")</td>
-                                        <td class="text-end">$ @row.TotalCostUsd.ToString("N2")</td>
-                                        <td>
-                                            <div class="d-flex gap-1">
-                                                <a asp-action="Details"
-                                                   asp-route-id="@row.TicketId"
-                                                   asp-route-department="@Model.Department"
-                                                   class="btn btn-sm btn-outline-info">Ver</a>
-                                                @if (canEditTicket)
-                                                {
-                                                    <a asp-action="Edit"
-                                                       asp-route-id="@row.TicketId"
-                                                       asp-route-department="@Model.Department"
-                                                       class="btn btn-sm btn-outline-primary">Editar</a>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
-    }
 
     @if (Model.IsMaintenanceView && maintenanceViewMode == "board")
     {
