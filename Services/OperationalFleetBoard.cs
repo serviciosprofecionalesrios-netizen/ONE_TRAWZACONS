@@ -25,7 +25,7 @@ public static class OperationalFleetBoard
         var masters = records.Where(x => x.Kind == "equipos" && x.IsActive).ToList();
         var board = new FleetBoardViewModel { HasUpload = source.IsFromUpload && source.LatestUploadAt.HasValue, LoadVersion = Version(source.LatestUploadAt) };
         var byKey = masters.ToDictionary(x => "master:" + x.Id, x => new FleetEquipmentViewModel {
-            Key = "master:" + x.Id, Code = x.Name, Company = x.CompanyClassification, MasterDisplayId = x.DisplayId, LoadVersion = board.LoadVersion });
+            Key = "master:" + x.Id, Code = x.Name, Plate = x.Plate, Company = x.CompanyClassification, MasterDisplayId = x.DisplayId, LoadVersion = board.LoadVersion });
         HashSet<string> currentKeys = board.HasUpload ? source.LatestUploadEquipment.Select(HolcimMasterCatalog.Identifier).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal) : [];
         var fleetRows = source.LatestUploadRows.Count > 0 ? source.LatestUploadRows : source.Rows;
         var groupedRows = fleetRows.Select((row,index) => new { row,index }).Where(x => currentKeys.Contains(HolcimMasterCatalog.Identifier(x.row.Equipo)))

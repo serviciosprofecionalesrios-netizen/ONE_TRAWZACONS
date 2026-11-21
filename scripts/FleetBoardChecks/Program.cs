@@ -43,9 +43,10 @@ Check(OperationalFleetBoard.Build(db.OperationalMasterRecords.ToList(),new(){Row
 Check(OperationalFleetBoard.Build([truck2],new(){IsFromUpload=true,LatestUploadAt=day,LatestUploadEquipment=[truck2.Name],Rows=[Row(truck2.Name,"NO RECONOCIDO")]},[]).Equipment.Single().Status=="standby","Unrecognized source states go to Standby, without an Other states card");
 
 ClaimsPrincipal Person(string email,string? profile=null)=>new(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Email,email),new Claim(ClaimTypes.Role,"Administrator")}.Concat(profile==null?[]:new[]{new Claim(UserAccessProfiles.ClaimType,profile)}),"test"));
-OperacionesController Controller(string email="monitoreo@trawzacons.com",string? profile=null){
+OperacionesController Controller(string email="monitoreo@trawzacons.com",string? profile=null,
+ Microsoft.AspNetCore.Hosting.IWebHostEnvironment? environment=null){
  var http=new DefaultHttpContext{User=Person(email,profile)};
- return new OperacionesController(null!,store,null!,null!,null!,null!,db,null!,null!,NullLogger<OperacionesController>.Instance,null!,null!){ControllerContext=new ControllerContext{HttpContext=http},TempData=new TempDataDictionary(http,new TempData())};
+ return new OperacionesController(null!,store,null!,null!,null!,null!,db,null!,null!,NullLogger<OperacionesController>.Instance,environment!,null!){ControllerContext=new ControllerContext{HttpContext=http},TempData=new TempDataDictionary(http,new TempData())};
 }
 var key="master:"+truck1.Id;
 foreach(var email in new[]{"leslieantonioespinoza@trawzacons.com","Espinozaleslieantonioespinoza@trawzacons.com"}){
@@ -425,4 +426,19 @@ Check(emptyImcController.TempData.ContainsKey("ImcImportError") && db.Operationa
 Check(pg.GetService<IMigrator>().GenerateScript("20261121020000_OperationalImcInspectionsPostgres", "20261121030000_OperationalImcFindingsPostgres").Contains("FindingsJson") &&
  sql.GetService<IMigrator>().GenerateScript("20261121020000_OperationalImcInspections", "20261121030000_OperationalImcFindings").Contains("FindingsJson"),
  "Finding storage migration generates for both database providers");
+var imcInspection = db.OperationalImcInspections.AsNoTracking().Single(row => row.FindingsJson != null);
+db.OperationalImcInspections.Add(new OperationalImcInspection
+{
+ Month = imcInspection.Month, UnitCode = "M-100001", UnitKey = "M100001", PresentedAt = imcInspection.PresentedAt,
+ Color = imcInspection.Color, FindingsJson = imcInspection.FindingsJson
+});
+db.SaveChanges();
+var detailFleet = ((SeguimientoToneladasViewModel)((ViewResult)Controller(environment: renderApp.Environment)
+ .SeguimientoToneladas("2027-02")).Model!).Fleet;
+var imcUnit = detailFleet.Equipment.Single(unit => unit.Code == truck1.Name);
+Check(imcUnit.ImcFindings.Count == 2 && detailFleet.Equipment.Single(unit => unit.Code == truck2.Name).ImcFindings.Count == 0,
+ "Fleet matches inspection findings using a normalized master plate without showing them on unrelated units");
+var imcChip = System.Net.WebUtility.HtmlDecode(await RenderChip(imcUnit));
+Check(imcChip.Contains("Hallazgos IMC del mes (2)") && imcChip.Contains("Frenos: No cumple") &&
+ imcChip.Contains("Luces: Aprobado con Restricción"), "Equipment menu and tooltip both show the inspection findings");
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

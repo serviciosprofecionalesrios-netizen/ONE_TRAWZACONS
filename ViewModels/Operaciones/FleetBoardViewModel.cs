@@ -21,6 +21,7 @@ public sealed class FleetEquipmentViewModel
 {
     public string Key { get; set; } = "";
     public string Code { get; set; } = "";
+    public string? Plate { get; set; }
     public string Company { get; set; } = "";
     public string? MasterDisplayId { get; set; }
     public string Driver { get; set; } = "";
@@ -43,6 +44,7 @@ public sealed class FleetEquipmentViewModel
         : CardStatus;
     public string? ImcColor { get; set; }
     public string? ImcMonth { get; set; }
+    public IReadOnlyList<ImcFindingRow> ImcFindings { get; set; } = [];
     public string ChipCssClass => ImcColor == "roja" ? "equipo-chip--imc-roja"
         : ImcColor == "amarilla" ? "equipo-chip--imc-amarilla"
         : ImcColor is null && Status is ("imc-roja" or "imc-amarilla") ? $"equipo-chip--{Status}"

@@ -7,6 +7,16 @@
     if(Model.LoadStatus=="finalizado") baseTitle += $"\nToneladas finalizadas: {(Model.CompletedTonnes.HasValue ? Model.CompletedTonnes.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" Tn" : "Sin registro")}\nCombustible despachado: {(Model.DispatchedFuelGallons.HasValue ? Model.DispatchedFuelGallons.Value.ToString("N2",System.Globalization.CultureInfo.GetCultureInfo("es-NI"))+" gal" : "Sin registro")}";
     if (Model.ImcColor is { } color) baseTitle += $" · IMC del mes: {color}";
     else if (Model.Status.StartsWith("imc-")) baseTitle += $" · {OperationalFleetBoard.StatusLabel(Model.Status)}";
+    if (Model.ImcFindings.Count > 0)
+    {
+        baseTitle += "\n\nHallazgos IMC del mes" + string.Concat(Model.ImcFindings.Take(3)
+            .Select(finding => $"\n{finding.PresentedAt:dd/MM/yyyy} · {finding.Item}: {finding.Status}"));
+        if (Model.ImcFindings.Count > 3) baseTitle += "\nAbre la ficha para ver todos los hallazgos.";
+    }
+    else if (Model.ImcColor is "roja" or "amarilla")
+    {
+        baseTitle += "\nSin hallazgos detallados de IMC para este equipo en el mes.";
+    }
     if (Model.ShowsBreakdownDetails && Model.Breakdowns.Count == 0) baseTitle += "\nSin avería registrada.";
     var tooltip = baseTitle + string.Concat(Model.Breakdowns.Select(x => $"\n\n{x.Details}\n{x.DurationLabel}: {x.ElapsedLabel}"));
     var eventsJson = JsonSerializer.Serialize(Model.Breakdowns.Select(x => new { details = x.Details, reportedAt = x.ReportedAtUnixMs, isClosed=x.IsClosed,closedAt=x.HasDuration?x.ClosedAtUnixMs:null,elapsedLabel=x.ElapsedLabel }));
@@ -16,6 +26,26 @@
     <ul class="dropdown-menu" style="max-height:70vh;overflow-y:auto">
         <li class="dropdown-header">@Model.Code · @(Model.InLatestUpload ? "En TiHouse" : "Fuera de la carga")</li>
         <li class="px-3 pb-2 small" style="max-width:320px;white-space:normal">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Sin asignar" : Model.Driver)</li>
+        @if (Model.ImcFindings.Count > 0)
+        {
+            <li class="px-3 py-2 small border-top" style="max-width:360px;white-space:normal">
+                <strong>Hallazgos IMC del mes (@Model.ImcFindings.Count)</strong>
+                <ul class="ps-3 mb-0 mt-1">
+                    @foreach (var finding in Model.ImcFindings)
+                    {
+                        <li class="mb-1">
+                            @finding.Item
+                            <span class="badge @(finding.Status == "No cumple" ? "text-bg-danger" : "text-bg-warning")">@finding.Status</span>
+                            <small class="d-block text-muted">@finding.PresentedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                        </li>
+                    }
+                </ul>
+            </li>
+        }
+        else if (Model.ImcColor is "roja" or "amarilla")
+        {
+            <li class="px-3 py-2 small border-top text-muted">Sin hallazgos detallados de IMC para este equipo en el mes.</li>
+        }
         @foreach(var incident in Model.Breakdowns){
             <li class="px-3 py-2 small border-top" style="max-width:360px;white-space:normal">
                 <strong>Última avería registrada · @(incident.IsClosed?"Cerrada":"Abierta")</strong><br/>

@@ -208,10 +208,16 @@ public partial class OperacionesController
         var imcColors = board.Imc.Cards
             .SelectMany(card => card.Units.Select(unit => (Unit: HolcimMasterCatalog.Identifier(unit), card.ColorClass)))
             .ToDictionary(entry => entry.Unit, entry => entry.ColorClass);
+        var findingsByUnit = board.Imc.Findings.ToLookup(finding => HolcimMasterCatalog.Identifier(finding.Unit));
         foreach (var equipment in board.Equipment)
         {
+            var code = HolcimMasterCatalog.Identifier(equipment.Code);
+            var plate = HolcimMasterCatalog.Identifier(equipment.Plate);
             equipment.ImcMonth = selectedMonth;
-            equipment.ImcColor = imcColors.GetValueOrDefault(HolcimMasterCatalog.Identifier(equipment.Code));
+            equipment.ImcColor = imcColors.GetValueOrDefault(code);
+            equipment.ImcFindings = findingsByUnit[code].Concat(plate != code ? findingsByUnit[plate] : [])
+                .DistinctBy(finding => (finding.PresentedAt, finding.Item, finding.Status))
+                .OrderByDescending(finding => finding.PresentedAt).ToArray();
         }
     }
     private FleetBoardViewModel BuildFleet(SeguimientoToneladasViewModel source)
