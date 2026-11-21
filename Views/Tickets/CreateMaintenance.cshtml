@@ -24,6 +24,8 @@
     var canSetPriority = ViewBag.CanSetPriority is bool canSet && canSet;
     var todayString = DateTime.Today.ToString("yyyy-MM-dd");
     var breakdownOrders = ViewBag.BreakdownOrders as IReadOnlyList<Ticket> ?? Array.Empty<Ticket>();
+    var sourceBreakdownId = ViewBag.SourceBreakdownId as int?;
+    var saveAction = sourceBreakdownId.HasValue ? "CreateMaintenance" : "CreateMaintenanceDraft";
 }
 
 <style>
@@ -61,7 +63,7 @@
 
 <div class="m-shell mt-3">
     <div class="m-head">
-        <h3 class="m-title module-banner page-title-ribbon"><i class="bi bi-clipboard-check" aria-hidden="true"></i><span>Alta de reparaciones</span></h3>
+        <h3 class="m-title module-banner page-title-ribbon"><i class="bi bi-clipboard-check" aria-hidden="true"></i><span>@(sourceBreakdownId.HasValue ? "Nueva orden de mantenimiento" : "Alta de reparaciones")</span></h3>
         <a asp-action="Index" asp-route-department="Mantenimiento" class="btn-close" title="Cerrar"></a>
     </div>
 
@@ -84,11 +86,20 @@
         </section>
     }
 
-    <form asp-action="CreateMaintenanceDraft" method="post" enctype="multipart/form-data" id="maintenanceCreateForm" novalidate>
+    <form asp-action="@saveAction" method="post" enctype="multipart/form-data" id="maintenanceCreateForm" novalidate>
         <div class="m-body">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-            <div class="alert alert-info">Flujo dedicado para mantenimiento. El departamento queda fijo en <strong>Mantenimiento</strong>.</div>
+            @if (sourceBreakdownId.HasValue)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger"></div>
+                <input type="hidden" name="breakdownId" value="@sourceBreakdownId" />
+                <div class="alert alert-info">Avería #@sourceBreakdownId · Revisa los datos cargados y completa la información de Taller.</div>
+            }
+            else
+            {
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                <div class="alert alert-info">Flujo dedicado para mantenimiento. El departamento queda fijo en <strong>Mantenimiento</strong>.</div>
+            }
 
             <input asp-for="Department" type="hidden" value="Mantenimiento" />
             <input asp-for="Status" type="hidden" value="@((int)TicketStatus.Open)" />
@@ -148,7 +159,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="m-label" for="intakeDate">Fecha de entrada <span class="req">*</span></label>
-                    <input id="intakeDate" name="intakeDate" class="form-control" type="date" value="@todayString" required />
+                    <input id="intakeDate" name="intakeDate" class="form-control" type="date" value="@(ViewData.ModelState["intakeDate"]?.AttemptedValue ?? todayString)" required />
                 </div>
                 <div class="col-md-3">
                     <label asp-for="Tenencia" class="m-label">Tenencia <span class="req">*</span></label>
@@ -304,7 +315,10 @@
         <div class="m-foot">
             <a asp-action="Index" asp-route-department="Mantenimiento" class="btn btn-secondary">Cancelar</a>
             <button type="submit" name="submitAction" value="save" class="btn btn-success"><i class="bi bi-tools"></i> Crear Orden de Mantenimiento</button>
-            <button type="submit" name="submitAction" value="save" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Guardar orden (PDF disponible después)</button>
+            @if (!sourceBreakdownId.HasValue)
+            {
+                <button type="submit" name="submitAction" value="save" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Guardar orden (PDF disponible después)</button>
+            }
         </div>
     </form>
 </div>

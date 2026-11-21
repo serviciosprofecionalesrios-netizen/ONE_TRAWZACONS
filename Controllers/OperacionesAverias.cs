@@ -88,31 +88,7 @@ public partial class OperacionesController
             Damages=damages,EquipmentUnderRepair=model.EquipmentUnderRepair,GondolaUnderRepair=model.GondolaUnderRepair,
             Observation=model.Observation?.Trim(),RegisteredBy=actor.Length>150?actor[..150]:actor };
         record.SetTechnicians(technicianIds);
-        static string Limit(string value, int maxLength) => value.Length <= maxLength ? value : value[..maxLength];
-
-        var site = record.Circuit.Equals("Limón", StringComparison.OrdinalIgnoreCase) ? "Mina El Limón" : record.Circuit;
-        var requester = User.Identity?.Name;
-        var description = $"Avería reportada el {record.EventAt:dd/MM/yyyy HH:mm}\n" +
-            $"Circuito: {record.Circuit}\nConductor: {record.Driver ?? "Sin registrar"}\n" +
-            $"Estatus del equipo: {record.EquipmentStatus}\n" +
-            string.Join("\n", damages.Select(d => $"{d.Target} · {d.Category} · {d.Element}"));
-
-        record.MaintenanceTicket = new Ticket
-        {
-            Department = "Mantenimiento",
-            IncidentType = "Mantenimiento Correctivo",
-            Status = TicketStatus.Open,
-            Priority = PriorityLevel.Medium,
-            MaintenanceStage = "Recibida",
-            RequestingUser = Limit(string.IsNullOrWhiteSpace(requester) ? actor : requester, 100),
-            Site = TicketsController.MaintenanceSites.FirstOrDefault(s => s.Equals(site, StringComparison.OrdinalIgnoreCase)) ?? "",
-            UnitCode = Limit(record.Equipment, 80),
-            FailureCategory = TicketsController.MaintenanceFailureCategories.FirstOrDefault(c => c.Equals(first.Category, StringComparison.OrdinalIgnoreCase)),
-            DamagedElement = Limit(first.Element, 150),
-            Description = Limit(description, 2000),
-            Observations = record.Observation is null ? null : Limit(record.Observation, 2000),
-            SLADeadline = TicketsController.CalculateSLA(PriorityLevel.Medium)
-        };
+        record.MaintenanceTicket = TicketsController.PrepareBreakdownMaintenanceOrder(record, User.Identity?.Name);
 
         _context.OperationalBreakdowns.Add(record);
         for (var attempt = 1; ; attempt++)

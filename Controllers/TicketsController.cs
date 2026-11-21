@@ -3703,8 +3703,64 @@ namespace ITServiceDeskApp.Controllers
             return TrimToMax(string.Join(" | ", notes), 2000);
         }
 
-        public async Task<IActionResult> CreateMaintenance(string? site = null, string? incidentType = null)
+        private bool CanCreateOrderFromBreakdown() => OperationalBreakdownClosure.CanClose(User) &&
+            (User.IsInRole(nameof(UserRole.Administrator)) || User.IsInRole(nameof(UserRole.Technician)) ||
+             User.IsInRole(nameof(UserRole.CoordinadorIT)));
+
+        internal static Ticket PrepareBreakdownMaintenanceOrder(OperationalBreakdown record, string? requester = null)
         {
+            var reportedSite = MaintenanceBreakdownBoard.ReportedSite(record);
+            var site = string.IsNullOrWhiteSpace(reportedSite) ? record.Circuit : reportedSite;
+            if (string.Equals(site, "Limón", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(site, "Mina El Limon", StringComparison.OrdinalIgnoreCase))
+            {
+                site = "Mina El Limón";
+            }
+
+            var damages = record.GetDamages().ToList();
+            var first = damages[0];
+            var description = $"Avería reportada el {record.EventAt:dd/MM/yyyy HH:mm}\n" +
+                $"Circuito: {record.Circuit}\nConductor: {record.Driver ?? "Sin registrar"}\n" +
+                $"Estatus del equipo: {record.EquipmentStatus}\n" +
+                string.Join("\n", damages.Select(d => $"{d.Target} · {d.Category} · {d.Element}"));
+
+            return new Ticket
+            {
+                Department = "Mantenimiento",
+                IncidentType = "Mantenimiento Correctivo",
+                Status = TicketStatus.Open,
+                Priority = PriorityLevel.Medium,
+                MaintenanceStage = "Recibida",
+                RequestingUser = TrimToMax(string.IsNullOrWhiteSpace(requester) ? record.RegisteredBy : requester, 100),
+                Site = MaintenanceSites.FirstOrDefault(s => s.Equals(site, StringComparison.OrdinalIgnoreCase)) ?? "",
+                UnitCode = TrimToMax(record.Equipment, 80),
+                FailureCategory = MaintenanceFailureCategories.FirstOrDefault(c =>
+                    CultureInfo.InvariantCulture.CompareInfo.Compare(c, first.Category, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0),
+                DamagedElement = TrimToMax(first.Element, 150),
+                Description = TrimToMax(description, 2000),
+                Observations = record.Observation is null ? null : TrimToMax(record.Observation, 2000),
+                SLADeadline = CalculateSLA(PriorityLevel.Medium)
+            };
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CreateMaintenance(string? site = null, string? incidentType = null, int? breakdownId = null)
+        {
+            if (breakdownId.HasValue)
+            {
+                if (!CanCreateOrderFromBreakdown()) return Forbid();
+                var breakdown = await _context.OperationalBreakdowns.AsNoTracking().Include(b => b.Damages)
+                    .SingleOrDefaultAsync(b => b.Id == breakdownId, HttpContext.RequestAborted);
+                if (breakdown == null || !MaintenanceBreakdownBoard.IsValidRecord(breakdown)) return NotFound();
+                if (breakdown.MaintenanceTicketId is int linkedId)
+                    return RedirectToAction(nameof(Edit), new { id = linkedId, department = "Mantenimiento" });
+
+                var prefilledOrder = PrepareBreakdownMaintenanceOrder(breakdown);
+                ViewBag.SourceBreakdownId = breakdown.Id;
+                await PopulateMaintenanceFormDataAsync(prefilledOrder, selectedMaintenanceUiMetaJson: "{}");
+                return View(prefilledOrder);
+            }
+
             static string? NormalizePresetValue(string? value)
             {
                 if (string.IsNullOrWhiteSpace(value))
@@ -3762,8 +3818,21 @@ namespace ITServiceDeskApp.Controllers
             DateTime? intakeDate,
             string? sparePartsJson,
             string? maintenanceUiMetaJson,
-            string? submitAction)
+            string? submitAction,
+            int? breakdownId = null)
         {
+            if (breakdownId.HasValue)
+            {
+                if (!CanCreateOrderFromBreakdown()) return Forbid();
+                var breakdown = await _context.OperationalBreakdowns.AsNoTracking()
+                    .SingleOrDefaultAsync(b => b.Id == breakdownId, HttpContext.RequestAborted);
+                if (breakdown == null || !MaintenanceBreakdownBoard.IsValidRecord(breakdown)) return NotFound();
+                if (breakdown.MaintenanceTicketId is int linkedId)
+                    return RedirectToAction(nameof(Edit), new { id = linkedId, department = "Mantenimiento" });
+
+                ViewBag.SourceBreakdownId = breakdown.Id;
+            }
+
             var canSetPriority = CanSetPriority();
             var sparePartInputs = ParseMaintenanceSparePartInputs(sparePartsJson);
             var normalizedSparePartsJson = SerializeMaintenanceSparePartInputs(sparePartInputs);
@@ -3935,7 +4004,12 @@ namespace ITServiceDeskApp.Controllers
                 ModelState.AddModelError(nameof(Ticket.ExitOdometerKm), "El KM de salida no puede ser menor al KM de falla.");
             }
 
+            var intakeObservations = breakdownId.HasValue ? ticket.Observations : null;
             NormalizeTechnicalFieldsForRole(ticket, canEditSolutionForm: false);
+            if (breakdownId.HasValue)
+            {
+                ticket.Observations = intakeObservations;
+            }
             NormalizeComponentChangeFields(ticket);
 
             var selectedPartsById = new Dictionary<int, MaintenanceInventoryPart>();
@@ -4069,6 +4143,10 @@ namespace ITServiceDeskApp.Controllers
 
             for (var attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                if (breakdownId.HasValue)
+                {
+                    ticket.Id = 0;
+                }
                 ticket.TicketNumber = await GenerateTicketNumberAsync();
                 var stockChanged = false;
                 var executionStrategy = _context.Database.CreateExecutionStrategy();
@@ -4083,6 +4161,16 @@ namespace ITServiceDeskApp.Controllers
                         try
                         {
                             await _context.SaveChangesAsync();
+
+                            if (breakdownId.HasValue)
+                            {
+                                var linked = await _context.OperationalBreakdowns
+                                    .Where(b => b.Id == breakdownId && b.MaintenanceTicketId == null)
+                                    .ExecuteUpdateAsync(setters => setters.SetProperty(b => b.MaintenanceTicketId, ticket.Id),
+                                        HttpContext.RequestAborted);
+                                if (linked != 1)
+                                    throw new DbUpdateConcurrencyException("La avería ya tiene una orden vinculada.");
+                            }
 
                             if (sparePartInputs.Count > 0)
                             {
@@ -4198,8 +4286,19 @@ namespace ITServiceDeskApp.Controllers
                         await RegisterMaintenanceAlertHistoryAsync(ticket.Id, MaintenanceAlertCostApprovalHistoryKey, "Pendiente", "Alerta de aprobacion de costos enviada");
                     }
 
+                    if (breakdownId.HasValue)
+                    {
+                        TempData["TicketsMessage"] = $"Orden {ticket.TicketNumber} creada y vinculada a la avería.";
+                        return RedirectToAction(nameof(Index), new { department = "Mantenimiento", search = ticket.TicketNumber });
+                    }
+
                     TempData["ExternalRepairMessage"] = $"Orden {ticket.TicketNumber} creada correctamente y disponible en Reparaciones.";
                     return RedirectToAction("Index", "MaintenanceRepairs", new { q = ticket.TicketNumber });
+                }
+                catch (DbUpdateConcurrencyException) when (breakdownId.HasValue)
+                {
+                    _context.ChangeTracker.Clear();
+                    return RedirectToAction(nameof(CreateMaintenance), new { breakdownId });
                 }
                 catch (DbUpdateException) when (attempt < maxAttempts)
                 {

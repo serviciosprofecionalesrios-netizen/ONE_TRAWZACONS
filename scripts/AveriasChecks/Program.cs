@@ -71,6 +71,21 @@ Check(await Controller().NuevaAveria(invalid,default) is ViewResult && db.Operat
 Check(await Controller(UserAccessProfiles.SupervisorOperations).NuevaAveria(Valid(),default) is ForbidResult,"Read-only supervisor cannot create breakdowns");
 Check(db.Tickets.Count()==1 && !db.OperationalBreakdowns.Any(x=>x.SourceKey!=null && x.MaintenanceTicketId!=null),
  "Invalid, unauthorized and historical breakdowns do not create maintenance orders");
+var historical = db.OperationalBreakdowns.AsNoTracking().First(x =>
+ x.SourceKey != null && x.Observation != null && x.Observation != "");
+var workshopHttp = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(
+ [new(ClaimTypes.Role, "Administrator"), new(UserAccessProfiles.BusinessRoleClaimType, "GerenteTaller")], "test")) };
+var ticketsController = new TicketsController(db, null!, null!, null!, NullLogger<TicketsController>.Instance, null!)
+ { ControllerContext = new ControllerContext { HttpContext = workshopHttp } };
+var historicalForm = (ViewResult)await ticketsController.CreateMaintenance(breakdownId: historical.Id);
+var historicalOrder = (Ticket)historicalForm.Model!;
+Check((int)historicalForm.ViewData["SourceBreakdownId"]! == historical.Id && historicalOrder.UnitCode == historical.Equipment &&
+ historicalOrder.RequestingUser == historical.RegisteredBy && historicalOrder.Description.Contains(historical.Element) &&
+ historicalOrder.Observations == historical.Observation && db.Tickets.Count() == 1,
+ "Opening a historical breakdown pre-fills the New Maintenance Order form without creating a ticket");
+Check(await ticketsController.CreateMaintenance(breakdownId: saved.Id) is RedirectToActionResult
+ { ActionName: nameof(TicketsController.Edit) } linked && Equals(linked.RouteValues?["id"], order.Id),
+ "Opening an already linked breakdown redirects to the existing order");
 Check(((BreakdownListViewModel)((ViewResult)await Controller().Averias(null,1)).Model!).Records.Count==50,"Historical table paginates at 50 rows");
 using var pg=new PostgresApplicationDbContext(new DbContextOptionsBuilder<PostgresApplicationDbContext>().UseNpgsql("Host=localhost;Database=check;Username=check;Password=unused").Options);
 Check(pg.GetService<IMigrator>().GenerateScript("20261028010000_FleetDriverAssignmentsPostgres","20261029010000_OperationalBreakdownsPostgres").Contains("OperationalBreakdowns"),"PostgreSQL migration script generated without connecting");

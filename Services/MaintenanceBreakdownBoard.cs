@@ -21,6 +21,7 @@ public static class MaintenanceBreakdownBoard
     }
     public static bool IsValidRecord(OperationalBreakdown record) =>
         !string.Equals(Metadata(record).GetValueOrDefault("VIGENCIA")?.Trim(),"NULO",StringComparison.OrdinalIgnoreCase);
+    public static string? ReportedSite(OperationalBreakdown record) => Metadata(record).GetValueOrDefault("Sitio")?.Trim();
     public static DateTime? ClosingDate(OperationalBreakdown record) => record.EndAt ??
         OperationalBreakdownCatalog.Date(Metadata(record).GetValueOrDefault("Fecha Fin Evento") ?? "");
     public static DateTime? Deadline(OperationalBreakdown record)
@@ -49,7 +50,7 @@ public static class MaintenanceBreakdownBoard
             .ToDictionary(x=>x.Key,x=>x.Last().Status);
         return records.Where(IsOperationallyOpen)
             .Select(x=> {
-                var site=Metadata(x).GetValueOrDefault("Sitio")?.Trim() ?? "";
+                var site=ReportedSite(x) ?? "";
                 if(site.Length==0 && states.TryGetValue(HolcimMasterCatalog.Identifier(x.Equipment),out var state))
                     site=state switch {"carretera"=>"Carretera","taller-pct"=>"PCT","taller-psb"=>"PSB","taller-poz"=>"POZ",_=>""};
                 if(site.Length==0) site="Sin ubicación registrada";

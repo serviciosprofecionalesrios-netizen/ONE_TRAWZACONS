@@ -178,7 +178,7 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th scope="col">Fecha del evento</th><th scope="col">Equipo</th><th scope="col">Circuito</th><th scope="col">Estado</th><th scope="col">Daños registrados</th></tr>
+                        <tr><th scope="col">Fecha del evento</th><th scope="col">Equipo</th><th scope="col">Circuito</th><th scope="col">Estado</th><th scope="col">Daños registrados</th>@if (canEdit) { <th scope="col">Acción</th> }</tr>
                     </thead>
                     <tbody>
                         @foreach (var breakdown in Model.HistoricalBreakdowns)
@@ -199,6 +199,16 @@
                                         }
                                     </ul>
                                 </td>
+                                @if (canEdit)
+                                {
+                                    <td class="text-nowrap">
+                                        @if (status != "Anulada")
+                                        {
+                                            <a asp-action="CreateMaintenance" asp-route-breakdownId="@breakdown.Id"
+                                               class="btn btn-sm btn-outline-primary">Completar orden</a>
+                                        }
+                                    </td>
+                                }
                             </tr>
                         }
                     </tbody>
