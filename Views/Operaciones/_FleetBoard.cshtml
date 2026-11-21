@@ -55,6 +55,28 @@
                     </button>
                 </form>
             </div>
+            @if (TempData["ImcImportOk"] is string imported)
+            {
+                <div class="alert alert-success py-2" role="status">@imported</div>
+            }
+            @if (TempData["ImcImportError"] is string importError)
+            {
+                <div class="alert alert-warning py-2" role="alert">@importError</div>
+            }
+            @if (Model.CanManage)
+            {
+                <form asp-action="ImportarInspeccionesImc" method="post" enctype="multipart/form-data"
+                      class="border rounded-3 bg-light p-3 mb-3">
+                    <input type="hidden" name="imcMonth" value="@Model.Imc.SelectedMonth" />
+                    <label for="imc-import-file" class="form-label fw-semibold">Cargar inspecciones IMC en bloque</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input id="imc-import-file" name="imcFile" type="file" accept=".xlsx" required
+                               class="form-control form-control-sm w-auto mw-100" aria-describedby="imc-import-help" />
+                        <button type="submit" class="btn btn-primary btn-sm">Importar Excel</button>
+                    </div>
+                    <small id="imc-import-help" class="form-text">Excel .xlsx de hasta 10 MB con Unidad, Presentada y Semáforo.</small>
+                </form>
+            }
             <div class="row g-3">
                 @foreach (var card in Model.Imc.Cards)
                 {

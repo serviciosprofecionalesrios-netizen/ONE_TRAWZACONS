@@ -10,15 +10,22 @@ public static class ImcHistory
     private static readonly Lazy<List<Inspection>> Inspections = new(ReadInspections);
     private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-NI");
 
-    internal static IEnumerable<Inspection> InspectionsForMonth(string month) =>
-        Inspections.Value.Where(row => row.PresentedAt.ToString("yyyy-MM", CultureInfo.InvariantCulture) == month);
+    internal static IEnumerable<Inspection> InspectionsForMonth(string month, IEnumerable<OperationalImcInspection>? uploaded = null) =>
+        Inspections.Value.Where(row => Period(row) == month)
+            .Concat((uploaded ?? []).Where(row => row.Month == month)
+                .Select(row => new Inspection(row.UnitCode, row.PresentedAt, row.Color)));
 
-    public static ImcMonthViewModel ForMonth(string? requestedMonth, IEnumerable<OperationalImcClearance>? clearances = null)
+    private static string Period(Inspection row) => row.PresentedAt.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+
+    internal static string[] Months(IEnumerable<string>? uploadedMonths = null) =>
+        Inspections.Value.Select(Period).Concat(uploadedMonths ?? []).Distinct().OrderDescending(StringComparer.Ordinal).ToArray();
+
+    public static ImcMonthViewModel ForMonth(string? requestedMonth, IEnumerable<OperationalImcClearance>? clearances = null,
+        IEnumerable<OperationalImcInspection>? uploaded = null, IEnumerable<string>? uploadedMonths = null)
     {
-        var periods = Inspections.Value.ToLookup(row => row.PresentedAt.ToString("yyyy-MM", CultureInfo.InvariantCulture));
-        var months = periods.Select(period => period.Key).OrderDescending(StringComparer.Ordinal).ToArray();
-        var selected = requestedMonth is not null && periods.Contains(requestedMonth) ? requestedMonth : months.FirstOrDefault();
-        var units = periods[selected ?? ""]
+        var months = Months(uploadedMonths ?? uploaded?.Select(row => row.Month));
+        var selected = requestedMonth is not null && months.Contains(requestedMonth) ? requestedMonth : months.FirstOrDefault();
+        var units = InspectionsForMonth(selected ?? "", uploaded)
             .GroupBy(row => HolcimMasterCatalog.Identifier(row.Unit))
             .Select(group => group.OrderByDescending(row => row.PresentedAt).First())
             .ToDictionary(row => HolcimMasterCatalog.Identifier(row.Unit));

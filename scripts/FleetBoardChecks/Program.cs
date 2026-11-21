@@ -157,6 +157,8 @@ var colorSource = new SeguimientoToneladasViewModel {
 var colorChanges=colorUnits.Select(x=>new OperationalFleetState{EquipmentKey="unit:"+HolcimMasterCatalog.Identifier(x.Item1),EquipmentCode=x.Item1,Status=x.Item2,UpdatedAtUtc=day}).ToList();
 var colorBoard=OperationalFleetBoard.Build([],colorSource,colorChanges);
 var renderBuilder=Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(new Microsoft.AspNetCore.Builder.WebApplicationOptions{ApplicationName=typeof(OperacionesController).Assembly.FullName});
+renderBuilder.Services.AddSingleton<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>(
+ new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider());
 Microsoft.Extensions.DependencyInjection.MvcServiceCollectionExtensions.AddControllersWithViews(renderBuilder.Services).AddApplicationPart(typeof(OperacionesController).Assembly);
 await using var renderApp=renderBuilder.Build();
 using var renderScope=Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(renderApp.Services);
@@ -345,4 +347,43 @@ var historicalUnit=Board().Equipment.Single(x=>x.Code==truck1.Name);
 Check(historicalUnit.CompletedTonnes==32.85m && historicalUnit.DispatchedFuelGallons==76.5m,"Partial upload retains figures with the historical load it displays");
 var noFiguresHtml=System.Net.WebUtility.HtmlDecode(await RenderChip(new(){Code="MANUAL",Status="finalizado"}));
 Check(noFiguresHtml.Contains("Sin registro"),"Manual activation without a trip does not invent tonnage or fuel");
+
+using var imcWorkbook = new OfficeOpenXml.ExcelPackage();
+var imcSheet = imcWorkbook.Workbook.Worksheets.Add("Inspecciones");
+imcSheet.Cells[1, 1].LoadFromArrays([
+ ["Unidad", "Presentada", "Semáforo"],
+ ["IMC-TEST", "01/02/2027 08:00", "Roja"],
+ ["IMC-TEST", new DateTime(2027, 2, 2, 9, 0, 0).ToOADate(), "Verde"],
+ ["IMC TEST", "02/02/2027 09:00", "Verde"]
+]);
+var imcBytes = imcWorkbook.GetAsByteArray();
+using var imcStream = new MemoryStream(imcBytes);
+var imcFile = new FormFile(imcStream, 0, imcBytes.Length, "imcFile", "inspecciones.xlsx");
+var importedImc = await Controller().ImportarInspeccionesImc(imcFile, "2026-11", default);
+Check(importedImc is RedirectToActionResult { Fragment: "imc-history" } importedRedirect &&
+ Equals(importedRedirect.RouteValues?["imcMonth"], "2027-02") && db.OperationalImcInspections.Count() == 2,
+ "Excel import handles text and Excel dates, canonicalizes colors and skips duplicates");
+await Controller().ImportarInspeccionesImc(imcFile, "2027-02", default);
+Check(db.OperationalImcInspections.Count() == 2 &&
+ ImcHistory.ForMonth("2027-02", uploaded: db.OperationalImcInspections.AsNoTracking().ToList()).Cards
+  .Single(card => card.Units.Contains("IMC-TEST")).ColorClass == "verde",
+ "Reimport is idempotent and a new month uses the latest inspection for the unit");
+var exportedImc = (FileContentResult)Controller().ExportarImcMensual("2027-02");
+using var exportedImcWorkbook = new OfficeOpenXml.ExcelPackage(new MemoryStream(exportedImc.FileContents));
+Check(exportedImcWorkbook.Workbook.Worksheets["Inspecciones"].Dimension.End.Row == 3,
+ "Monthly export includes both valid imported inspections");
+imcSheet.Cells[4, 3].Value = "Color desconocido";
+var invalidImcBytes = imcWorkbook.GetAsByteArray();
+using var invalidImcStream = new MemoryStream(invalidImcBytes);
+var invalidImcController = Controller();
+await invalidImcController.ImportarInspeccionesImc(new FormFile(invalidImcStream, 0, invalidImcBytes.Length, "imcFile", "inspecciones.xlsx"), "2027-02", default);
+Check(invalidImcController.TempData.ContainsKey("ImcImportError") && db.OperationalImcInspections.Count() == 2,
+ "Invalid rows reject the entire workbook and leave stored inspections intact");
+Check(await Controller("supervisor@example.com", UserAccessProfiles.SupervisorOperations).ImportarInspeccionesImc(imcFile, null, default) is ForbidResult,
+ "Read-only supervisors cannot import inspections");
+Check((await RenderView(new FleetBoardViewModel { Imc = november, CanManage = true }, "/Views/Operaciones/_FleetBoard.cshtml")).Contains("id=\"imc-import-file\"") &&
+ !novemberHtml.Contains("id=\"imc-import-file\""), "IMC upload displays only for authorized users");
+Check(pg.GetService<IMigrator>().GenerateScript("20261121010000_BreakdownMaintenanceOrdersPostgres", "20261121020000_OperationalImcInspectionsPostgres").Contains("OperationalImcInspections") &&
+ sql.GetService<IMigrator>().GenerateScript("20261121010000_BreakdownMaintenanceOrders", "20261121020000_OperationalImcInspections").Contains("OperationalImcInspections"),
+ "Inspection migration generates for PostgreSQL and SQL Server");
 sealed class TempData : ITempDataProvider {public IDictionary<string,object> LoadTempData(HttpContext context)=>new Dictionary<string,object>();public void SaveTempData(HttpContext context,IDictionary<string,object> values){}}

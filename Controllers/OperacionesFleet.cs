@@ -10,12 +10,13 @@ public partial class OperacionesController
     [HttpGet]
     public IActionResult ExportarImcMensual(string? imcMonth)
     {
-        var month = ImcHistory.ForMonth(imcMonth).SelectedMonth;
+        var month = SelectImcMonth(imcMonth, UploadedImcMonths());
         if (month is null || (imcMonth is not null && imcMonth != month)) return BadRequest();
 
         var adjustments = _context.OperationalImcClearances.AsNoTracking()
             .Where(row => row.Month == month).ToDictionary(row => row.UnitKey);
-        var inspections = ImcHistory.InspectionsForMonth(month).ToList();
+        var inspections = ImcHistory.InspectionsForMonth(month, UploadedImcInspections(month))
+            .OrderByDescending(row => row.PresentedAt).ThenBy(row => row.Unit, StringComparer.Ordinal).ToList();
         var groups = inspections.ToLookup(row => HolcimMasterCatalog.Identifier(row.Unit));
         var colors = new[] { "Rojo", "Amarillo", "Verde" };
 
@@ -74,6 +75,92 @@ public partial class OperacionesController
         return File(package.GetAsByteArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"IMC-{month}.xlsx");
     }
 
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequestSizeLimit(12 * 1024 * 1024)]
+    public async Task<IActionResult> ImportarInspeccionesImc(IFormFile? imcFile, string? imcMonth, CancellationToken cancellationToken)
+    {
+        if (!OperationalFleetBoard.CanManage(User)) return Forbid();
+
+        IActionResult Back(string? month) =>
+            RedirectToAction(nameof(SeguimientoToneladas), null, new { imcMonth = month }, "imc-history");
+
+        if (imcFile is null || imcFile.Length == 0 || imcFile.Length > ImcInspectionWorkbook.MaxFileBytes ||
+            !Path.GetExtension(imcFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["ImcImportError"] = "Selecciona un archivo Excel .xlsx de hasta 10 MB.";
+            return Back(imcMonth);
+        }
+
+        List<OperationalImcInspection> rows;
+        try
+        {
+            using var buffer = new MemoryStream();
+            await imcFile.CopyToAsync(buffer, cancellationToken);
+            buffer.Position = 0;
+            rows = ImcInspectionWorkbook.Read(buffer);
+        }
+        catch (InvalidDataException ex)
+        {
+            TempData["ImcImportError"] = ex.Message;
+            return Back(imcMonth);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or FormatException
+                                   or System.Xml.XmlException or NotSupportedException)
+        {
+            TempData["ImcImportError"] = "No se pudo leer el Excel. Revisa que abra correctamente y vuelve a subirlo.";
+            return Back(imcMonth);
+        }
+
+        var months = rows.Select(row => row.Month).Distinct().ToArray();
+        var bundledKeys = months.SelectMany(month => ImcHistory.InspectionsForMonth(month))
+            .Select(row => (HolcimMasterCatalog.Identifier(row.Unit), row.PresentedAt, row.Color)).ToArray();
+        for (var attempt = 1; ; attempt++)
+        {
+            var saved = await _context.OperationalImcInspections.AsNoTracking().Where(row => months.Contains(row.Month))
+                .Select(row => new { row.UnitKey, row.PresentedAt, row.Color }).ToListAsync(cancellationToken);
+            var keys = saved.Select(row => (row.UnitKey, row.PresentedAt, row.Color)).Concat(bundledKeys).ToHashSet();
+            var pending = rows.Where(row => keys.Add((row.UnitKey, row.PresentedAt, row.Color))).ToList();
+            try
+            {
+                _context.OperationalImcInspections.AddRange(pending);
+                await _context.SaveChangesAsync(cancellationToken);
+                TempData["ImcImportOk"] = $"{pending.Count:N0} inspecciones importadas · {rows.Count - pending.Count:N0} duplicadas omitidas.";
+                return Back(months.Max(StringComparer.Ordinal));
+            }
+            catch (DbUpdateException ex) when (attempt < 3 && IsImcInspectionKeyConflict(ex))
+            {
+                foreach (var row in pending) _context.Entry(row).State = EntityState.Detached;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "No se pudieron guardar las inspecciones IMC.");
+                TempData["ImcImportError"] = "No se pudo guardar la carga de inspecciones. Inténtalo de nuevo.";
+                return Back(imcMonth);
+            }
+        }
+    }
+
+    private static bool IsImcInspectionKeyConflict(DbUpdateException exception) => exception.InnerException switch
+    {
+        Npgsql.PostgresException pg => pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation &&
+            pg.ConstraintName == "PK_OperationalImcInspections",
+        Microsoft.Data.SqlClient.SqlException sql => (sql.Number is 2601 or 2627) &&
+            sql.Message.Contains("PK_OperationalImcInspections", StringComparison.Ordinal),
+        _ => false
+    };
+
+    private string[] UploadedImcMonths() =>
+        _context.OperationalImcInspections.Select(row => row.Month).Distinct().ToArray();
+
+    private List<OperationalImcInspection> UploadedImcInspections(string? month) =>
+        _context.OperationalImcInspections.AsNoTracking().Where(row => row.Month == month).ToList();
+
+    private static string? SelectImcMonth(string? requested, IEnumerable<string> uploadedMonths)
+    {
+        var months = ImcHistory.Months(uploadedMonths);
+        return requested is not null && months.Contains(requested) ? requested : months.FirstOrDefault();
+    }
+
     private ViewResult SeguimientoFleetView(SeguimientoToneladasViewModel model, string? imcMonth = null)
     {
         var fleetSource = model.IsFromUpload ? model : _operacionesSeguimientoStore.Get() ?? model;
@@ -84,10 +171,11 @@ public partial class OperacionesController
 
     private void ApplyImcMonth(FleetBoardViewModel board, string? imcMonth)
     {
-        var selectedMonth = ImcHistory.ForMonth(imcMonth).SelectedMonth;
+        var uploadedMonths = UploadedImcMonths();
+        var selectedMonth = SelectImcMonth(imcMonth, uploadedMonths);
         var clearances = _context.OperationalImcClearances.AsNoTracking()
             .Where(row => row.Month == selectedMonth).ToList();
-        board.Imc = ImcHistory.ForMonth(selectedMonth, clearances);
+        board.Imc = ImcHistory.ForMonth(selectedMonth, clearances, UploadedImcInspections(selectedMonth), uploadedMonths);
         var imcColors = board.Imc.Cards
             .SelectMany(card => card.Units.Select(unit => (Unit: HolcimMasterCatalog.Identifier(unit), card.ColorClass)))
             .ToDictionary(entry => entry.Unit, entry => entry.ColorClass);
@@ -148,7 +236,7 @@ public partial class OperacionesController
         if (equipment == null) return BadRequest();
         if (status == "imc-verde" || (imcMonth is not null && status is ("imc-roja" or "imc-amarilla")))
         {
-            if (string.IsNullOrEmpty(imcMonth) || imcMonth != ImcHistory.ForMonth(imcMonth).SelectedMonth)
+            if (string.IsNullOrEmpty(imcMonth) || imcMonth != SelectImcMonth(imcMonth, UploadedImcMonths()))
                 return BadRequest();
             var color = status switch { "imc-roja" => "Rojo", "imc-amarilla" => "Amarillo", _ => "Verde" };
             var unitKey = HolcimMasterCatalog.Identifier(equipment.Code);
