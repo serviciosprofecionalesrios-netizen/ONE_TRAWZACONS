@@ -16,7 +16,8 @@ public partial class OperacionesController
 
         var adjustments = _context.OperationalImcClearances.AsNoTracking()
             .Where(row => row.Month == month).ToDictionary(row => row.UnitKey);
-        var inspections = ImcHistory.InspectionsForMonth(month, UploadedImcInspections(month))
+        var uploaded = UploadedImcInspections(month).ToList();
+        var inspections = ImcHistory.InspectionsForMonth(month, uploaded)
             .OrderByDescending(row => row.PresentedAt).ThenBy(row => row.Unit, StringComparer.Ordinal).ToList();
         var groups = inspections.ToLookup(row => HolcimMasterCatalog.Identifier(row.Unit));
         var colors = new[] { "Rojo", "Amarillo", "Verde" };
@@ -56,6 +57,18 @@ public partial class OperacionesController
         observations.Cells[1, 1].LoadFromArrays(new[] { new object[] { "Unidad", "Presentada", "Semáforo" } }
             .Concat(inspections.Select(row => new object[] { row.Unit, row.PresentedAt, row.Color })));
         observations.Cells[2, 2, inspections.Count + 1, 2].Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss";
+        var findings = package.Workbook.Worksheets.Add("Componentes observados");
+        findings.Cells[1, 1].LoadFromArrays([new object[] { "Unidad", "Fecha de inspección", "Semáforo de inspección", "Componente o punto evaluado", "Estado observado" }]);
+        var findingRows = uploaded.OrderByDescending(row => row.PresentedAt).ThenBy(row => row.UnitCode)
+            .SelectMany(row => ImcInspectionWorkbook.Findings(row.FindingsJson)
+                .Select(finding => new object[] { row.UnitCode, row.PresentedAt, row.Color, finding.Item, finding.Status }))
+            .ToList();
+        if (findingRows.Count > 0)
+        {
+            findings.Cells[2, 1].LoadFromArrays(findingRows);
+            findings.Cells[2, 2, findingRows.Count + 1, 2].Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss";
+            findings.Cells[findings.Dimension.Address].AutoFilter = true;
+        }
         summary.Cells[1, 1].LoadFromArrays([
             ["Indicador", "Valor"], ["Mes", month], ["Unidades", rowIndex - 2], ["Inspecciones", inspections.Count],
             ["Unidades rojas", effectiveCounts["Rojo"]], ["Unidades amarillas", effectiveCounts["Amarillo"]],
@@ -73,6 +86,8 @@ public partial class OperacionesController
         }
         detail.Cells[detail.Dimension.Address].AutoFilter = true;
         observations.Cells[observations.Dimension.Address].AutoFilter = true;
+        findings.Column(4).Width = 65;
+        findings.Column(4).Style.WrapText = true;
         return File(package.GetAsByteArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"IMC-{month}.xlsx");
     }
 
