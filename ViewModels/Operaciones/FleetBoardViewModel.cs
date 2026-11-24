@@ -51,6 +51,9 @@ public sealed class FleetEquipmentViewModel
         : LoadStatus == "ruta" ? "equipo-chip--ruta"
         : LoadStatus == "finalizado" ? "equipo-chip--descargado" : "";
     public string? Reason { get; set; }
+    public DateTime? LeaveStart { get; set; }
+    public DateTime? LeaveReturn { get; set; }
+    public string? LeaveDriver { get; set; }
     public string? ManualStateKey { get; set; }
     public List<string> ManualStateKeys { get; set; } = [];
     public bool InLatestUpload { get; set; }

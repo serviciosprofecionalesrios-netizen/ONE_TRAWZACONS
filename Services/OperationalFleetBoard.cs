@@ -6,7 +6,7 @@ using System.Security.Claims;
 namespace ITServiceDeskApp.Services;
 public static class OperationalFleetBoard
 {
-    public static readonly string[] Reasons = ["Plantel Contratista", "Otros", "Viajes Externos", "Conductor de Pase"];
+    public static readonly string[] Reasons = ["Plantel Contratista", "Otros", "Viajes Externos", "Conductor de Pase", "Equipo de Pase"];
     public static readonly string[] ManualStatuses = ["auto", "finalizado", "fuera-ruta", "carretera", "taller-pct", "taller-psb", "taller-poz", "imc-roja", "imc-amarilla"];
     public static bool CanManage(ClaimsPrincipal user) => UserAccessProfiles.CanMaintainDrivers(user) || UserAccessProfiles.CanMaintainOperationalMasters(user);
     public static bool CanChangeStatus(ClaimsPrincipal user) => CanManage(user) ||
@@ -66,6 +66,9 @@ public static class OperationalFleetBoard
             equipment.Status = change.Status == "finalizado" && equipment.InLatestUpload && source.LatestUploadAt != change.SourceUploadedAt && equipment.BaseStatus is "ruta" or "finalizado"
                 ? equipment.BaseStatus : change.Status;
             equipment.Reason = change.Reason;
+            equipment.LeaveStart = change.LeaveStart;
+            equipment.LeaveReturn = change.LeaveReturn;
+            equipment.LeaveDriver = change.LeaveDriver;
             equipment.ManualStateKey = change.EquipmentKey;
             equipment.ManualStateKeys.Add(change.EquipmentKey);
         }

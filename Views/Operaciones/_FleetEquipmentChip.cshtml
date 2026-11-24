@@ -46,6 +46,15 @@
         {
             <li class="px-3 py-2 small border-top text-muted">Sin hallazgos detallados de IMC para este equipo en el mes.</li>
         }
+        @if (Model.Reason is "Conductor de Pase" or "Equipo de Pase")
+        {
+            <li class="px-3 pb-2 small">
+                <strong>@Model.Reason</strong>
+                @if (!string.IsNullOrWhiteSpace(Model.LeaveDriver)){<div>@Model.LeaveDriver</div>}
+                <div>Inicio: @(Model.LeaveStart?.ToString("dd/MM/yyyy") ?? "Sin registrar")</div>
+                <div>Retorno planificado: @(Model.LeaveReturn?.ToString("dd/MM/yyyy") ?? "Sin registrar")</div>
+            </li>
+        }
         @foreach(var incident in Model.Breakdowns){
             <li class="px-3 py-2 small border-top" style="max-width:360px;white-space:normal">
                 <strong>Última avería registrada · @(incident.IsClosed?"Cerrada":"Abierta")</strong><br/>
@@ -84,8 +93,31 @@
         @if(Model.CanChangeStatus){
             <li><details><summary class="dropdown-item"><i class="bi bi-sign-turn-right me-2"></i>Fuera de ruta ▸</summary>
                 <form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="fuera-ruta"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
-                    @foreach(var reason in OperationalFleetBoard.Reasons){<button class="dropdown-item ps-4" name="reason" value="@reason" type="submit">@reason</button>}
+                    @foreach(var reason in OperationalFleetBoard.Reasons.Where(reason => reason is not ("Conductor de Pase" or "Equipo de Pase"))){<button class="dropdown-item ps-4" name="reason" value="@reason" type="submit">@reason</button>}
                 </form>
+                @foreach (var leaveReason in new[] { "Conductor de Pase", "Equipo de Pase" })
+                {
+                    <details class="px-3 py-1">
+                        <summary>@leaveReason</summary>
+                        <form asp-action="ActualizarEstadoEquipo" method="post" class="py-2" style="min-width:240px;max-width:75vw" data-fleet-leave>
+                            <input type="hidden" name="key" value="@Model.Key"/>
+                            <input type="hidden" name="status" value="fuera-ruta"/>
+                            <input type="hidden" name="reason" value="@leaveReason"/>
+                            <input type="hidden" name="loadVersion" value="@Model.LoadVersion"/>
+                            @if (leaveReason == "Conductor de Pase")
+                            {
+                                <p class="small text-wrap">Conductor: @(string.IsNullOrWhiteSpace(Model.Driver) ? "Asigna primero un conductor al equipo." : Model.Driver)</p>
+                            }
+                            <label class="d-block small mb-2">Desde cuándo estará de pase
+                                <input type="date" name="leaveStart" class="form-control form-control-sm" required value="@(Model.Reason == leaveReason ? Model.LeaveStart?.ToString("yyyy-MM-dd") : null)"/>
+                            </label>
+                            <label class="d-block small mb-2">Retorno planificado
+                                <input type="date" name="leaveReturn" class="form-control form-control-sm" required value="@(Model.Reason == leaveReason ? Model.LeaveReturn?.ToString("yyyy-MM-dd") : null)"/>
+                            </label>
+                            <button class="btn btn-primary btn-sm" type="submit" disabled="@(leaveReason == "Conductor de Pase" && string.IsNullOrWhiteSpace(Model.Driver))">Guardar pase</button>
+                        </form>
+                    </details>
+                }
             </details></li>
             @foreach(var state in new[]{"carretera","taller-pct","taller-psb","taller-poz"}){
                 <li><form asp-action="ActualizarEstadoEquipo" method="post"><input type="hidden" name="key" value="@Model.Key"/><input type="hidden" name="status" value="@state"/><input type="hidden" name="loadVersion" value="@Model.LoadVersion"/><button class="dropdown-item" type="submit">@OperationalFleetBoard.StatusLabel(state)</button></form></li>

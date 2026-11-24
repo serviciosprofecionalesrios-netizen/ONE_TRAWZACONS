@@ -6,6 +6,9 @@ public sealed class OperationalFleetState
     [Required, MaxLength(160)] public string EquipmentCode { get; set; } = "";
     [Required, MaxLength(30)] public string Status { get; set; } = "";
     [MaxLength(50)] public string? Reason { get; set; }
+    public DateTime? LeaveStart { get; set; }
+    public DateTime? LeaveReturn { get; set; }
+    [MaxLength(250)] public string? LeaveDriver { get; set; }
     public DateTime? SourceUploadedAt { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
     [MaxLength(150)] public string ChangedBy { get; set; } = "";

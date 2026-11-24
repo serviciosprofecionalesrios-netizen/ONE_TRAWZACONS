@@ -257,7 +257,7 @@ public partial class OperacionesController
     }
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ActualizarEstadoEquipo(string key, string status, string? reason, string loadVersion,
-        CancellationToken cancellationToken, string? imcMonth = null)
+        CancellationToken cancellationToken, string? imcMonth = null, DateTime? leaveStart = null, DateTime? leaveReturn = null)
     {
         if (!OperationalFleetBoard.CanChangeStatus(User)) return Forbid();
         var source = _operacionesSeguimientoStore.Get() ?? new SeguimientoToneladasViewModel();
@@ -302,6 +302,13 @@ public partial class OperacionesController
         }
         if (!OperationalFleetBoard.ManualStatuses.Contains(status) ||
             (status == "fuera-ruta" && !OperationalFleetBoard.Reasons.Contains(reason))) return BadRequest();
+        var isLeave = status == "fuera-ruta" && reason is "Conductor de Pase" or "Equipo de Pase";
+        if (isLeave && (!leaveStart.HasValue || !leaveReturn.HasValue || leaveReturn.Value.Date < leaveStart.Value.Date ||
+            (reason == "Conductor de Pase" && string.IsNullOrWhiteSpace(equipment.Driver))))
+        {
+            TempData["FleetError"] = "Para registrar el pase, indica inicio y retorno planificado, con retorno igual o posterior al inicio. Para un conductor de pase, asigna primero el conductor al equipo.";
+            return RedirectToAction(nameof(SeguimientoToneladas), null, null, "fleet-board");
+        }
         var row = await _context.OperationalFleetStates.FindAsync([equipment.ManualStateKey ?? key],cancellationToken);
         if (status == "auto")
         {
@@ -314,6 +321,9 @@ public partial class OperacionesController
             if (row == null) { row = new OperationalFleetState {EquipmentKey = key}; _context.OperationalFleetStates.Add(row); }
             row.EquipmentCode = equipment.Code;
             row.Status = status; row.Reason = status == "fuera-ruta" ? reason : null;
+            row.LeaveStart = isLeave ? DateTime.SpecifyKind(leaveStart!.Value.Date, DateTimeKind.Unspecified) : null;
+            row.LeaveReturn = isLeave ? DateTime.SpecifyKind(leaveReturn!.Value.Date, DateTimeKind.Unspecified) : null;
+            row.LeaveDriver = isLeave && reason == "Conductor de Pase" ? equipment.Driver : null;
             row.SourceUploadedAt = source.LatestUploadAt; row.UpdatedAtUtc = DateTime.UtcNow;
             var actor = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "";
             row.ChangedBy = actor.Length > 150 ? actor[..150] : actor;

@@ -10,6 +10,15 @@ function initializeFleetBoard() {
 }
 document.addEventListener('DOMContentLoaded', initializeFleetBoard);
 document.addEventListener('toneladas:updated', initializeFleetBoard);
+document.addEventListener('input', function (event) {
+    const form = event.target.closest('form[data-fleet-leave]');
+    if (!form) return;
+    const start = form.elements.leaveStart;
+    const plannedReturn = form.elements.leaveReturn;
+    plannedReturn.min = start.value;
+    plannedReturn.setCustomValidity(start.value && plannedReturn.value && plannedReturn.value < start.value
+        ? 'El retorno debe ser igual o posterior al inicio del pase.' : '');
+});
 
 function fleetElapsedLabel(reportedAt, closedAt) {
     var minutes = Math.max(0, Math.floor(((closedAt == null ? Date.now() : Number(closedAt)) - Number(reportedAt)) / 60000));
