@@ -110,10 +110,13 @@
                     <div class="p-2" style="max-height:28rem;overflow-y:auto">
                         @foreach (var equipment in equipmentFindings)
                         {
-                            <details class="border rounded mb-2">
+                            var color = Model.Imc.Cards.FirstOrDefault(card => card.Units.Any(unit =>
+                                ITServiceDeskApp.Services.HolcimMasterCatalog.Identifier(unit) == equipment.Key))?.ColorClass;
+                            var findingCount = equipment.Count();
+                            <details class="border rounded mb-2 imc-finding-group imc-finding-group--@color">
                                 <summary class="p-3 fw-semibold">
                                     @equipment.First().Unit
-                                    <span class="badge text-bg-secondary ms-2">@equipment.Count() hallazgos</span>
+                                    <span class="badge imc-finding-count ms-2">@findingCount @(findingCount == 1 ? "hallazgo" : "hallazgos")</span>
                                 </summary>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-hover align-middle mb-0">
