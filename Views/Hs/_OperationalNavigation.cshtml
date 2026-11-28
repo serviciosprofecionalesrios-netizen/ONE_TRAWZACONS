@@ -1,0 +1,9 @@
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+}
+<nav class="nav nav-pills gap-2 mb-3" aria-label="Gestión operativa H&S">
+    <a class="nav-link @(action == "OperationalManagement" ? "active" : "")" asp-controller="Hs" asp-action="OperationalManagement" aria-current="@(action == "OperationalManagement" ? "page" : null)">Gestión operativa</a>
+    <a class="nav-link @(action == "Incidents" ? "active" : "")" asp-controller="Hs" asp-action="Incidents" aria-current="@(action == "Incidents" ? "page" : null)">Incidentes</a>
+    <a class="nav-link @(action == "Inspections" ? "active" : "")" asp-controller="Hs" asp-action="Inspections" aria-current="@(action == "Inspections" ? "page" : null)">Inspecciones</a>
+    <a class="nav-link @(action == "Permits" ? "active" : "")" asp-controller="Hs" asp-action="Permits" aria-current="@(action == "Permits" ? "page" : null)">Permisos de trabajo</a>
+</nav>

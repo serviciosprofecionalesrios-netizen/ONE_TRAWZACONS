@@ -2090,17 +2090,10 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item op-menu-item @(hsIncidentsActive ? "is-active" : "")"
+                                <a class="dropdown-item op-menu-item @((currentController == "Hs" && currentAction == "OperationalManagement") || hsIncidentsActive || hsInspectionsActive || hsPermitsActive ? "is-active" : "")"
                                    asp-controller="Hs"
-                                   asp-action="Incidents">
-                                    <span class="op-item-main"><i class="bi bi-exclamation-triangle"></i>Incidentes</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item op-menu-item @(hsInspectionsActive ? "is-active" : "")"
-                                   asp-controller="Hs"
-                                   asp-action="Inspections">
-                                    <span class="op-item-main"><i class="bi bi-clipboard2-check"></i>Inspecciones</span>
+                                   asp-action="OperationalManagement">
+                                    <span class="op-item-main"><i class="bi bi-clipboard2-check"></i>Gestión operativa</span>
                                 </a>
                             </li>
                             <li>
@@ -2118,13 +2111,6 @@
                                    asp-controller="Hs"
                                    asp-action="Trainings">
                                     <span class="op-item-main"><i class="bi bi-mortarboard"></i>Capacitaciones</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item op-menu-item @(hsPermitsActive ? "is-active" : "")"
-                                   asp-controller="Hs"
-                                   asp-action="Permits">
-                                    <span class="op-item-main"><i class="bi bi-shield-check"></i>Permisos de trabajo</span>
                                 </a>
                             </li>
                             <li>

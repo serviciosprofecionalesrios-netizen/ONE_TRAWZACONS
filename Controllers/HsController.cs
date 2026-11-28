@@ -55,6 +55,9 @@ namespace ITServiceDeskApp.Controllers
         }
 
         [HttpGet]
+        public IActionResult OperationalManagement() => View();
+
+        [HttpGet]
         public async Task<IActionResult> Dashboard(DateTime? startDate = null, DateTime? endDate = null)
         {
             var today = DateTime.Today;
