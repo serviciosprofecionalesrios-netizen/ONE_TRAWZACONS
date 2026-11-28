@@ -90,9 +90,9 @@ namespace ITServiceDeskApp.ViewComponents
                 var alerts = _hsSource.Read(ITServiceDeskApp.Services.HsCalendarSource.Local(now).Date).Alerts;
                 model.TotalCount += alerts.Count;
                 model.Items = alerts.Take(8).Select(x => new NotificationItemViewModel {
-                    Url = x.Url, Title = x.Training, Summary = $"{x.Driver} · {x.Date:dd/MM/yyyy} · {x.Days} días · {x.StatusLabel}",
+                    Url = x.Url, Title = x.Title, Summary = $"{x.Driver} · {x.Date:dd/MM/yyyy} · {x.Days} días · {x.StatusLabel}",
                     TicketNumber = x.Code, PriorityLabel = x.StatusLabel, PriorityCssClass = "badge text-bg-danger",
-                    CardCssClass = "notif-item notif-item--breached", IconCssClass = "notif-icon notif-icon--breached", IconSymbolCssClass = "bi bi-mortarboard", TimeLabel = x.UrgencyLabel
+                    CardCssClass = "notif-item notif-item--breached", IconCssClass = "notif-icon notif-icon--breached", IconSymbolCssClass = x.IsTraining ? "bi bi-mortarboard" : "bi bi-file-earmark-text", TimeLabel = x.UrgencyLabel
                 }).Concat(model.Items).Take(20).ToList();
             }
 

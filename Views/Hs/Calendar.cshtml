@@ -31,7 +31,7 @@
  }
  </div>
  <section class="hs-alerts" aria-labelledby="hsAlertsTitle">
-  <div class="hs-section-heading"><div><h2 id="hsAlertsTitle"><i class="bi bi-bell"></i> Alertas de capacitación <span class="hs-count">@Model.Alerts.Count</span></h2><p>Todos los vencimientos pendientes, incluidos los de semanas anteriores.</p></div><button class="btn btn-sm btn-outline-primary" type="button" data-alert-group="all">Ver todas las alertas</button></div>
+  <div class="hs-section-heading"><div><h2 id="hsAlertsTitle"><i class="bi bi-bell"></i> Alertas de capacitaciones y documentos <span class="hs-count">@Model.Alerts.Count</span></h2><p>Capacitaciones y documentos pendientes, incluidos los vencidos en semanas anteriores.</p></div><button class="btn btn-sm btn-outline-primary" type="button" data-alert-group="all">Ver todas las alertas</button></div>
   @if(Model.Driver!="" || Model.Training!="" || Model.Status!=""){
    <div class="hs-filter-note">Alertas filtradas por tu selección. <a asp-action="Calendar" asp-route-date="@Model.Anchor.ToString("yyyy-MM-dd")" asp-route-view="@Model.View">Restablecer filtros</a></div>
   }
@@ -40,7 +40,7 @@
    var rows=Model.Alerts.Where(x=>group.Item1=="expired"?x.Days<=0:group.Item1=="urgent"?x.Days>0&&x.Days<=15:x.Days>=16&&x.Days<=30).OrderBy(x=>x.Date).ToList();
    <article class="hs-alert-column hs-alert-@group.Item4"><div class="hs-alert-column-title"><h3>@group.Item2</h3><span>@rows.Count</span></div><p class="hs-alert-caption">@group.Item3</p>
     @foreach(var x in rows.Take(3)){
-     <a class="hs-alert-record" href="@x.Url"><span class="hs-alert-person">@x.Driver <small>@x.Code</small></span><span class="hs-alert-training">@x.Training</span><span class="hs-alert-due"><i class="bi bi-circle-fill hs-red" aria-hidden="true"></i> @x.UrgencyLabel <small>· @x.Date.ToString("dd/MM/yyyy")</small></span></a>
+     <a class="hs-alert-record" href="@x.Url"><span class="hs-alert-person">@x.Driver <small>@x.Code</small></span><span class="hs-alert-training">@x.Title</span><span class="hs-alert-due"><i class="bi bi-circle-fill hs-red" aria-hidden="true"></i> @x.UrgencyLabel <small>· @x.Date.ToString("dd/MM/yyyy")</small></span></a>
     }
     @if(rows.Count==0){<p class="hs-alert-empty"><i class="bi bi-check-circle"></i> Sin pendientes en este grupo</p>}
     <button class="hs-alert-more" type="button" data-alert-group="@group.Item1">Ver @rows.Count registros <span aria-hidden="true">→</span></button>
@@ -100,13 +100,17 @@
    <div class="d-flex gap-2 align-items-center"><div class="btn-group"><a href="@Navigate(previous,Model.View)" class="btn btn-outline-secondary" aria-label="Período anterior">‹</a><a href="@Navigate(today,Model.View)" class="btn btn-outline-secondary">Hoy</a><a href="@Navigate(next,Model.View)" class="btn btn-outline-secondary" aria-label="Período siguiente">›</a></div><h2>@Model.Start.ToString("dd MMM",es) — @Model.End.AddDays(-1).ToString("dd MMM yyyy",es)</h2></div>
    <div class="d-flex gap-2 align-items-center flex-wrap">@if(Model.View=="week"){<a href="@Navigate(Model.Anchor,Model.View,!Model.FullDay)" class="btn btn-sm btn-outline-secondary">@(Model.FullDay?"Mostrar 06–18 h":"Mostrar 24 horas")</a>}<div class="hs-view-switch"><a href="@Navigate(Model.Anchor,"week")" class="@(Model.View=="week"?"is-active":"")">Semana</a><a href="@Navigate(Model.Anchor,"month")" class="@(Model.View=="month"?"is-active":"")">Mes</a></div></div>
   </div>
+  <div class="hs-pending-strip" role="status">
+   <div><strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Pendientes de actualización: @Model.Alerts.Count(x => x.Days <= 0)</strong><p>Las capacitaciones y los documentos vencidos permanecen como alerta hasta registrar su renovación. Se muestran en «Todo el día» de hoy; el detalle conserva la fecha original de vencimiento.</p></div>
+   <button type="button" class="btn btn-sm btn-outline-danger" data-alert-group="expired">Ver pendientes</button>
+  </div>
   <div class="hs-scroll" role="region" tabindex="0" aria-label="Calendario desplazable">
   @if(Model.View=="week"){
    <div class="hs-week">
     <div class="hs-week-row hs-week-header"><div class="hs-time-cell">GMT−6</div>@foreach(var day in days){<button type="button" class="hs-day-heading @(day==today?"is-today":"")" data-day="@day.ToString("yyyy-MM-dd")"><span>@day.ToString("ddd",es)</span><strong>@day.Day</strong>@if(day==today){<small>HOY</small>}</button>}</div>
     <div class="hs-week-row hs-all-day-row"><div class="hs-time-cell">Todo el día</div>@foreach(var day in days){
-     var all=Model.Events.Where(x=>x.Date.Date==day&&x.AllDay).ToList();
-     var outside=Model.Events.Count(x=>x.Date.Date==day&&!x.AllDay&&(x.Date.Hour<firstHour||x.Date.Hour>=lastHour));
+     var all=Model.Events.Where(x=>x.CalendarDate.Date==day&&x.AllDay).ToList();
+     var outside=Model.Events.Count(x=>x.CalendarDate.Date==day&&!x.AllDay&&(x.Date.Hour<firstHour||x.Date.Hour>=lastHour));
      <div class="hs-all-day-cell">@foreach(var x in all.Take(2)){<button type="button" class="hs-event hs-tone-@x.Tone" data-day="@day.ToString("yyyy-MM-dd")">@if(x.RedIndicator){<span class="hs-red" aria-label="Alerta de vencimiento">●</span>}<strong>@x.Title</strong><small>@x.Driver</small><small>@x.UrgencyLabel</small></button>}
       @if(all.Count>2){<button class="hs-more" type="button" data-day="@day.ToString("yyyy-MM-dd")">+@(all.Count-2) más</button>}
       @if(all.Count==0){<button class="hs-empty-day" type="button" data-day="@day.ToString("yyyy-MM-dd")" aria-label="Ver @day.ToString("dd/MM/yyyy")">—</button>}
@@ -116,7 +120,7 @@
     }</div>
     @for(var hour=firstHour;hour<lastHour;hour++){
      <div class="hs-week-row hs-hour-row"><div class="hs-time-cell">@hour.ToString("00"):00</div>@foreach(var day in days){
-      var timed=Model.Events.Where(x=>!x.AllDay&&x.Date.Date==day&&x.Date.Hour==hour).ToList();
+      var timed=Model.Events.Where(x=>!x.AllDay&&x.CalendarDate.Date==day&&x.Date.Hour==hour).ToList();
       <div class="hs-time-slot"><button type="button" class="hs-slot-trigger" data-day="@day.ToString("yyyy-MM-dd")" aria-label="Consultar @day.ToString("dd/MM/yyyy") a las @hour horas"></button>@foreach(var x in timed.Take(2)){<button type="button" class="hs-event hs-tone-@x.Tone" data-day="@day.ToString("yyyy-MM-dd")"><small>@x.Date.ToString("HH:mm")</small><strong>@x.Title</strong><small>@x.Driver</small></button>}@if(timed.Count>2){<button class="hs-more" type="button" data-day="@day.ToString("yyyy-MM-dd")">+@(timed.Count-2) más</button>}</div>
      }</div>
     }
@@ -124,7 +128,7 @@
   }else{
    <div class="hs-month">
     @foreach(var label in new[]{"LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"}){<div class="hs-month-heading">@label</div>}
-    @foreach(var day in days){var items=Model.Events.Where(x=>x.Date.Date==day).ToList();
+    @foreach(var day in days){var items=Model.Events.Where(x=>x.CalendarDate.Date==day).ToList();
      <section class="hs-day @(day.Month!=Model.Anchor.Month?"hs-other-month":"") @(day==today?"is-today":"")"><button class="hs-month-date" type="button" data-day="@day.ToString("yyyy-MM-dd")" aria-label="Consultar @day.ToString("dd/MM/yyyy")"><span>@day.Day</span>@if(items.Count>0){<small>@items.Count actividades</small>}</button>
       @foreach(var x in items.Take(3)){<button type="button" class="hs-event hs-tone-@x.Tone" data-day="@day.ToString("yyyy-MM-dd")">@if(x.RedIndicator){<span class="hs-red" aria-label="Alerta de vencimiento">●</span>}<strong>@x.Title</strong><small>@x.Driver</small></button>}
       @if(items.Count>3){<button type="button" class="hs-more" data-day="@day.ToString("yyyy-MM-dd")">Ver todos · @items.Count</button>}

@@ -73,17 +73,16 @@ public partial class HsController
         foreach (var x in actions) model.Events.Add(new() { Key = $"action:{x.Id}", Date = HsCalendarSource.Local(x.DueDateUtc), Title = x.Title, Status = x.Status, Tone = "warning", Url = $"/Hs/ActionEdit/{x.Id}" });
         var permits = await _context.HsWorkPermits.AsNoTracking().Where(x => x.EndAtUtc >= startUtc && x.EndAtUtc < endUtc).ToListAsync();
         foreach (var x in permits) model.Events.Add(new() { Key = $"permit:{x.Id}", Date = HsCalendarSource.Local(x.EndAtUtc), Title = $"{x.PermitType} · {x.Area}", Status = x.Status, Tone = "secondary", Url = $"/Hs/PermitEdit/{x.Id}" });
-        var docs = await _context.HsDocuments.AsNoTracking().Where(x => x.ReviewDateUtc >= startUtc && x.ReviewDateUtc < endUtc).ToListAsync();
-        foreach (var x in docs) model.Events.Add(new() { Key = $"document:{x.Id}", Date = HsCalendarSource.Local(x.ReviewDateUtc!.Value), Title = $"{x.Code} · {x.Title}", Status = x.Status, Tone = "secondary", Url = "/Hs/Documents" });
         model.Sites = model.Events.Select(x => x.Site).Where(x => x.Length > 0).Distinct().Order().ToList();
         model.Trainings = model.Trainings.Concat(model.Events.Select(x => x.Training).Where(x => x.Length > 0)).Distinct().Order().ToList();
         bool Matches(HsOperationalEvent x) => (driver == "" || x.DriverId == driver) && (training == "" || x.Training == training) && (status == "" || x.Status == status) && HsCalendarSource.MatchesActivitySite(x, site);
         model.Alerts = model.Alerts.Where(Matches).ToList();
-        var expiry = model.Events.Where(x => x.IsTraining && x.Days.HasValue && Matches(x)).ToList();
+        var expiry = model.Events.Where(x => x.Days.HasValue && Matches(x)).ToList();
         model.Expiries = expiry;
         model.ActiveDrivers = driver == "" ? model.ActiveDrivers : model.Drivers.ContainsKey(driver) ? 1 : 0;
         model.Valid = expiry.Count(x => x.Days > 30); model.Due = expiry.Count(x => x.Days > 0 && x.Days <= 30); model.Expired = expiry.Count(x => x.Days <= 0);
-        model.Events = model.Events.Where(x => x.Date >= model.Start && x.Date < model.End && Matches(x)).OrderBy(x => x.Date).ToList();
+        foreach (var item in model.Events.Where(x => !x.Days.HasValue)) item.CalendarDate = item.Date;
+        model.Events = model.Events.Where(x => x.CalendarDate >= model.Start && x.CalendarDate < model.End && Matches(x)).OrderBy(x => x.Date).ToList();
         return View(model);
     }
 }

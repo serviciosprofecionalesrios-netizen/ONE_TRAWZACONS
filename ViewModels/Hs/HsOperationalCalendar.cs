@@ -30,6 +30,8 @@ public sealed class HsOperationalEvent
 {
     public string Key { get; set; } = "";
     public DateTime Date { get; set; }
+    // Keep the real expiry for details; overdue records remain on today's agenda.
+    public DateTime CalendarDate { get; set; }
     public bool AllDay { get; set; }
     public bool IsTraining { get; set; }
     public string Title { get; set; } = "";

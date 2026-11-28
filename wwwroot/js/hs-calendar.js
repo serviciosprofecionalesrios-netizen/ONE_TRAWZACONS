@@ -4,7 +4,7 @@
  const events = read('hsEvents'), alerts = read('hsAlerts'), expiries = read('hsExpiries');
  const drawer = document.getElementById('hsDayDrawer'), body = document.getElementById('hsDayBody');
  const title = document.getElementById('hsDayTitle');
- const groups = ['Capacitaciones registradas','Capacitaciones próximas a vencer','Capacitaciones vencidas','Inspecciones y auditorías','Otras actividades H&S','Vencimientos vigentes'];
+ const groups = ['Capacitaciones registradas','Capacitaciones próximas a vencer','Capacitaciones vencidas','Inspecciones y auditorías','Otras actividades H&S','Documentos','Vencimientos vigentes'];
  const date = value => new Date(value.slice(0,10) + 'T12:00:00').toLocaleDateString('es-NI');
  function node(tag, text, cls) { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (cls) n.className = cls; return n; }
  function show() { bootstrap.Offcanvas.getOrCreateInstance(drawer).show(); }
@@ -19,7 +19,7 @@
   });
   el.append(dl); const actions = node('div',undefined,'hs-detail-actions');
   if (x.Url) { const a=node('a','Consultar registro','btn btn-sm btn-outline-primary'); a.href=x.Url; actions.append(a); }
-  if (x.Days !== null && drawer.dataset.canEdit === 'true') { const a=node('a','Actualizar documentos','btn btn-sm btn-primary'); a.href='/Operaciones/ControlDocumentos'; actions.append(a); }
+  if (x.Days !== null && !x.Key.startsWith('training-expiry:') && !x.Key.startsWith('document:') && drawer.dataset.canEdit === 'true') { const a=node('a','Actualizar documentos','btn btn-sm btn-primary'); a.href='/Operaciones/ControlDocumentos'; actions.append(a); }
   el.append(actions); return el;
  }
  function list(heading, rows) {
@@ -52,7 +52,7 @@
  }
  function dayDetails(day) {
   title.textContent=new Date(day+'T12:00:00').toLocaleDateString('es-NI',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  body.replaceChildren(); const rows=events.filter(x=>x.Date.slice(0,10)===day);
+  body.replaceChildren(); const rows=events.filter(x=>x.CalendarDate.slice(0,10)===day);
   if (!rows.length) body.append(node('p','No hay actividades ni vencimientos para esta fecha.','hs-empty-panel'));
   groups.forEach(group=>{const items=rows.filter(x=>x.Group===group);if(!items.length)return;body.append(node('h3',group+' · '+items.length));items.forEach(x=>body.append(card(x)));}); show();
  }
@@ -63,13 +63,13 @@
  document.querySelectorAll('[data-alert-group]').forEach(b=>b.addEventListener('click',()=>{
   const group=b.dataset.alertGroup;
   const rows=alerts.filter(x=>group==='all'||(group==='expired'&&x.Days<=0)||(group==='urgent'&&x.Days>0&&x.Days<=15)||(group==='soon'&&x.Days>=16&&x.Days<=30));
-  const names={all:'Todas las alertas de capacitación',expired:'Capacitaciones vencidas / hoy',urgent:'Vencen en 1–15 días',soon:'Vencen en 16–30 días'};
+  const names={all:'Alertas de capacitaciones y documentos',expired:'Capacitaciones y documentos vencidos / hoy',urgent:'Vencen en 1–15 días',soon:'Vencen en 16–30 días'};
   list(names[group],rows);
  }));
  document.querySelectorAll('[data-kpi]').forEach(b=>b.addEventListener('click',()=>{
   const key=b.dataset.kpi;
   if (key==='drivers') { const field=document.getElementById('hsDriver');field.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});field.focus({preventScroll:true});field.classList.add('hs-highlight');field.addEventListener('blur',()=>field.classList.remove('hs-highlight'),{once:true});return; }
   const rows=expiries.filter(x=>key==='valid'?x.Days>30:key==='due'?x.Days>0&&x.Days<=30:x.Days<=0);
-  list(key==='valid'?'Capacitaciones vigentes':key==='due'?'Próximas a vencer · 30 días':'Capacitaciones vencidas / hoy',rows);
+  list(key==='valid'?'Capacitaciones y documentos vigentes':key==='due'?'Próximas a vencer · 30 días':'Capacitaciones y documentos vencidos / hoy',rows);
  }));
 })();
